@@ -60,21 +60,22 @@ Leggi il file `CLAUDE.md` nella root del progetto target.
 
 ## Fase 2 — Reverse Interaction (obbligatoria, non skippabile)
 
-Fai **esattamente 5 domande** all'utente per colmare i buchi di contesto prima di procedere.
+Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta la risposta, poi formula la successiva tenendo conto di ciò che hai appena sentito. Non presentare mai più domande in un unico messaggio.
 
 **Regole:**
-- Minimo 5 domande. Puoi farne di più se il dominio è ambiguo, mai meno.
-- Le `Note di sviluppo` del ticket possono ridurre l'ampiezza delle domande, non il numero minimo.
+- Una domanda per messaggio. Sempre.
+- Minimo 5 domande totali. Puoi farne di più se le risposte aprono nuovi buchi di contesto.
+- Le `Note di sviluppo` del ticket possono orientare le domande, non ridurne il numero minimo.
 - L'unica eccezione per scendere sotto 5 è una giustificazione esplicita scritta nel tuo messaggio (es. "Il ticket e le note di sviluppo coprono già questi aspetti — le 5 domande sarebbero ridondanti perché…").
-- Le domande devono essere precise e specifiche al problema, non generiche.
-- Aspetta le risposte prima di andare alla fase successiva.
+- Ogni domanda deve essere costruita sulla risposta precedente, non preparata in anticipo.
+- Procedi alla Fase 3 solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
 
-**Aree da coprire (adatta al contesto specifico):**
-1. Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
-2. Chi la usa? Quali utenti o sistemi interagiscono con essa, e in quali condizioni limite?
-3. Cosa non deve fare? Scope esplicito di ciò che è out-of-scope.
-4. Ci sono vincoli tecnici noti? (performance, compatibilità, dipendenze legacy, deadline)
-5. Come si misura il successo? Quali test o comportamenti osservabili confermano che è fatta bene?
+**Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
+- Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
+- Chi la usa? Quali utenti o sistemi interagiscono con essa, e in quali condizioni limite?
+- Cosa non deve fare? Scope esplicito di ciò che è out-of-scope.
+- Ci sono vincoli tecnici noti? (performance, compatibilità, dipendenze legacy, deadline)
+- Come si misura il successo? Quali test o comportamenti osservabili confermano che è fatta bene?
 
 ---
 
