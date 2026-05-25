@@ -60,6 +60,24 @@ Leggi il file `CLAUDE.md` nella root del progetto target.
 
 ## Fase 2 — Reverse Interaction (obbligatoria, non skippabile)
 
+### 2a — Mappatura domini e submodule
+
+Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
+
+1. **Submodule presenti** — esegui `git submodule status` e leggi `.gitmodules`. Nota quali repo sono inclusi (es. `wm-package` per backend, `wm-core` / `map-core` per frontend).
+2. **Dominio della feature** — sulla base del ticket e del codice, classifica la feature:
+   - **Custom** — logica specifica di questo progetto, il codice va nel repo principale
+   - **Package/submodule** — logica generica riusabile, il codice va nel submodule appropriato
+   - **Misto** — parte nel repo principale, parte nel submodule (specifica quale parte va dove)
+3. **Dichiarazione esplicita** — prima della prima domanda scrivi un messaggio con:
+   - Submodule trovati e loro scopo
+   - Classificazione della feature (custom / package / misto)
+   - Per ogni file o modulo che verrà toccato, il repo di destinazione esplicito
+
+Questa classificazione rimane attiva per tutto il workflow: overview.md, plan.md e ogni step del piano devono sempre indicare il repo di destinazione per ogni file.
+
+### 2b — Dialogo
+
 Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta la risposta, poi formula la successiva tenendo conto di ciò che hai appena sentito. Non presentare mai più domande in un unico messaggio.
 
 **Regole:**
@@ -86,9 +104,11 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 
 ## Fase 3 — Challenge (review adversariale)
 
-Attacca il tuo approccio su questi 5 assi. L'obiettivo è trovare debolezze, non difendere la soluzione.
+La Challenge si svolge in due momenti:
 
-Per ogni asse scrivi almeno un punto concreto — non puoi scrivere "nessun rischio" senza motivazione esplicita.
+**Momento 1 — Analisi completa (un unico messaggio)**
+
+Presenta tutti e 5 gli assi in un solo messaggio. Per ogni asse scrivi almeno un punto concreto — non puoi scrivere "nessun rischio" senza motivazione esplicita. L'obiettivo è trovare debolezze, non difendere la soluzione.
 
 1. **Assunzioni fragili** — Quali ipotesi stai facendo che potrebbero essere false? Cosa succede se lo sono?
 2. **Rischi architetturali** — Dove questo design crea accoppiamento, rigidità o debito tecnico futuro?
@@ -96,7 +116,14 @@ Per ogni asse scrivi almeno un punto concreto — non puoi scrivere "nessun risc
 4. **Worst case** — Se qualcosa va storto in produzione, qual è lo scenario peggiore? È recuperabile?
 5. **Difficoltà di rollback** — Quanto è facile tornare indietro? Ci sono migrazioni di dati, API breaking change, o dipendenze esterne che rendono il rollback costoso?
 
-Dopo la Challenge, comunica all'utente le criticità emerse e chiedi se vuole modificare l'approccio prima di procedere.
+**Momento 2 — Dialogo asse per asse**
+
+Dopo aver presentato l'analisi, affronta gli assi uno alla volta in ordine di criticità (dal più critico al meno). Per ogni asse:
+- Riassumi il rischio in una riga
+- Proponi come intendi gestirlo
+- Chiedi all'utente se vuole modificare l'approccio su quel punto
+
+Aspetta la risposta prima di passare all'asse successivo. Se la risposta apre nuovi scenari non coperti dall'analisi iniziale, aggiorna l'asse o aggiungi considerazioni prima di procedere. Solo dopo aver discusso tutti gli assi critici procedi alla Fase 4.
 
 ---
 
