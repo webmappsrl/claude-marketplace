@@ -92,6 +92,27 @@ Per tornare alla versione remota:
 /plugin marketplace add webmappsrl/claude-marketplace
 ```
 
+## Skill team-skills disponibili
+
+| Skill | Quando si attiva |
+|---|---|
+| `webmapp-feature-workflow` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
+
+Ogni skill può dipendere o comporre skill di `superpowers` (già installato come plugin separato).
+
+## Integrazione con Orchestrator (sistema ticket Webmapp)
+
+I ticket Webmapp vivono su **Orchestrator** (`webmappsrl/orchestrator`), piattaforma Laravel interna.
+
+**Formato ID ticket:** `oc:<numero>` (es. `oc:7815`)
+
+**Come fornire un ticket a Claude:** incollare il contenuto del ticket nella chat (Titolo, Richiesta, Note di sviluppo). Integrazione diretta via API/MCP pianificata per il futuro.
+
+**Convenzioni nei documenti generati da skill:**
+- Ogni file `docs/features/` inizia con `> Ticket: oc:<ID>`
+- Feature slug: `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`)
+- Commit scope: `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
+
 ## Aggiornare superpowers
 
 `superpowers` è pinato a `ref: main` di `obra/superpowers`. Per pinnare a una versione stabile,
