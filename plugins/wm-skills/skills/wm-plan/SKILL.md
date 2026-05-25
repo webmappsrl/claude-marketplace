@@ -69,7 +69,11 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - L'unica eccezione per scendere sotto 5 è una giustificazione esplicita scritta nel tuo messaggio (es. "Il ticket e le note di sviluppo coprono già questi aspetti — le 5 domande sarebbero ridondanti perché…").
 - Ogni domanda deve essere costruita sulla risposta precedente, non preparata in anticipo.
 - Procedi alla Fase 3 solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
-- **Non chiedere ciò che puoi leggere nel codice o nel database.** Prima di formulare ogni domanda, verifica se la risposta è ricavabile da: codebase (modelli, migration, config, CLAUDE.md) oppure dal database locale — che contiene un dump veritiero dei dati di produzione. Per domande sulla struttura dati, relazioni tra entità o valori reali, interroga direttamente il db locale (`php artisan tinker`, query SQL, o equivalente per lo stack del progetto) prima di chiedere all'utente. Se trovi la risposta, non fare la domanda — dichiarala in una riga ("Ho verificato nel db che X — procedo con questa assunzione"). Le domande sono riservate a contesto business, decisioni di prodotto e vincoli non visibili né nel codice né nei dati.
+- **Non chiedere ciò che puoi leggere nel codice o nel database.** Per ogni potenziale domanda segui questo protocollo obbligatorio in tre passi — non puoi saltarli:
+  1. **Cerca nel codice** — modelli, migration, config, CLAUDE.md. Hai trovato la risposta? Usala, non fare la domanda.
+  2. **Cerca nel db locale** — che contiene un dump veritiero dei dati di produzione. Interrogalo con `php artisan tinker`, query SQL diretta, o equivalente per lo stack del progetto. Hai trovato la risposta? Usala, non fare la domanda.
+  3. **Solo se entrambe le ricerche sono fallite** — formula la domanda arricchita dal contesto trovato nei passi 1 e 2: cita esplicitamente cosa hai già capito e cosa rimane aperto. Non fare domande che ignorano ciò che hai già trovato.
+  Prima di ogni domanda scrivi esplicitamente: *"Ho cercato nel codice [cosa hai cercato e dove] e nel db [query eseguita] — non ho trovato risposta sufficiente, quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
 
 **Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
 - Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
