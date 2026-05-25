@@ -131,9 +131,19 @@ Aspetta la risposta prima di passare all'asse successivo. Se la risposta apre nu
 
 ## Fase 4 — Scrivi `overview.md`
 
-Crea il file `docs/features/<feature-slug>/overview.md`.
+**I file di documentazione seguono il codice, non il repo principale.**
 
-Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`). Se non c'è ticket, usa solo il titolo kebab-case.
+Per ogni repo coinvolto dalla feature (principale + eventuali submodule) crea un `overview.md` separato nella cartella `docs/features/<feature-slug>/` di quel repo. Non accentrare tutto nel repo principale se il codice è distribuito.
+
+| Dove va il codice | Dove va la documentazione |
+|---|---|
+| Repo principale | `docs/features/<feature-slug>/overview.md` nel repo principale |
+| Submodule `wm-package` | `docs/features/<feature-slug>/overview.md` in `wm-package/` |
+| Submodule `wm-core` | `docs/features/<feature-slug>/overview.md` in `wm-core/` |
+
+Se la feature è interamente custom (nessun submodule coinvolto), un solo `overview.md` nel repo principale è sufficiente.
+
+Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`). Se non c'è ticket, usa solo il titolo kebab-case. Lo slug è lo stesso in tutti i repo per mantenere la tracciabilità.
 
 **Struttura obbligatoria:**
 
