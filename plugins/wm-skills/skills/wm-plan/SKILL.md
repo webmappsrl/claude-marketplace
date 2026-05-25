@@ -179,7 +179,18 @@ Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
 
 ## Fase 5 — Scrivi `plan.md`
 
-**REQUIRED SUB-SKILL:** Invoca `superpowers:writing-plans` per generare il piano, con questi override:
+**Prima di invocare writing-plans**, leggi esplicitamente tutti gli `overview.md` generati in Fase 4 (uno per ogni repo coinvolto) e costruisci un briefing strutturato da passare come contesto a writing-plans. Il briefing deve contenere:
+
+- Ticket: `oc:<ID>` e titolo
+- Repo coinvolti e classificazione (custom / package / misto)
+- Requisiti dalla sezione "Requisiti" di ogni overview.md
+- Rischi e decisioni emerse dalla Challenge (Fase 3) e recepite nell'overview
+- File da creare/modificare per repo, dalla sezione "Moduli toccati"
+- Vincoli tecnici emersi dal dialogo in Fase 2
+
+Questo briefing è lo spec che writing-plans usa per generare il piano — senza di esso writing-plans parte cieco.
+
+**REQUIRED SUB-SKILL:** Invoca `superpowers:writing-plans` con il briefing sopra come contesto, e questi override:
 
 - **Percorso di salvataggio:** `docs/features/<feature-slug>/plan.md`
 - **Header obbligatorio:** il piano inizia con `> Ticket: oc:<ID>`
