@@ -1,10 +1,9 @@
 {
-  "name": "acme-team-marketplace",
+  "name": "claude-marketplace",
   "owner": {
-    "name": "Acme Engineering Team",
-    "email": "engineering@acme.example"
+    "name": "Webmapp"
   },
-  "description": "Plugin del team Acme: Superpowers + skill custom interne",
+  "description": "Marketplace di plugin Claude Code di Webmapp: Superpowers + skill interne del team",
   "plugins": [
     {
       "name": "superpowers",
@@ -18,7 +17,7 @@
     {
       "name": "team-skills",
       "source": "./plugins/team-skills",
-      "description": "Skill interne del team Acme: stile, PR, deploy"
+      "description": "Skill interne del team Webmapp: stile, PR, deploy"
     }
   ]
 }
