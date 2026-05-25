@@ -69,6 +69,7 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - L'unica eccezione per scendere sotto 5 è una giustificazione esplicita scritta nel tuo messaggio (es. "Il ticket e le note di sviluppo coprono già questi aspetti — le 5 domande sarebbero ridondanti perché…").
 - Ogni domanda deve essere costruita sulla risposta precedente, non preparata in anticipo.
 - Procedi alla Fase 3 solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
+- **Non chiedere ciò che puoi leggere nel codice.** Prima di formulare ogni domanda, verifica se la risposta è ricavabile dal codebase (modelli, migration, config, CLAUDE.md). Se la trovi, non fare la domanda — usa quella risposta e semmai confermala all'utente in un'unica riga ("Ho visto nel codice che X — procedo con questa assunzione"). Le domande sono riservate a contesto business, decisioni di prodotto e vincoli non visibili nel codice.
 
 **Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
 - Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
