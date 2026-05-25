@@ -1,5 +1,5 @@
 {
-  "name": "webmapp-marketplace",
+  "name": "wm-marketplace",
   "owner": {
     "name": "Webmapp"
   },
@@ -15,8 +15,8 @@
       "description": "Agentic skills framework (upstream, di Jesse Vincent / obra)"
     },
     {
-      "name": "team-skills",
-      "source": "./plugins/team-skills",
+      "name": "wm-skills",
+      "source": "./plugins/wm-skills",
       "description": "Skill interne del team Webmapp: stile, PR, deploy"
     }
   ]

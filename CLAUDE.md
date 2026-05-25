@@ -9,8 +9,8 @@ Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
 
 - **`superpowers`** — framework agentico di Jesse Vincent ([obra/superpowers](https://github.com/obra/superpowers)),
   referenziato direttamente dall'upstream con `ref: main`
-- **`team-skills`** — skill interne Webmapp (convenzioni di codice, checklist PR, processo deploy),
-  mantenute in questo repo sotto `plugins/team-skills/`
+- **`wm-skills`** — skill interne Webmapp (convenzioni di codice, checklist PR, processo deploy),
+  mantenute in questo repo sotto `plugins/wm-skills/`
 
 ## Struttura e ruolo dei file di config
 
@@ -18,7 +18,7 @@ Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
 .claude-plugin/
   marketplace.json          catalogo del marketplace: nome, owner, lista plugin con sorgente
 plugins/
-  team-skills/
+  wm-skills/
     .claude-plugin/
       plugin.json           manifesto del plugin: name, description, author, license, keywords
     skills/
@@ -31,7 +31,7 @@ plugins/
 Definisce il marketplace. Il campo `name` **non deve** contenere prefissi come `claude-*` o
 impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore di schema.
 
-### `plugins/team-skills/.claude-plugin/plugin.json`
+### `plugins/wm-skills/.claude-plugin/plugin.json`
 
 **Non ha campo `version` di proposito.** Questo significa che ogni commit su `main` viene trattato
 come nuova versione e arriva al team al primo `marketplace update`. Se in futuro volete passare a
@@ -41,7 +41,7 @@ release cadenzate, aggiungete `"version": "1.0.0"` e bumpate a ogni release.
 
 1. Creare la cartella:
    ```
-   plugins/team-skills/skills/<nome-skill>/
+   plugins/wm-skills/skills/<nome-skill>/
    ```
 2. Creare `SKILL.md` con questo frontmatter YAML obbligatorio:
    ```markdown
@@ -80,7 +80,7 @@ locale dalla directory del repo:
 ```bash
 # Dentro Claude Code, dalla root del repo:
 /plugin marketplace add .
-/plugin install team-skills@webmapp-marketplace
+/plugin install wm-skills@wm-marketplace
 ```
 
 Questo punta al filesystem locale. Ogni modifica a un `SKILL.md` è immediatamente disponibile
@@ -88,15 +88,15 @@ ricaricando la sessione, senza commit né push.
 
 Per tornare alla versione remota:
 ```bash
-/plugin marketplace remove webmapp-marketplace
+/plugin marketplace remove wm-marketplace
 /plugin marketplace add webmappsrl/claude-marketplace
 ```
 
-## Skill team-skills disponibili
+## Skill wm-skills disponibili
 
 | Skill | Quando si attiva |
 |---|---|
-| `webmapp-feature-workflow` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
+| `wm-plan` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
 
 Ogni skill può dipendere o comporre skill di `superpowers` (già installato come plugin separato).
 

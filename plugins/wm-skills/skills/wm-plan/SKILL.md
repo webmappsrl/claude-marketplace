@@ -1,5 +1,5 @@
 ---
-name: webmapp-feature-workflow
+name: wm-plan
 description: "Use when asked to implement, build, add, or refactor a non-trivial feature — anything that touches multiple files, changes architecture, or introduces new behaviour. Do NOT invoke for simple bug fixes, typo corrections, or read-only questions."
 ---
 
@@ -141,7 +141,7 @@ Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
 - **Commit convention:** tutti i commit usano `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
 - **⚠️ No commit o branch automatici:** i commit nel piano sono istruzioni testuali per l'utente, non azioni da eseguire autonomamente. Claude non esegue `git commit`, `git push` o crea branch senza conferma esplicita dell'utente per ogni singolo commit.
 
-Durante la scrittura del piano applica la skill `team-skills:our-code-style` per allineare le scelte implementative alle convenzioni Webmapp.
+Durante la scrittura del piano applica la skill `wm-skills:our-code-style` per allineare le scelte implementative alle convenzioni Webmapp.
 
 Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
 
@@ -235,9 +235,9 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 ## Composizione con altre skill Webmapp
 
-- **`team-skills:our-code-style`** — applica in Fase 5 (scrittura plan) e Fase 6 (esecuzione)
-- **`team-skills:our-pr-checklist`** — applica dopo la Fase 7, prima di aprire la PR
-- **`team-skills:our-deploy-post-merge`** — applica dopo il merge della PR
+- **`wm-skills:our-code-style`** — applica in Fase 5 (scrittura plan) e Fase 6 (esecuzione)
+- **`wm-skills:our-pr-checklist`** — applica dopo la Fase 7, prima di aprire la PR
+- **`wm-skills:our-deploy-post-merge`** — applica dopo il merge della PR
 
 ---
 
