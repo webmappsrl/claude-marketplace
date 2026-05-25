@@ -90,7 +90,9 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - **Non chiedere ciò che puoi leggere nel codice o nel database.** Per ogni potenziale domanda segui questo protocollo obbligatorio in tre passi — non puoi saltarli:
   1. **Cerca nel codice** — modelli, migration, config, CLAUDE.md. Hai trovato la risposta? Usala, non fare la domanda.
   2. **Cerca nel db locale** — che contiene un dump veritiero dei dati di produzione. Interrogalo con `php artisan tinker`, query SQL diretta, o equivalente per lo stack del progetto. Hai trovato la risposta? Usala, non fare la domanda.
-  3. **Solo se entrambe le ricerche sono fallite** — formula la domanda arricchita dal contesto trovato nei passi 1 e 2: cita esplicitamente cosa hai già capito e cosa rimane aperto. Aggiungi sempre un consiglio basato su best practice rilevanti per il problema specifico, così l'utente può decidere con più contesto. Non fare domande che ignorano ciò che hai già trovato.
+  3. **Solo se entrambe le ricerche sono fallite** — formula la domanda arricchita dal contesto trovato nei passi 1 e 2: cita esplicitamente cosa hai già capito e cosa rimane aperto. Non fare domande che ignorano ciò che hai già trovato.
+
+- **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
   Prima di ogni domanda scrivi esplicitamente: *"Ho cercato nel codice [cosa hai cercato e dove] e nel db [query eseguita] — non ho trovato risposta sufficiente, quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
 
 **Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
