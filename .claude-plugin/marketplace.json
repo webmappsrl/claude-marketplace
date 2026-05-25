@@ -1,0 +1,24 @@
+{
+  "name": "acme-team-marketplace",
+  "owner": {
+    "name": "Acme Engineering Team",
+    "email": "engineering@acme.example"
+  },
+  "description": "Plugin del team Acme: Superpowers + skill custom interne",
+  "plugins": [
+    {
+      "name": "superpowers",
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers",
+        "ref": "main"
+      },
+      "description": "Agentic skills framework (upstream, di Jesse Vincent / obra)"
+    },
+    {
+      "name": "team-skills",
+      "source": "./plugins/team-skills",
+      "description": "Skill interne del team Acme: stile, PR, deploy"
+    }
+  ]
+}

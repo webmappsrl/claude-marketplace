@@ -1,0 +1,11 @@
+{
+  "name": "team-skills",
+  "description": "Skill interne del team Acme: convenzioni di codice, checklist PR, processo di deploy",
+  "version": "0.1.0",
+  "author": {
+    "name": "Acme Engineering Team",
+    "email": "engineering@acme.example"
+  },
+  "license": "MIT",
+  "keywords": ["team", "internal", "conventions"]
+}
