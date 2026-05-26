@@ -101,6 +101,10 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - Cosa non deve fare? Scope esplicito di ciò che è out-of-scope.
 - Ci sono vincoli tecnici noti? (performance, compatibilità, dipendenze legacy, deadline)
 - Come si misura il successo? Quali test o comportamenti osservabili confermano che è fatta bene?
+- La feature introduce testi visibili all'utente? Se sì, **ispeziona autonomamente** il repo per determinare:
+  - Lingua di default (cerca `config/app.php` → `locale`, `i18n.config.*` → `defaultLocale`, `nuxt.config.*` → `i18n.defaultLocale`, `.env` → `APP_LOCALE`, o equivalenti per lo stack)
+  - Lingue disponibili (elenca le cartelle/file in `resources/lang/`, `lang/`, `locales/`, `src/locales/`, `public/locales/` o equivalenti)
+  Documenta quanto trovato prima di fare domande. Chiedi all'utente solo se non riesci a determinare né la lingua di default né le lingue disponibili.
 
 ---
 
@@ -236,6 +240,13 @@ Ripeti per ogni submodule coinvolto dalla feature (stesso nome branch in tutti i
 Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con 6c.
 
 ### 6c — Implementazione
+
+**Regola traduzioni (obbligatoria):** ogni testo traducibile introdotto dall'implementazione deve:
+- avere il testo base nella **lingua di default del repo** (rilevata in Fase 2 — solitamente inglese, ma verifica)
+- avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase 2)
+- non lasciare chiavi mancanti in nessun file di lingua esistente
+
+Se in Fase 2 non è stata rilevata la configurazione i18n (feature non aveva testi UI), ispezionala ora prima di scrivere qualsiasi stringa traducibile.
 
 Scegli l'entry point Superpowers più adatto e dichiaralo esplicitamente all'utente con la motivazione:
 
