@@ -211,9 +211,31 @@ Se il piano include componenti UI/UX (nuove interfacce, layout, prototipi, slide
 
 > "Questa feature ha componenti visual. Ti consiglio di prototipare il design su claude.ai/design prima di implementare — puoi poi trasferire il risultato direttamente a Claude Code con un'istruzione."
 
-Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con 6b.
+Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con 6b (creazione branch).
 
-### 6b — Implementazione
+### 6b — Creazione branch (obbligatoria, prima di scrivere qualsiasi file)
+
+<HARD-GATE>
+Nessun file può essere creato o modificato prima che esista un branch dedicato alla feature. Questo vale sempre, con o senza ticket Orchestrator.
+</HARD-GATE>
+
+Deriva il nome del branch dalla feature:
+
+| Caso | Nome branch |
+|---|---|
+| Ticket presente | `feature/oc-<ID>-<titolo-in-kebab-case>` (es. `feature/oc-7815-creazione-poi-tramite-osm-id`) |
+| Nessun ticket | `feature/<titolo-in-kebab-case>` (es. `feature/creazione-poi-tramite-osm-id`) |
+
+Esegui:
+```bash
+git checkout -b <nome-branch>
+```
+
+Ripeti per ogni submodule coinvolto dalla feature (stesso nome branch in tutti i repo).
+
+Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con 6c.
+
+### 6c — Implementazione
 
 Scegli l'entry point Superpowers più adatto e dichiaralo esplicitamente all'utente con la motivazione:
 
@@ -233,7 +255,7 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
-### 6c — Gate di revisione (obbligatorio, non skippabile)
+### 6d — Gate di revisione (obbligatorio, non skippabile)
 
 <HARD-GATE>
 Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto.
