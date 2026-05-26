@@ -225,6 +225,27 @@ Scegli l'entry point Superpowers più adatto e dichiaralo esplicitamente all'ute
 
 Esempio di dichiarazione: *"Invoco `superpowers:subagent-driven-development` perché il piano tocca sia frontend che backend con task indipendenti che possono essere eseguiti in parallelo."*
 
+### 6c — Gate di revisione (obbligatorio, non skippabile)
+
+<HARD-GATE>
+Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto.
+</HARD-GATE>
+
+Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
+
+1. Esegui `git diff --stat` e poi `git diff` per ogni repo coinvolto (principale + submodule).
+2. Presenta all'utente un riepilogo strutturato:
+   - File creati / modificati / eliminati per repo
+   - Breve descrizione del contenuto di ogni file significativo
+3. Chiedi conferma esplicita con questo messaggio:
+
+   > "Ho completato l'implementazione. Ecco il diff completo. **Rivedi il codice prima di procedere.** Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
+
+4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
+5. Solo dopo l'approvazione esplicita esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+
+**Nessuna eccezione.** Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
+
 ---
 
 ## Fase 7 — Mantieni `notes.md`
