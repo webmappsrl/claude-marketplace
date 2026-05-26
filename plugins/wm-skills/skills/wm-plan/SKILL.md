@@ -225,6 +225,14 @@ Scegli l'entry point Superpowers più adatto e dichiaralo esplicitamente all'ute
 
 Esempio di dichiarazione: *"Invoco `superpowers:subagent-driven-development` perché il piano tocca sia frontend che backend con task indipendenti che possono essere eseguiti in parallelo."*
 
+**⚠️ Override obbligatorio prima di invocare qualsiasi skill Superpowers:**
+
+Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse parte del tuo contesto di esecuzione:
+
+> "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. La fase di commit è gestita separatamente in 6c dopo approvazione del developer."
+
+Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
+
 ### 6c — Gate di revisione (obbligatorio, non skippabile)
 
 <HARD-GATE>
