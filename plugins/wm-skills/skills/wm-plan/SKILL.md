@@ -55,7 +55,17 @@ Se risponde 401: cancella il token e ripeti il login prima di ritentare.
 
 ### Creazione ticket (POST — richiede conferma esplicita)
 
-Prima di eseguire, mostra all'utente i campi che verranno inviati e chiedi conferma esplicita. Solo dopo:
+Prima di eseguire, mostra un riepilogo tabellare e chiedi conferma esplicita:
+
+> **Creazione ticket**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `<campo>` | `<valore>` |
+>
+> Procedo?
+
+Solo dopo la conferma:
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
@@ -71,11 +81,16 @@ Salva l'ID restituito (`$.id`) come `<ID>` del ticket per il resto del workflow.
 
 ### Aggiornamento ticket (PATCH — richiede conferma esplicita)
 
-Prima di eseguire, mostra sempre questo messaggio:
+Prima di eseguire, mostra sempre un riepilogo tabellare:
 
-> "Sto per aggiornare il ticket oc:\<ID\> con questi campi:
-> - `<campo>`: `<valore>`
-> Procedo?"
+> **Aggiornamento ticket oc:\<ID\>**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `<campo>` | `<valore>` |
+> | `<campo>` | `<valore>` |
+>
+> Procedo?
 
 Solo dopo la conferma:
 
