@@ -13,38 +13,180 @@ Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano n
 
 ---
 
+## Orchestrator API
+
+Queste istruzioni valgono per tutte le chiamate HTTP a Orchestrator. Usale ogni volta che una fase richiede di leggere o scrivere un ticket.
+
+### Configurazione
+
+- **URL base:** leggi `$ORCHESTRATOR_URL` dall'environment. Se non è impostata usa `https://orchestrator.maphub.it` come default.
+- **Token:** salvato in `~/.config/webmapp/orchestrator-token` (plain text, una riga). Se il file non esiste o la chiamata restituisce 401, esegui il login (vedi sotto).
+
+### Login (solo se token assente o scaduto)
+
+Chiedi email e password all'utente, poi:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+curl -s -X POST "$ORCHESTRATOR_URL/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"<email>","password":"<password>"}' \
+  | jq -r '.token'
+```
+
+Salva il token restituito:
+
+```bash
+mkdir -p ~/.config/webmapp
+echo "<token>" > ~/.config/webmapp/orchestrator-token
+```
+
+### Lettura ticket (GET — nessuna conferma richiesta)
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json"
+```
+
+Se risponde 401: cancella il token e ripeti il login prima di ritentare.
+
+### Creazione ticket (POST — richiede conferma esplicita)
+
+Prima di eseguire, mostra un riepilogo tabellare e chiedi conferma esplicita:
+
+> **Creazione ticket**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `<campo>` | `<valore>` |
+>
+> Procedo?
+
+Solo dopo la conferma:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '<json payload>'
+```
+
+Salva l'ID restituito (`$.id`) come `<ID>` del ticket per il resto del workflow.
+
+### Aggiornamento ticket (PATCH — richiede conferma esplicita)
+
+Prima di eseguire, mostra sempre un riepilogo tabellare:
+
+> **Aggiornamento ticket oc:\<ID\>**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `<campo>` | `<valore>` |
+> | `<campo>` | `<valore>` |
+>
+> Procedo?
+
+Solo dopo la conferma:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '<json payload>'
+```
+
+### Status disponibili (letti dinamicamente)
+
+Prima di proporre uno status, leggi i valori aggiornati da:
+
+```
+https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryStatus.php
+```
+
+Estrai i valori dell'enum e presentali all'utente come lista numerata. Suggerisci quello più appropriato al contesto ma aspetta sempre la scelta esplicita dell'utente.
+
+### Campi accettati (letti dinamicamente)
+
+Prima di costruire un payload POST o PATCH, leggi i campi validati da:
+
+```
+https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Http/Requests/Api/StoryApiRequest.php
+```
+
+Usa solo i campi presenti nelle `rules()` del Form Request. Non inviare campi non dichiarati.
+
+### Regola generale scritture
+
+**Qualsiasi operazione di scrittura su Orchestrator (POST o PATCH) richiede conferma esplicita con preview della modifica prima di eseguire la chiamata HTTP. Nessuna eccezione.**
+
+---
+
 ## Fase 0 — Ticket Orchestrator
 
 Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico referenziato come `oc:<ID>` (es. `oc:7815`).
 
-**Chiedi all'utente:**
-> "Qual è l'ID del ticket Orchestrator per questa feature? Incolla anche il contenuto del ticket (Titolo, Richiesta, Note di sviluppo)."
+### Caso A — L'utente fornisce un ID ticket
 
-Se l'utente non ha un ticket, procedi comunque con il workflow. Al termine della Fase 3 (Challenge), prima di scrivere i documenti, proponi il testo completo di un ticket da creare su Orchestrator con questo formato:
+Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket via API seguendo `## Orchestrator API → Lettura ticket`:
 
-```
-Titolo: <titolo sintetico della feature>
-
-Tipo: Feature
-
-Richiesta:
-<descrizione del problema e della soluzione emersa dalle fasi 0-3, 5-10 righe>
-
-Note di sviluppo:
-<approccio tecnico scelto, moduli coinvolti, vincoli emersi dalla Challenge>
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(cat ~/.config/webmapp/orchestrator-token 2>/dev/null)
+curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json"
 ```
 
-Chiedi all'utente di confermarlo o modificarlo prima di procedere alla Fase 4. Una volta confermato, usa il testo del ticket proposto come riferimento per overview.md e plan.md (senza ID numerico finché non viene creato su Orchestrator).
+Se il token non esiste o la risposta è 401, esegui il login (vedi `## Orchestrator API → Login`) e ritenta.
 
-**Da estrarre dal ticket:**
-- `Titolo` → usato per il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`)
-- `Richiesta` → contesto del problema da risolvere, usato in Fase 2 e Fase 4
-- `Note di sviluppo` → contesto tecnico già raccolto, può ridurre le domande in Fase 2 (ma non eliminarle)
-- `Tipo` → Feature / Bug / etc., orienta il tono dell'overview
+Dal JSON restituito estrai:
+- `name` → titolo, usato per il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>`
+- `customer_request` → contesto del problema, usato in Fase 2 e Fase 4
+- `description` → note tecniche già raccolte, può orientare le domande in Fase 2
+- `type` → orienta il tono dell'overview
 
-**Riferimento ticket in tutti i documenti:** ogni file creato nelle fasi successive deve riportare in testa `> Ticket: oc:<ID>`.
+Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase 1.
 
-**Commit convention:** tutti i commit del workflow usano `oc:<ID>` come scope (es. `feat(oc:7815): add OSM POI import action`).
+### Caso B — L'utente non ha un ticket
+
+Chiedi all'utente una descrizione della feature (anche breve). Con quella, proponi subito il testo del ticket:
+
+```
+name: <titolo sintetico della feature>
+
+type: Feature
+
+customer_request:
+<descrizione del problema in linguaggio non tecnico, 3-5 righe>
+
+description:
+<approccio tecnico iniziale, da raffinare dopo le fasi successive>
+```
+
+Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
+
+**Il ticket va creato prima di procedere alla Fase 1.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
+
+Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug.
+
+### Aggiornamenti espliciti durante il workflow
+
+Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), esegui un PATCH seguendo `## Orchestrator API → Aggiornamento ticket`. Mostra sempre il preview della modifica e attendi conferma prima di inviare.
+
+### Da estrarre in entrambi i casi
+
+- `<feature-slug>`: `<ID>-<titolo-in-kebab-case>` (con ticket) o `<titolo-in-kebab-case>` (senza)
+- **Riferimento ticket in tutti i documenti:** ogni file creato nelle fasi successive deve riportare in testa `> Ticket: oc:<ID>` (ometti se non c'è ID).
+- **Commit convention:** tutti i commit usano `oc:<ID>` come scope (es. `feat(oc:7815): add OSM POI import action`). Senza ticket, usa il titolo kebab-case come scope.
 
 ---
 
@@ -367,3 +509,21 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 - [ ] `docs/features/<feature-slug>/plan.md` — approvato dall'utente, riferimento ticket presente
 - [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione"), riferimento ticket presente
 - [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
+
+### Aggiornamento Orchestrator (solo se esiste un ticket oc:\<ID\>)
+
+- [ ] Leggi lo status attuale del ticket via `## Orchestrator API → Lettura ticket`
+- [ ] Leggi gli status disponibili da `StoryStatus.php` su GitHub (vedi `## Orchestrator API → Status disponibili`)
+- [ ] Suggerisci lo status più appropriato al contesto (es. `testing` se ci sono test da verificare, `done` se tutto è completato e i test passano) e presenta la lista completa — aspetta la scelta esplicita dell'utente
+- [ ] Prepara la bozza di `description` (note dev) con:
+  - Link alla cartella `docs/features/<feature-slug>/`
+  - Riepilogo tecnico di cosa è stato implementato (file creati/modificati, approccio usato)
+  - Tono tecnico, rivolto al team
+- [ ] Prepara la bozza del messaggio di risposta cliente con:
+  - Descrizione in linguaggio non tecnico di cosa è stato fatto e perché
+  - Niente nomi di file, classi, branch o dettagli implementativi
+  - Tono chiaro e orientato al beneficio per l'utente finale
+- [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
+- [ ] Solo dopo approvazione esplicita, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i campi: `status`, `description`, `customer_request`
+
+  **Importante:** manda solo il testo pulito nei campi `customer_request` e `description` — il backend chiama internamente `addResponse()` e `addDevNote()` che gestiscono formato HTML, timestamp, prepend e notifiche. Non costruire HTML manualmente.
