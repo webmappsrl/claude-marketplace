@@ -519,9 +519,20 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
   - Link alla cartella `docs/features/<feature-slug>/`
   - Riepilogo tecnico di cosa è stato implementato (file creati/modificati, approccio usato)
   - Tono tecnico, rivolto al team
-- [ ] Prepara la bozza di `customer_request` (risposta cliente) con:
+- [ ] Prepara la bozza del messaggio di risposta cliente con:
   - Descrizione in linguaggio non tecnico di cosa è stato fatto e perché
   - Niente nomi di file, classi, branch o dettagli implementativi
   - Tono chiaro e orientato al beneficio per l'utente finale
-- [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la `customer_request` è letta dal cliente, richiede revisione attenta
-- [ ] Solo dopo approvazione esplicita, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i tre campi: `status`, `description`, `customer_request`
+- [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
+- [ ] Solo dopo approvazione esplicita, costruisci il nuovo valore di `customer_request` **prepending** il nuovo messaggio al contenuto esistente con questo formato esatto:
+
+```
+<NomeUtente> ha risposto il: <DD-MM-YYYY HH:MM>
+ <div style='background-color: #f8f9fa; border-left: 4px solid #6c757d; padding: 10px 20px;'> <p><testo approvato></p> </div><div style='height: 2px; background-color: #e2e8f0; margin: 20px 0;'></div><contenuto_esistente>
+```
+
+  - `<NomeUtente>`: nome e cognome dell'utente autenticato (letto dalla risposta del login o dal token)
+  - `<DD-MM-YYYY HH:MM>`: data e ora corrente formattata
+  - `<contenuto_esistente>`: valore attuale di `customer_request` letto via GET (può essere stringa vuota)
+
+- [ ] Esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i campi: `status`, `description`, `customer_request` (con il valore costruito sopra)
