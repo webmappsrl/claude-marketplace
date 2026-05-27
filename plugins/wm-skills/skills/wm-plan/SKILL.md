@@ -524,15 +524,6 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
   - Niente nomi di file, classi, branch o dettagli implementativi
   - Tono chiaro e orientato al beneficio per l'utente finale
 - [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
-- [ ] Solo dopo approvazione esplicita, costruisci il nuovo valore di `customer_request` **prepending** il nuovo messaggio al contenuto esistente con questo formato esatto:
+- [ ] Solo dopo approvazione esplicita, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i campi: `status`, `description`, `customer_request`
 
-```
-<NomeUtente> ha risposto il: <DD-MM-YYYY HH:MM>
- <div style='background-color: #f8f9fa; border-left: 4px solid #6c757d; padding: 10px 20px;'> <p><testo approvato></p> </div><div style='height: 2px; background-color: #e2e8f0; margin: 20px 0;'></div><contenuto_esistente>
-```
-
-  - `<NomeUtente>`: nome e cognome dell'utente autenticato (letto dalla risposta del login o dal token)
-  - `<DD-MM-YYYY HH:MM>`: data e ora corrente formattata
-  - `<contenuto_esistente>`: valore attuale di `customer_request` letto via GET (può essere stringa vuota)
-
-- [ ] Esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i campi: `status`, `description`, `customer_request` (con il valore costruito sopra)
+  **Importante:** manda solo il testo pulito nei campi `customer_request` e `description` — il backend chiama internamente `addResponse()` e `addDevNote()` che gestiscono formato HTML, timestamp, prepend e notifiche. Non costruire HTML manualmente.
