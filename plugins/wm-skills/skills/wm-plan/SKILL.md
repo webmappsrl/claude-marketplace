@@ -143,7 +143,7 @@ Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase 1.
 
 ### Caso B — L'utente non ha un ticket
 
-Procedi con il workflow usando le informazioni disponibili. Al termine della Fase 3 (Challenge), prima di scrivere i documenti, proponi il testo completo di un ticket con questo formato:
+Chiedi all'utente una descrizione della feature (anche breve). Con quella, proponi subito il testo del ticket:
 
 ```
 name: <titolo sintetico della feature>
@@ -151,13 +151,15 @@ name: <titolo sintetico della feature>
 type: Feature
 
 customer_request:
-<descrizione del problema e della soluzione emersa dalle fasi 0-3, 5-10 righe, linguaggio non tecnico>
+<descrizione del problema in linguaggio non tecnico, 3-5 righe>
 
 description:
-<approccio tecnico scelto, moduli coinvolti, vincoli emersi dalla Challenge>
+<approccio tecnico iniziale, da raffinare dopo le fasi successive>
 ```
 
 Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
+
+**Il ticket va creato prima di procedere alla Fase 1.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
 
 Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug.
 
