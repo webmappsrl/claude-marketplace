@@ -426,6 +426,7 @@ Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
 
 4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
 5. Solo dopo l'approvazione esplicita esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+6. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
 **Nessuna eccezione.** Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
