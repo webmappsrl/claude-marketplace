@@ -250,31 +250,6 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 
 ---
 
-## Fase 3 — Challenge (review adversariale)
-
-La Challenge si svolge in due momenti:
-
-**Momento 1 — Analisi completa (un unico messaggio)**
-
-Presenta tutti e 5 gli assi in un solo messaggio. Per ogni asse scrivi almeno un punto concreto — non puoi scrivere "nessun rischio" senza motivazione esplicita. L'obiettivo è trovare debolezze, non difendere la soluzione.
-
-1. **Assunzioni fragili** — Quali ipotesi stai facendo che potrebbero essere false? Cosa succede se lo sono?
-2. **Rischi architetturali** — Dove questo design crea accoppiamento, rigidità o debito tecnico futuro?
-3. **Blind spot** — Cosa non stai considerando? Edge case, utenti atipici, comportamenti inattesi?
-4. **Worst case** — Se qualcosa va storto in produzione, qual è lo scenario peggiore? È recuperabile?
-5. **Difficoltà di rollback** — Quanto è facile tornare indietro? Ci sono migrazioni di dati, API breaking change, o dipendenze esterne che rendono il rollback costoso?
-
-**Momento 2 — Dialogo asse per asse**
-
-Dopo aver presentato l'analisi, affronta gli assi uno alla volta in ordine di criticità (dal più critico al meno). Per ogni asse:
-- Riassumi il rischio in una riga
-- Proponi come intendi gestirlo
-- Chiedi all'utente se vuole modificare l'approccio su quel punto
-
-Aspetta la risposta prima di passare all'asse successivo. Se la risposta apre nuovi scenari non coperti dall'analisi iniziale, aggiorna l'asse o aggiungi considerazioni prima di procedere. Solo dopo aver discusso tutti gli assi critici procedi alla Fase 4.
-
----
-
 ## Fase 4 — Scrivi `overview.md`
 
 **I file di documentazione seguono il codice, non il repo principale.**
@@ -291,10 +266,12 @@ Se la feature è interamente custom (nessun submodule coinvolto), un solo `overv
 
 Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`). Se non c'è ticket, usa solo il titolo kebab-case. Lo slug è lo stesso in tutti i repo per mantenere la tracciabilità.
 
+**La documentazione va creata sempre, anche senza ticket.** L'assenza di un ID Orchestrator non è un motivo per saltare `overview.md`, `plan.md` o `notes.md`. Ometti solo la riga `> Ticket: oc:<ID>` nell'header.
+
 **Struttura obbligatoria:**
 
 ```markdown
-> Ticket: oc:<ID>
+> Ticket: oc:<ID>   ← ometti se non c'è ticket
 
 # <Titolo dal ticket>
 
@@ -320,6 +297,49 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 ```
 
 Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
+
+---
+
+## Fase 3 — Challenge (review adversariale)
+
+La Challenge viene eseguita **dopo** la scrittura di `overview.md` e **prima** di scrivere `plan.md`. Questo garantisce che l'analisi avvenga su un documento concreto e che eventuali buchi trovati possano essere corretti nell'overview prima di pianificare l'implementazione.
+
+### Esecuzione tramite subagente isolato
+
+Lancia un subagente con questo prompt — e **nient'altro**:
+
+```
+Leggi il file `docs/features/<feature-slug>/overview.md`.
+
+Sei un revisore adversariale. Il tuo unico obiettivo è trovare criticità,
+assunzioni fragili, rischi nascosti e scenari di fallimento in questa feature.
+Non bilanciare con aspetti positivi. Non difendere le scelte fatte.
+Assumi che la soluzione abbia problemi e trovali.
+
+Analizza questi 5 assi:
+1. Assunzioni fragili — Quali ipotesi potrebbero essere false? Cosa succede se lo sono?
+2. Rischi architetturali — Dove questo design crea accoppiamento, rigidità o debito tecnico?
+3. Blind spot — Cosa non viene considerato? Edge case, utenti atipici, comportamenti inattesi?
+4. Worst case — Se qualcosa va storto in produzione, qual è lo scenario peggiore? È recuperabile?
+5. Difficoltà di rollback — Quanto è facile tornare indietro? Migrazioni, API breaking change, dipendenze esterne?
+
+Per ogni asse scrivi almeno un punto concreto. Non puoi scrivere "nessun rischio" senza motivazione esplicita.
+```
+
+**Non aggiungere al prompt nessun altro contesto, riassunto o spiegazione della conversazione precedente. Solo il percorso del file e le istruzioni sopra. Il subagente deve leggere `overview.md` autonomamente dal filesystem.**
+
+### Dialogo asse per asse
+
+Ricevuto il report del subagente, presentalo all'utente e affronta gli assi uno alla volta in ordine di criticità (dal più critico al meno). Per ogni asse:
+- Riassumi il rischio in una riga
+- Proponi come intendi gestirlo
+- Chiedi all'utente se vuole modificare l'approccio su quel punto
+
+Aspetta la risposta prima di passare all'asse successivo.
+
+### Aggiornamento overview (se necessario)
+
+Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, aggiorna `overview.md` prima di procedere alla Fase 5. Mostra le modifiche all'utente e attendi approvazione esplicita.
 
 ---
 
@@ -506,9 +526,11 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i file:
 
-- [ ] `docs/features/<feature-slug>/overview.md` — approvato dall'utente, riferimento ticket presente
-- [ ] `docs/features/<feature-slug>/plan.md` — approvato dall'utente, riferimento ticket presente
-- [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione"), riferimento ticket presente
+- [ ] `docs/features/<feature-slug>/overview.md` — approvato dall'utente (riferimento ticket presente se applicabile)
+- [ ] `docs/features/<feature-slug>/plan.md` — approvato dall'utente (riferimento ticket presente se applicabile)
+- [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione") (riferimento ticket presente se applicabile)
+
+**Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
 
 ### Aggiornamento Orchestrator (solo se esiste un ticket oc:\<ID\>)
