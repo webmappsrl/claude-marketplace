@@ -20,38 +20,49 @@ Queste istruzioni valgono per tutte le chiamate HTTP a Orchestrator. Usale ogni 
 ### Configurazione
 
 - **URL base:** leggi `$ORCHESTRATOR_URL` dall'environment. Se non è impostata usa `https://orchestrator.maphub.it` come default.
-- **Token:** salvato in `~/.config/webmapp/orchestrator-token` (plain text, una riga). Se il file non esiste o la chiamata restituisce 401, esegui il login (vedi sotto).
+- **Auth:** salvato in `~/.config/webmapp/orchestrator-auth.json` (JSON con campi `token`, `id`, `name`, `email`). Se il file non esiste o la chiamata restituisce 401, esegui il login (vedi sotto). Se esiste solo il file legacy `~/.config/webmapp/orchestrator-token`, esegui la migrazione (vedi sotto).
 
-### Login (solo se token assente o scaduto)
+### Login (solo se auth assente o scaduto)
 
 Chiedi email e password all'utente, poi:
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-curl -s -X POST "$ORCHESTRATOR_URL/api/auth/login" \
+TOKEN=$(curl -s -X POST "$ORCHESTRATOR_URL/api/auth/login" \
   -H "Content-Type: application/json" \
   -d '{"email":"<email>","password":"<password>"}' \
-  | jq -r '.token'
+  | jq -r '.token')
+USER=$(curl -s -X GET "$ORCHESTRATOR_URL/api/me" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json")
+mkdir -p ~/.config/webmapp
+echo $USER | jq --arg token "$TOKEN" '. + {token: $token}' > ~/.config/webmapp/orchestrator-auth.json
 ```
 
-Salva il token restituito:
+### Migrazione da file legacy (solo se `orchestrator-auth.json` assente ma `orchestrator-token` presente)
 
 ```bash
-mkdir -p ~/.config/webmapp
-echo "<token>" > ~/.config/webmapp/orchestrator-token
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+USER=$(curl -s -X GET "$ORCHESTRATOR_URL/api/me" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json")
+echo $USER | jq --arg token "$TOKEN" '. + {token: $token}' > ~/.config/webmapp/orchestrator-auth.json
 ```
+
+Se `GET /api/me` risponde 401 durante la migrazione, il token legacy è scaduto: cancella `orchestrator-token` ed esegui il login completo sopra.
 
 ### Lettura ticket (GET — nessuna conferma richiesta)
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
 curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/json"
 ```
 
-Se risponde 401: cancella il token e ripeti il login prima di ritentare.
+Se risponde 401: cancella il file auth e ripeti il login prima di ritentare.
 
 ### Creazione ticket (POST — richiede conferma esplicita)
 
@@ -69,7 +80,7 @@ Solo dopo la conferma:
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
 curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -96,7 +107,7 @@ Solo dopo la conferma:
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
 curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
@@ -140,13 +151,13 @@ Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket
 
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(cat ~/.config/webmapp/orchestrator-token 2>/dev/null)
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json 2>/dev/null)
 curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: application/json"
 ```
 
-Se il token non esiste o la risposta è 401, esegui il login (vedi `## Orchestrator API → Login`) e ritenta.
+Se il file auth non esiste, controlla se esiste `~/.config/webmapp/orchestrator-token` ed esegui la migrazione (vedi `## Orchestrator API → Migrazione da file legacy`). Se la risposta è 401, cancella il file auth ed esegui il login completo.
 
 Dal JSON restituito estrai:
 - `name` → titolo, usato per il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>`
@@ -155,6 +166,29 @@ Dal JSON restituito estrai:
 - `type` → orienta il tono dell'overview
 
 Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase 1.
+
+### Domanda progress (Caso A)
+
+Dopo il riepilogo, chiedi:
+
+> "Vuoi impostare lo status del ticket a **progress** e assegnartelo?"
+
+Se l'utente risponde sì, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+USER_ID=$(jq -r '.id' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{\"status\": \"progress\", \"user_id\": $USER_ID}"
+```
+
+Se il PATCH fallisce (risposta non 2xx o errore di rete), avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
+
+Se l'utente risponde no, procedi direttamente alla Fase 1 senza modificare il ticket.
 
 ### Caso B — L'utente non ha un ticket
 
@@ -176,7 +210,26 @@ Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il tic
 
 **Il ticket va creato prima di procedere alla Fase 1.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
 
-Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug.
+Una volta creato il ticket e salvato l'ID, chiedi:
+
+> "Vuoi impostare lo status del ticket a **progress** e assegnartelo?"
+
+Se l'utente risponde sì, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+USER_ID=$(jq -r '.id' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d "{\"status\": \"progress\", \"user_id\": $USER_ID}"
+```
+
+Se il PATCH fallisce, avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
+
+Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug. La domanda progress non viene posta.
 
 ### Aggiornamenti espliciti durante il workflow
 
@@ -445,8 +498,9 @@ Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
    > "Ho completato l'implementazione. Ecco il diff completo. **Rivedi il codice prima di procedere.** Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
 
 4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
-5. Solo dopo l'approvazione esplicita esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-6. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
+5. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase 7 (scrivi `notes.md`) e la Fase 8 (aggiorna `CLAUDE.md`) — così tutti i file vengono inclusi nello stesso commit.
+6. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
 **Nessuna eccezione.** Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
@@ -459,6 +513,7 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 **Regole:**
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
+- **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
 
 **Struttura consigliata:**
 
@@ -539,7 +594,11 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 - [ ] Leggi gli status disponibili da `StoryStatus.php` su GitHub (vedi `## Orchestrator API → Status disponibili`)
 - [ ] Suggerisci lo status più appropriato al contesto (es. `testing` se ci sono test da verificare, `done` se tutto è completato e i test passano) e presenta la lista completa — aspetta la scelta esplicita dell'utente
 - [ ] Prepara la bozza di `description` (note dev) con:
-  - Link alla cartella `docs/features/<feature-slug>/`
+  - Link cliccabile HTML alla cartella `docs/features/<feature-slug>/` — il campo è interpretato come HTML, usa:
+    ```
+    <a href="https://github.com/<owner>/<repo>/tree/main/docs/features/<feature-slug>/">docs/features/<feature-slug>/</a>
+    ```
+    Ricava `<owner>/<repo>` eseguendo `git remote get-url origin` e normalizzando l'URL (rimuovi `.git` finale, gestisci sia formato HTTPS che SSH).
   - Riepilogo tecnico di cosa è stato implementato (file creati/modificati, approccio usato)
   - Tono tecnico, rivolto al team
 - [ ] Prepara la bozza del messaggio di risposta cliente con:
