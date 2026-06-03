@@ -251,6 +251,29 @@ Leggi il file `CLAUDE.md` nella root del progetto target.
 - Estrai: stack tecnologico, convenzioni di test, struttura cartelle, istruzioni specifiche al team.
 - Tieni queste informazioni attive per tutto il workflow.
 
+### Rilevazione stack UI (eseguita in Fase 1)
+
+Dopo aver letto `CLAUDE.md`, rileva se il progetto ha uno stack frontend:
+
+```bash
+cat package.json 2>/dev/null | jq -r '(.dependencies // {}) + (.devDependencies // {}) | keys[]' | grep -E "^(@angular/core|vue|@vue/core|react)$"
+```
+
+Se `package.json` non esiste o non contiene dipendenze frontend, verifica la presenza di cartelle frontend Laravel:
+
+```bash
+ls resources/views/ resources/js/components/ 2>/dev/null | head -3
+```
+
+**Imposta internamente il flag `stack_ui`:**
+- `stack_ui: angular` — se trovato `@angular/core`
+- `stack_ui: vue` — se trovato `vue` o `@vue/core`
+- `stack_ui: react` — se trovato `react`
+- `stack_ui: laravel-blade` — se trovata `resources/views/` senza dipendenze JS frontend
+- `stack_ui: false` — se nessun segnale trovato
+
+Questo flag rimane attivo per tutto il workflow e influenza Fase 2a.
+
 ---
 
 ## Fase 2 — Reverse Interaction (obbligatoria, non skippabile)
@@ -270,6 +293,61 @@ Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
    - Per ogni file o modulo che verrà toccato, il repo di destinazione esplicito
 
 Questa classificazione rimane attiva per tutto il workflow: overview.md, plan.md e ogni step del piano devono sempre indicare il repo di destinazione per ogni file.
+
+### 2c — UX/UI Detection (eseguita al termine di Fase 2a)
+
+Dopo aver classificato i moduli toccati, esegui il seguente controllo in ordine di priorità:
+
+**Livello 0 — Richiesta esplicita (priorità massima)**
+
+Se la richiesta dell'utente o il titolo/body del ticket contiene parole come: `UI`, `UX`, `interfaccia`, `componente`, `layout`, `form`, `modal`, `stile`, `CSS`, `design`, `animazione`, `schermata` → confidenza alta, procedi direttamente all'invocazione.
+
+**Livello 1 — Stack UI rilevato in Fase 1 + file coinvolti**
+
+Se `stack_ui != false` E almeno uno dei file/moduli toccati dalla feature appartiene a:
+- Estensioni: `.vue`, `.html`, `.css`, `.scss`, `.component.ts`, `.component.html`, `.component.scss`
+- Cartelle: `src/components/`, `src/views/`, `resources/views/`, `resources/js/components/`, `src/app/`
+
+→ confidenza alta, procedi all'invocazione automatica.
+
+**Livello 2 — Solo stack UI, nessun file frontend esplicito**
+
+Se `stack_ui != false` ma i file toccati sono solo backend/logica → confidenza bassa.
+
+**Livello 3 — Nessun segnale**
+
+Se `stack_ui: false` e nessun file frontend → nessuna azione UX.
+
+---
+
+**Flusso di invocazione:**
+
+```
+SE confidenza alta:
+  → scrivi: "Rilevati componenti UI ([file/stack trovati]) — cerco skill UX specializzata."
+  → cerca tra le skill disponibili: ui-ux-pro-max
+  → SE trovata:
+      invoca la skill con questo contesto:
+      - Titolo ticket e tipo
+      - Stack rilevato (vue / angular / react / laravel-blade)
+      - Lista file/componenti UI coinvolti
+      - customer_request del ticket (se disponibile)
+      Ricevuto il parere della skill:
+      - Le raccomandazioni UX (pattern, accessibilità, comportamenti attesi) → aggiunte come requisiti funzionali nella sezione "Requisiti" di overview.md
+      - I rischi UX (anti-pattern, edge case visivi, problemi di usabilità) → aggiunti nella sezione "Rischi" di overview.md
+      - Prefissa ogni voce aggiunta con `[UX]` per renderla tracciabile (es. `- [ ] [UX] Il form deve mostrare errori inline`)
+  → SE non trovata:
+      scrivi: "⚠️ La skill ui-ux-pro-max non è installata.
+      Per ottenerla: /plugin install ui-ux-pro-max@wm-marketplace
+      Procedo con giudizio interno UX — installa la skill per i prossimi ticket."
+      Applica il tuo giudizio interno su UX per i Requisiti e Rischi dell'overview.
+
+SE confidenza bassa:
+  → chiedi: "Ho rilevato uno stack frontend ([stack]) ma i file toccati sembrano principalmente backend.
+     Questa feature ha componenti UI? Vuoi che invochi la skill UX specializzata?"
+  → SE sì: stesso flusso lookup sopra
+  → SE no: procedi senza UX detection
+```
 
 ### 2b — Dialogo
 
@@ -571,6 +649,7 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 ## Composizione con altre skill Webmapp
 
+- **`ui-ux-pro-max`** — invocata automaticamente in Fase 2c quando rilevati componenti UI/UX (Vue, Angular, HTML/CSS). Richiede `/plugin install ui-ux-pro-max@wm-marketplace` se non installata.
 - **`wm-skills:our-code-style`** — applica in Fase 5 (scrittura plan) e Fase 6 (esecuzione)
 - **`wm-skills:our-pr-checklist`** — applica dopo la Fase 7, prima di aprire la PR
 - **`wm-skills:our-deploy-post-merge`** — applica dopo il merge della PR
