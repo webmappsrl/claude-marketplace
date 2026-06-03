@@ -18,6 +18,15 @@
       "name": "wm-skills",
       "source": "./plugins/wm-skills",
       "description": "Skill interne del team Webmapp: stile, PR, deploy"
+    },
+    {
+      "name": "ui-ux-pro-max",
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+        "ref": "main"
+      },
+      "description": "Skill UX/UI professionale: design system, palette, tipografia, checklist pre-consegna"
     }
   ]
 }
