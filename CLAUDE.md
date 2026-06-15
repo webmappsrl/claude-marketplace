@@ -56,6 +56,18 @@ release cadenzate, aggiungete `"version": "1.0.0"` e bumpate a ogni release.
    deve essere una frase con soggetto ("Use when…" oppure "Usa quando…"), non un titolo.
 4. Validare prima del commit (vedi sotto), poi fare commit + push su `main`.
 
+### Coupling tra skill
+
+Alcune skill condividono un contratto su artefatti o comportamenti. Quando modifichi una skill, verifica se esiste un coupling documentato qui e aggiorna tutte le skill coinvolte in sincronia.
+
+| Skill A | Skill B | Contratto condiviso |
+|---|---|---|
+| `wm-plan` | `wm-review-ticket` | `wm-plan` è fonte autoritativa del contratto artefatti `docs/features/<slug>/`. `wm-review-ticket` lo referenzia, non lo duplica. Modificare la struttura artefatti richiede solo aggiornare `wm-plan`. |
+
+### Convenzioni di naming
+
+- **Prefisso obbligatorio `wm-`**: tutte le skill di `wm-skills` devono avere il nome in kebab-case con prefisso `wm-` (es. `wm-plan`, `wm-review-ticket`). Questo vale sia per il nome della cartella che per il campo `name` nel frontmatter di `SKILL.md`.
+
 ### Convenzioni di stile per le skill
 
 - **Tono**: imperativo e diretto, rivolto a Claude come agente che esegue istruzioni
@@ -97,6 +109,7 @@ Per tornare alla versione remota:
 | Skill | Quando si attiva |
 |---|---|
 | `wm-plan` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
+| `wm-review-ticket` | Eseguire la code review di un ticket Orchestrator — sia quando un collega assegna un ticket da rivedere, sia al termine di una feature wm-plan prima del merge. |
 
 Ogni skill può dipendere o comporre skill di `superpowers` (già installato come plugin separato).
 
