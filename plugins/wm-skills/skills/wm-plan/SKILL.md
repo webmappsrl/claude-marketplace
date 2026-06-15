@@ -13,6 +13,27 @@ Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano n
 
 ---
 
+## Contratto artefatti
+
+Questa sezione è la fonte autoritativa degli artefatti prodotti da `wm-plan`. `wm-skills:wm-review-ticket` la legge via WebFetch per conoscere la struttura senza duplicarla.
+
+Per ogni feature lavorata con `wm-plan`, vengono creati i seguenti file nella cartella `docs/features/<feature-slug>/` del repo target:
+
+| File | Contenuto | Usato da wm-review-ticket per |
+|------|-----------|-------------------------------|
+| `overview.md` | Cosa cambia, Perché, Requisiti, Rischi, Out of scope, Moduli toccati | Criterio principale di correttezza: il codice risponde ai Requisiti? |
+| `plan.md` | Lista task implementativi step-by-step | Verifica completezza: tutti i task sono stati eseguiti? |
+| `notes.md` | Deviazioni dal piano, bug trovati, decisioni on-the-fly | Contesto deviazioni: sono giustificate o rischiose? |
+
+**Slug:** `<ID>-<titolo-in-kebab-case>` (es. `8068-wm-review-ticket`). Se non c'è ticket, solo `<titolo-in-kebab-case>`.
+
+**Ricerca fuzzy per ID:**
+```bash
+find docs/features/ -maxdepth 1 -type d | grep "<ID>"
+```
+
+---
+
 ## Orchestrator API
 
 Queste istruzioni valgono per tutte le chiamate HTTP a Orchestrator. Usale ogni volta che una fase richiede di leggere o scrivere un ticket.
@@ -574,6 +595,8 @@ Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
 3. Chiedi conferma esplicita con questo messaggio:
 
    > "Ho completato l'implementazione. Ecco il diff completo. **Rivedi il codice prima di procedere.** Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
+   >
+   > 💡 **Review formale opzionale:** vuoi eseguire una code review strutturata prima dei commit? Invoca `wm-skills:wm-review-ticket oc:<ID>` per finder paralleli e aggiornamento automatico del ticket. Rispondi **sì** per eseguirla ora, **no** per procedere direttamente ai commit.
 
 4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
 5. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase 7 (scrivi `notes.md`) e la Fase 8 (aggiorna `CLAUDE.md`) — così tutti i file vengono inclusi nello stesso commit.
