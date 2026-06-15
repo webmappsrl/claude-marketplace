@@ -133,6 +133,12 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Decisioni architetturali
 
+### wm-review-ticket skill (oc:8068)
+- **Contratto artefatti via WebFetch su GitHub raw**: `wm-review-ticket` non duplica la struttura `docs/features/` ma la legge da `wm-plan/SKILL.md` su GitHub al runtime — nessun drift possibile
+- **`wm-plan` fonte autoritativa del contratto**: la tabella coupling in `CLAUDE.md` è l'unico punto da aggiornare se la struttura `docs/features/` cambia
+- **Stash automatico pre-checkout**: se il working tree è dirty, la skill fa `git stash` automatico e `git stash pop` al termine — nessun rischio di perdita lavoro in corso
+- **Review opzionale in wm-plan Fase 6d**: formulata come domanda sì/no esplicita, non hint passivo
+
 ### Ask user to set ticket status to progress in wm-plan (oc:7973)
 - **File auth unificato JSON** (`orchestrator-auth.json`) invece di token plain text: permette di salvare anche `user_id`, `name`, `email` in un unico file, necessari per il PATCH `user_id` senza chiamate aggiuntive
 - **`GET /api/me`** per ricavare l'utente corrente invece di usare `creator_id` del ticket: garantisce che l'assegnazione sia sempre all'utente autenticato, anche su ticket creati da altri
@@ -143,3 +149,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 | Feature | Ticket | Moduli toccati | Note |
 |---|---|---|---|
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
+| wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
