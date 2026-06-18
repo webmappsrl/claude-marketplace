@@ -133,6 +133,13 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Decisioni architetturali
 
+### wm-plan slug e environment-setup (oc:8102)
+- **Slug al posto dei numeri nelle fasi**: `## Fase: ticket`, `## Fase: environment-setup`, ecc. — inserire nuove fasi non richiede mai rinumerazione
+- **`Fase: environment-setup` centralizza il rilevamento ambiente**: `project-detection`, `domain-mapping`, `ux-ui-detection`, `docker-check` eseguiti prima di `init-context` e `reverse-interaction`
+- **`init-context` mantenuta separata**: Claude legge `CLAUDE.md` come primo atto di comprensione del progetto — semanticamente distinto dal rilevamento tecnico
+- **docker-check FAIL-SOFT**: qualsiasi errore → `⚠️` + prosegui, mai bloccare il workflow; usa `docker compose stop` mai `down`/`rm`
+- **Review opzionale in wm-plan ora `execution: formal-review`**: sottofase esplicita invece di hint testuale in `execution: review-gate`
+
 ### wm-review-ticket skill (oc:8068)
 - **Contratto artefatti via WebFetch su GitHub raw**: `wm-review-ticket` non duplica la struttura `docs/features/` ma la legge da `wm-plan/SKILL.md` su GitHub al runtime — nessun drift possibile
 - **`wm-plan` fonte autoritativa del contratto**: la tabella coupling in `CLAUDE.md` è l'unico punto da aggiornare se la struttura `docs/features/` cambia
@@ -150,3 +157,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 |---|---|---|---|
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
 | wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
+| wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |

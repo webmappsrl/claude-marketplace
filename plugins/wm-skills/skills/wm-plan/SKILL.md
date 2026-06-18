@@ -162,11 +162,11 @@ Usa solo i campi presenti nelle `rules()` del Form Request. Non inviare campi no
 
 ---
 
-## Fase 0 — Ticket Orchestrator
+## Fase: ticket
 
 Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico referenziato come `oc:<ID>` (es. `oc:7815`).
 
-### Caso A — L'utente fornisce un ID ticket
+### ticket: caso-a
 
 Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket via API seguendo `## Orchestrator API → Lettura ticket`:
 
@@ -182,13 +182,13 @@ Se il file auth non esiste, controlla se esiste `~/.config/webmapp/orchestrator-
 
 Dal JSON restituito estrai:
 - `name` → titolo, usato per il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>`
-- `customer_request` → contesto del problema, usato in Fase 2 e Fase 4
-- `description` → note tecniche già raccolte, può orientare le domande in Fase 2
+- `customer_request` → contesto del problema, usato in Fase: reverse-interaction e Fase: overview
+- `description` → note tecniche già raccolte, può orientare le domande in Fase: reverse-interaction
 - `type` → orienta il tono dell'overview
 
-Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase 1.
+Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase: init-context.
 
-### Domanda progress (Caso A)
+### ticket: progress
 
 Dopo il riepilogo, chiedi:
 
@@ -209,9 +209,9 @@ curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
 
 Se il PATCH fallisce (risposta non 2xx o errore di rete), avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
 
-Se l'utente risponde no, procedi direttamente alla Fase 1 senza modificare il ticket.
+Se l'utente risponde no, procedi direttamente alla Fase: init-context senza modificare il ticket.
 
-### Caso B — L'utente non ha un ticket
+### ticket: caso-b
 
 Chiedi all'utente una descrizione della feature (anche breve). Con quella, proponi subito il testo del ticket:
 
@@ -229,7 +229,7 @@ description:
 
 Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
 
-**Il ticket va creato prima di procedere alla Fase 1.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
+**Il ticket va creato prima di procedere alla Fase: init-context.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
 
 Una volta creato il ticket e salvato l'ID, chiedi:
 
@@ -252,11 +252,11 @@ Se il PATCH fallisce, avvisa l'utente con un messaggio ("⚠️ Impossibile aggi
 
 Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug. La domanda progress non viene posta.
 
-### Aggiornamenti espliciti durante il workflow
+### ticket: aggiornamenti-espliciti
 
 Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), esegui un PATCH seguendo `## Orchestrator API → Aggiornamento ticket`. Mostra sempre il preview della modifica e attendi conferma prima di inviare.
 
-### Da estrarre in entrambi i casi
+### ticket: estrazione
 
 - `<feature-slug>`: `<ID>-<titolo-in-kebab-case>` (con ticket) o `<titolo-in-kebab-case>` (senza)
 - **Riferimento ticket in tutti i documenti:** ogni file creato nelle fasi successive deve riportare in testa `> Ticket: oc:<ID>` (ometti se non c'è ID).
@@ -264,42 +264,47 @@ Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "
 
 ---
 
-## Fase 1 — Leggi CLAUDE.md
+## Fase: environment-setup
 
-Leggi il file `CLAUDE.md` nella root del progetto target.
+Questa fase rileva il tipo di progetto e normalizza l'ambiente prima di qualsiasi altra operazione. I flag impostati qui rimangono attivi per tutto il workflow.
 
-- Se non esiste, segnalalo all'utente e procedi con le informazioni disponibili.
-- Estrai: stack tecnologico, convenzioni di test, struttura cartelle, istruzioni specifiche al team.
-- Tieni queste informazioni attive per tutto il workflow.
+**⚠️ Questa fase è FAIL-SOFT.** Qualsiasi errore (Docker daemon non attivo, CLI mancante, `.env` non leggibile) produce `⚠️ Environment setup non disponibile — proseguo con il workflow.` e il workflow continua normalmente. La fase non blocca mai il flusso.
 
-### Rilevazione stack UI (eseguita in Fase 1)
+### environment-setup: project-detection
 
-Dopo aver letto `CLAUDE.md`, rileva se il progetto ha uno stack frontend:
+Esegui i seguenti check e imposta i flag interni:
 
 ```bash
+# 1. Rileva Laravel/wmpackage con Docker
+grep -s "DOCKER_PROJECT_DIR_NAME" .env
+
+# 2. Rileva stack frontend
 cat package.json 2>/dev/null | jq -r '(.dependencies // {}) + (.devDependencies // {}) | keys[]' | grep -E "^(@angular/core|vue|@vue/core|react)$"
-```
 
-Se `package.json` non esiste o non contiene dipendenze frontend, verifica la presenza di cartelle frontend Laravel:
+# 3. Rileva submodule
+git submodule status 2>/dev/null
 
-```bash
+# 4. Rileva cartelle frontend Laravel
 ls resources/views/ resources/js/components/ 2>/dev/null | head -3
 ```
 
-**Imposta internamente il flag `stack_ui`:**
-- `stack_ui: angular` — se trovato `@angular/core`
-- `stack_ui: vue` — se trovato `vue` o `@vue/core`
-- `stack_ui: react` — se trovato `react`
-- `stack_ui: laravel-blade` — se trovata `resources/views/` senza dipendenze JS frontend
-- `stack_ui: false` — se nessun segnale trovato
+**Flag interni da impostare:**
 
-Questo flag rimane attivo per tutto il workflow e influenza Fase 2a.
+| Flag | Valore | Condizione |
+|------|--------|-----------|
+| `stack_type` | `laravel` | `.env` con `DOCKER_PROJECT_DIR_NAME`, nessun frontend JS |
+| `stack_type` | `frontend` | `package.json` con Vue/Angular/React |
+| `stack_type` | `fullstack` | entrambi i segnali |
+| `stack_type` | `other` | nessun segnale |
+| `has_docker` | `true` / `false` | presenza `DOCKER_PROJECT_DIR_NAME` in `.env` |
+| `has_submodules` | `true` / `false` | output non vuoto di `git submodule status` |
+| `stack_ui` | `angular` | trovato `@angular/core` |
+| `stack_ui` | `vue` | trovato `vue` o `@vue/core` |
+| `stack_ui` | `react` | trovato `react` |
+| `stack_ui` | `laravel-blade` | `stack_type: laravel` + trovata `resources/views/` |
+| `stack_ui` | `false` | nessun segnale |
 
----
-
-## Fase 2 — Reverse Interaction (obbligatoria, non skippabile)
-
-### 2a — Mappatura domini e submodule
+### environment-setup: domain-mapping
 
 Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
 
@@ -308,22 +313,22 @@ Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
    - **Custom** — logica specifica di questo progetto, il codice va nel repo principale
    - **Package/submodule** — logica generica riusabile, il codice va nel submodule appropriato
    - **Misto** — parte nel repo principale, parte nel submodule (specifica quale parte va dove)
-3. **Dichiarazione esplicita** — prima della prima domanda scrivi un messaggio con:
+3. **Dichiarazione esplicita** — scrivi un messaggio con:
    - Submodule trovati e loro scopo
    - Classificazione della feature (custom / package / misto)
    - Per ogni file o modulo che verrà toccato, il repo di destinazione esplicito
 
 Questa classificazione rimane attiva per tutto il workflow: overview.md, plan.md e ogni step del piano devono sempre indicare il repo di destinazione per ogni file.
 
-### 2c — UX/UI Detection (eseguita al termine di Fase 2a)
+### environment-setup: ux-ui-detection
 
-Dopo aver classificato i moduli toccati, esegui il seguente controllo in ordine di priorità:
+Dopo aver impostato i flag in project-detection, valuta la necessità di design UX:
 
 **Livello 0 — Richiesta esplicita (priorità massima)**
 
 Se la richiesta dell'utente o il titolo/body del ticket contiene parole come: `UI`, `UX`, `interfaccia`, `componente`, `layout`, `form`, `modal`, `stile`, `CSS`, `design`, `animazione`, `schermata` → confidenza alta, procedi direttamente all'invocazione.
 
-**Livello 1 — Stack UI rilevato in Fase 1 + file coinvolti**
+**Livello 1 — Stack UI rilevato in Fase: environment-setup + file coinvolti**
 
 Se `stack_ui != false` E almeno uno dei file/moduli toccati dalla feature appartiene a:
 - Estensioni: `.vue`, `.html`, `.css`, `.scss`, `.component.ts`, `.component.html`, `.component.scss`
@@ -354,9 +359,8 @@ SE confidenza alta:
       - Lista file/componenti UI coinvolti
       - customer_request del ticket (se disponibile)
       Ricevuto il parere della skill:
-      - Le raccomandazioni UX (pattern, accessibilità, comportamenti attesi) → aggiunte come requisiti funzionali nella sezione "Requisiti" di overview.md
-      - I rischi UX (anti-pattern, edge case visivi, problemi di usabilità) → aggiunti nella sezione "Rischi" di overview.md
-      - Prefissa ogni voce aggiunta con `[UX]` per renderla tracciabile (es. `- [ ] [UX] Il form deve mostrare errori inline`)
+      - Le raccomandazioni UX → aggiunte come requisiti funzionali nella sezione "Requisiti" di overview.md con prefisso `[UX]`
+      - I rischi UX → aggiunti nella sezione "Rischi" di overview.md con prefisso `[UX]`
   → SE non trovata:
       scrivi: "⚠️ La skill ui-ux-pro-max non è installata.
       Per ottenerla: /plugin install ui-ux-pro-max@wm-marketplace
@@ -370,7 +374,74 @@ SE confidenza bassa:
   → SE no: procedi senza UX detection
 ```
 
-### 2b — Dialogo
+### environment-setup: docker-check
+
+Eseguito **solo se `has_docker: true`**.
+
+**Verifica container attivo:**
+
+```bash
+DOCKER_PROJECT_DIR_NAME=$(grep "^DOCKER_PROJECT_DIR_NAME=" .env | cut -d= -f2)
+docker compose -f local.compose.yml ps --format json 2>/dev/null
+```
+
+Analizza l'output per trovare container con `State: running` associati al progetto corrente.
+
+- **Se già up:** mostra `✅ Container \`<nome>\` già attivo.` e prosegui alla Fase: init-context.
+- **Se non up:** procedi al rilevamento conflitti.
+
+**Rilevamento conflitti di porta:**
+
+```bash
+# Leggi le porte dal .env (ignora variabili mancanti)
+grep -E "^DOCKER_(SERVE|PHP|PSQL|VITE|KIBANA)_PORT=" .env 2>/dev/null
+
+# Confronta con i container running
+docker ps --format "table {{.Names}}\t{{.Ports}}" 2>/dev/null
+```
+
+**Se ci sono container in conflitto**, mostra:
+
+> **Container in conflitto rilevati:**
+>
+> | Container | Porta in conflitto |
+> |-----------|-------------------|
+> | `<nome1>` | `<porta>` |
+>
+> Fermo questi container e avvio `<DOCKER_PROJECT_DIR_NAME>`?
+
+Attendi conferma esplicita. Solo dopo conferma:
+
+```bash
+# Ferma i container in conflitto — MAI docker compose down o docker rm
+docker stop <container-id>   # oppure: docker compose stop nella dir del progetto in conflitto
+
+# Avvia il container del progetto corrente
+echo "⏳ Avvio container \`$DOCKER_PROJECT_DIR_NAME\`... potrebbe richiedere qualche minuto."
+docker compose -f local.compose.yml up -d
+```
+
+Al termine: `✅ Container \`<DOCKER_PROJECT_DIR_NAME>\` avviato, ambiente normalizzato.`
+
+---
+
+## Fase: init-context
+
+Leggi il file `CLAUDE.md` nella root del progetto target.
+
+- Se non esiste, segnalalo all'utente e procedi con le informazioni disponibili.
+- Estrai: stack tecnologico, convenzioni di test, struttura cartelle, istruzioni specifiche al team.
+- Tieni queste informazioni attive per tutto il workflow.
+
+> I flag di stack (`stack_ui`, `stack_type`, `has_docker`, `has_submodules`) sono già stati impostati in Fase: environment-setup.
+
+---
+
+## Fase: reverse-interaction (obbligatoria, non skippabile)
+
+> I flag `stack_ui`, `stack_type`, `has_docker`, `has_submodules`, la classificazione domain-mapping e la valutazione UX sono già stati impostati in Fase: environment-setup.
+
+### reverse-interaction: dialog
 
 Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta la risposta, poi formula la successiva tenendo conto di ciò che hai appena sentito. Non presentare mai più domande in un unico messaggio.
 
@@ -380,7 +451,7 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - Le `Note di sviluppo` del ticket possono orientare le domande, non ridurne il numero minimo.
 - L'unica eccezione per scendere sotto 5 è una giustificazione esplicita scritta nel tuo messaggio (es. "Il ticket e le note di sviluppo coprono già questi aspetti — le 5 domande sarebbero ridondanti perché…").
 - Ogni domanda deve essere costruita sulla risposta precedente, non preparata in anticipo.
-- Procedi alla Fase 3 solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
+- Procedi alla Fase: overview solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
 - **Non chiedere ciò che puoi leggere nel codice o nel database.** Per ogni potenziale domanda segui questo protocollo obbligatorio in tre passi — non puoi saltarli:
   1. **Cerca nel codice** — modelli, migration, config, CLAUDE.md. Hai trovato la risposta? Usala, non fare la domanda.
   2. **Cerca nel db locale** — che contiene un dump veritiero dei dati di produzione. Interrogalo con `php artisan tinker`, query SQL diretta, o equivalente per lo stack del progetto. Hai trovato la risposta? Usala, non fare la domanda.
@@ -402,7 +473,7 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 
 ---
 
-## Fase 4 — Scrivi `overview.md`
+## Fase: overview
 
 **I file di documentazione seguono il codice, non il repo principale.**
 
@@ -431,7 +502,7 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 [Descrizione concisa di cosa il sistema farà di diverso dopo questa feature]
 
 ## Perché
-[Motivazione business/tecnica emersa dal ticket e dalla Fase 2]
+[Motivazione business/tecnica emersa dal ticket e dalla Fase: reverse-interaction]
 
 ## Requisiti
 - [ ] Requisito funzionale 1
@@ -439,7 +510,7 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 ...
 
 ## Rischi
-[Criticità emerse dalla Fase 3 con indicazione di come vengono mitigate]
+[Criticità emerse dalla Fase: challenge con indicazione di come vengono mitigate]
 
 ## Out of scope
 [Cosa esplicitamente NON viene fatto in questo ciclo]
@@ -452,11 +523,11 @@ Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
 
 ---
 
-## Fase 3 — Challenge (review adversariale)
+## Fase: challenge
 
 La Challenge viene eseguita **dopo** la scrittura di `overview.md` e **prima** di scrivere `plan.md`. Questo garantisce che l'analisi avvenga su un documento concreto e che eventuali buchi trovati possano essere corretti nell'overview prima di pianificare l'implementazione.
 
-### Esecuzione tramite subagente isolato
+### challenge: subagent
 
 Lancia un subagente con questo prompt — e **nient'altro**:
 
@@ -480,7 +551,7 @@ Per ogni asse scrivi almeno un punto concreto. Non puoi scrivere "nessun rischio
 
 **Non aggiungere al prompt nessun altro contesto, riassunto o spiegazione della conversazione precedente. Solo il percorso del file e le istruzioni sopra. Il subagente deve leggere `overview.md` autonomamente dal filesystem.**
 
-### Dialogo asse per asse
+### challenge: dialog
 
 Ricevuto il report del subagente, presentalo all'utente e affronta gli assi uno alla volta in ordine di criticità (dal più critico al meno). Per ogni asse:
 - Riassumi il rischio in una riga
@@ -489,22 +560,22 @@ Ricevuto il report del subagente, presentalo all'utente e affronta gli assi uno 
 
 Aspetta la risposta prima di passare all'asse successivo.
 
-### Aggiornamento overview (se necessario)
+### challenge: overview-update
 
-Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, aggiorna `overview.md` prima di procedere alla Fase 5. Mostra le modifiche all'utente e attendi approvazione esplicita.
+Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, aggiorna `overview.md` prima di procedere alla Fase: write-plan. Mostra le modifiche all'utente e attendi approvazione esplicita.
 
 ---
 
-## Fase 5 — Scrivi `plan.md`
+## Fase: write-plan
 
-**Prima di invocare writing-plans**, leggi esplicitamente tutti gli `overview.md` generati in Fase 4 (uno per ogni repo coinvolto) e costruisci un briefing strutturato da passare come contesto a writing-plans. Il briefing deve contenere:
+**Prima di invocare writing-plans**, leggi esplicitamente tutti gli `overview.md` generati in Fase: overview (uno per ogni repo coinvolto) e costruisci un briefing strutturato da passare come contesto a writing-plans. Il briefing deve contenere:
 
 - Ticket: `oc:<ID>` e titolo
 - Repo coinvolti e classificazione (custom / package / misto)
 - Requisiti dalla sezione "Requisiti" di ogni overview.md
-- Rischi e decisioni emerse dalla Challenge (Fase 3) e recepite nell'overview
+- Rischi e decisioni emerse dalla Fase: challenge e recepite nell'overview
 - File da creare/modificare per repo, dalla sezione "Moduli toccati"
-- Vincoli tecnici emersi dal dialogo in Fase 2
+- Vincoli tecnici emersi dalla Fase: reverse-interaction
 
 Questo briefing è lo spec che writing-plans usa per generare il piano — senza di esso writing-plans parte cieco.
 
@@ -521,9 +592,9 @@ Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
 
 ---
 
-## Fase 6 — Esecuzione
+## Fase: execution
 
-### 6a — Design (se applicabile)
+### execution: design (se applicabile)
 
 Se il piano include componenti UI/UX (nuove interfacce, layout, prototipi, slide, one-pager), prima di eseguire il codice proponi all'utente di usare **Claude Design** (`claude.ai/design`):
 
@@ -531,7 +602,7 @@ Se il piano include componenti UI/UX (nuove interfacce, layout, prototipi, slide
 
 Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con 6b (creazione branch).
 
-### 6b — Creazione branch (obbligatoria, prima di scrivere qualsiasi file)
+### execution: branch (obbligatoria, prima di scrivere qualsiasi file)
 
 <HARD-GATE>
 Nessun file può essere creato o modificato prima che esista un branch dedicato alla feature. Questo vale sempre, con o senza ticket Orchestrator.
@@ -553,14 +624,14 @@ Ripeti per ogni submodule coinvolto dalla feature (stesso nome branch in tutti i
 
 Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con 6c.
 
-### 6c — Implementazione
+### execution: implementation
 
 **Regola traduzioni (obbligatoria):** ogni testo traducibile introdotto dall'implementazione deve:
-- avere il testo base nella **lingua di default del repo** (rilevata in Fase 2 — solitamente inglese, ma verifica)
-- avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase 2)
+- avere il testo base nella **lingua di default del repo** (rilevata in Fase: reverse-interaction — solitamente inglese, ma verifica)
+- avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase: reverse-interaction)
 - non lasciare chiavi mancanti in nessun file di lingua esistente
 
-Se in Fase 2 non è stata rilevata la configurazione i18n (feature non aveva testi UI), ispezionala ora prima di scrivere qualsiasi stringa traducibile.
+Se in Fase: reverse-interaction non è stata rilevata la configurazione i18n (feature non aveva testi UI), ispezionala ora prima di scrivere qualsiasi stringa traducibile.
 
 Scegli l'entry point Superpowers più adatto e dichiaralo esplicitamente all'utente con la motivazione:
 
@@ -580,7 +651,7 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
-### 6d — Gate di revisione (obbligatorio, non skippabile)
+### execution: review-gate (obbligatorio, non skippabile)
 
 <HARD-GATE>
 Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto.
@@ -599,15 +670,24 @@ Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
    > 💡 **Review formale opzionale:** vuoi eseguire una code review strutturata prima dei commit? Invoca `wm-skills:wm-review-ticket oc:<ID>` per finder paralleli e aggiornamento automatico del ticket. Rispondi **sì** per eseguirla ora, **no** per procedere direttamente ai commit.
 
 4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
-5. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase 7 (scrivi `notes.md`) e la Fase 8 (aggiorna `CLAUDE.md`) — così tutti i file vengono inclusi nello stesso commit.
+5. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase: notes e la Fase: update-context — così tutti i file vengono inclusi nello stesso commit.
 6. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
 7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
 **Nessuna eccezione.** Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
+### execution: formal-review
+
+Se l'utente risponde **sì** alla proposta di review formale in `execution: review-gate`:
+
+1. Invoca `wm-skills:wm-review-ticket oc:<ID>`
+2. Attendi il completamento della review
+3. Se emergono correzioni → applicale prima di procedere ai commit
+4. Torna al punto 6 di `execution: review-gate` (esegui i commit)
+
 ---
 
-## Fase 7 — Mantieni `notes.md`
+## Fase: notes
 
 Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzione.
 
@@ -638,7 +718,7 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 
 ---
 
-## Fase 8 — Aggiorna CLAUDE.md del progetto target
+## Fase: update-context
 
 Aggiorna il `CLAUDE.md` nella root del progetto target con le informazioni prodotte dal workflow. Se il file non esiste, crealo.
 
@@ -654,7 +734,7 @@ Aggiorna il `CLAUDE.md` nella root del progetto target con le informazioni prodo
 
 Se la sezione esiste già, aggiungi la nuova riga senza toccare quelle precedenti.
 
-**Sezione `## Decisioni architetturali`** — aggiungi le scelte non ovvie emerse dalla Challenge (Fase 3) e dai notes (Fase 7) che un futuro Claude dovrebbe conoscere per non ripercorrere gli stessi ragionamenti:
+**Sezione `## Decisioni architetturali`** — aggiungi le scelte non ovvie emerse dalla Fase: challenge e dalla Fase: notes che un futuro Claude dovrebbe conoscere per non ripercorrere gli stessi ragionamenti:
 
 ```markdown
 ## Decisioni architetturali
@@ -672,9 +752,9 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 ## Composizione con altre skill Webmapp
 
-- **`ui-ux-pro-max`** — invocata automaticamente in Fase 2c quando rilevati componenti UI/UX (Vue, Angular, HTML/CSS). Richiede `/plugin install ui-ux-pro-max@wm-marketplace` se non installata.
-- **`wm-skills:our-code-style`** — applica in Fase 5 (scrittura plan) e Fase 6 (esecuzione)
-- **`wm-skills:our-pr-checklist`** — applica dopo la Fase 7, prima di aprire la PR
+- **`ui-ux-pro-max`** — invocata automaticamente in environment-setup: ux-ui-detection quando rilevati componenti UI/UX (Vue, Angular, HTML/CSS). Richiede `/plugin install ui-ux-pro-max@wm-marketplace` se non installata.
+- **`wm-skills:our-code-style`** — applica in Fase: write-plan e Fase: execution
+- **`wm-skills:our-pr-checklist`** — applica dopo la Fase: notes, prima di aprire la PR
 - **`wm-skills:our-deploy-post-merge`** — applica dopo il merge della PR
 
 ---
@@ -690,7 +770,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
 
-### Aggiornamento Orchestrator (solo se esiste un ticket oc:\<ID\>)
+### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
 - [ ] Leggi lo status attuale del ticket via `## Orchestrator API → Lettura ticket`
 - [ ] Leggi gli status disponibili da `StoryStatus.php` su GitHub (vedi `## Orchestrator API → Status disponibili`)
