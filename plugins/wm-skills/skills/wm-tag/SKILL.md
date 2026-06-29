@@ -129,23 +129,31 @@ Proponi il nome al dev e attendi conferma:
 
 ## Fase: tag-description
 
-Analizza il testo del brief/trascrizione e produce la descrizione del tag in Markdown:
+Analizza il testo del brief/trascrizione e produce la descrizione del tag in Markdown. **Non essere scarno: ogni macro area deve contenere abbastanza contesto da capire cosa vuole il cliente senza dover rileggere la trascrizione.**
 
 ```markdown
 **Fonte:** <URL Drive o "Testo fornito in chat">
 
+## Contesto
+
+<Chi è il cliente, qual è il progetto, qual è l'obiettivo dichiarato di questa sessione/call. 3-5 righe. Includi eventuali vincoli espliciti (tecnologici, di budget, di timeline) e il tono della richiesta (urgente, esplorativo, consolidamento, ecc.)>
+
 ## Macro aree
 
-- **<Area 1>**: <descrizione sintetica — cosa vuole il cliente in quest'area>
-- **<Area 2>**: <descrizione sintetica>
+### <Area 1 — titolo descrittivo>
+<Descrizione estesa di cosa vuole il cliente in quest'area: motivazione, comportamento atteso, eventuali esempi o casi d'uso citati nella trascrizione. Minimo 3 righe per area.>
+
+### <Area 2 — titolo descrittivo>
+<Descrizione estesa...>
+
 ...
 
-## Informazioni principali
+## Note e vincoli trasversali
 
-<Contesto generale: chi è il cliente, obiettivo del progetto, vincoli noti (tecnologici, temporali, di budget), deadline esplicite se presenti nel testo>
+<Tutto ciò che non rientra in una singola area ma vale per il progetto: preferenze tecnologiche, limitazioni dichiarate, richieste di compatibilità, aspettative su tempi di risposta o deploy, stakeholder citati, dipendenze da sistemi esterni.>
 ```
 
-Mostra la descrizione all'utente e attendi approvazione esplicita prima di procedere alla creazione del tag.
+Mostra la descrizione all'utente e attendi approvazione esplicita prima di procedere alla creazione del tag. Se l'utente chiede di espandere o correggere una sezione, aggiornala e mostra di nuovo prima di procedere.
 
 ---
 
@@ -181,26 +189,54 @@ Al termine: `✅ Tag \`<nome-tag>\` creato (ID: <TAG_ID>).`
 
 ## Fase: ticket-list
 
-Analizza il testo e individua tutti i task distinti che il cliente ha richiesto. Per ogni task identifica:
-- Titolo sintetico
-- Tipo: Feature (nuova funzionalità), Bug (problema da risolvere), Task (attività tecnica senza utente finale diretto)
-- Repo di destinazione stimato (backend / frontend / altro — usando i nomi da `repos.json` come riferimento)
+Analizza il testo e individua tutte le richieste distinte del cliente. Questa fase si articola in due step che vanno presentati separatamente.
 
-Presenta la lista proposta in formato tabellare:
+### ticket-list: step 1 — elenco richieste individuate
 
-| # | Titolo ticket | Tipo | Repo |
-|---|---|---|---|
-| 1 | ... | Feature | backend |
-| 2 | ... | Bug | frontend |
+Prima di proporre i ticket, mostra all'utente **tutte le richieste identificate nel testo** in forma estesa. Ogni richiesta deve essere descritta con abbastanza dettaglio da capire cosa ha chiesto il cliente, non solo il titolo.
+
+Formato:
+
+---
+**Richieste individuate dalla trascrizione**
+
+**1. \<Titolo descrittivo della richiesta\>**
+\<Descrizione estesa: cosa ha chiesto il cliente, perché lo vuole, eventuali dettagli tecnici o esempi citati, comportamento atteso. Minimo 3 righe.\>
+*Citazione dalla trascrizione (se presente):* "\<frase esatta o parafrasi vicina al testo originale\>"
+
+**2. \<Titolo descrittivo\>**
+\<Descrizione estesa...\>
+*Citazione:* "..."
+
+...
+---
+
+Chiedi all'utente: "Ho individuato \<N\> richieste. Le ho capite correttamente? Ci sono richieste mancanti, da unire o da scartare?"
+
+Attendi feedback esplicito prima di procedere allo step 2.
+
+### ticket-list: step 2 — mapping a ticket
+
+Una volta approvato l'elenco richieste, proponi come ogni richiesta si traduce in ticket Orchestrator:
+
+| # | Richiesta | Titolo ticket proposto | Tipo | Repo |
+|---|---|---|---|---|
+| 1 | \<titolo richiesta\> | \<titolo sintetico per il ticket\> | Feature | backend |
+| 2 | \<titolo richiesta\> | \<titolo sintetico\> | Bug | frontend |
+
+Note sul mapping:
+- Una richiesta può generare più ticket se copre domini distinti (es. backend + frontend separati)
+- Richieste correlate possono essere unite in un unico ticket se sono inseparabili tecnicamente
+- Il titolo del ticket deve essere in italiano, sintetico (max 8 parole), comprensibile senza contesto
 
 L'utente può:
-- **Approvare** la lista così com'è
-- **Modificare** un titolo o tipo
-- **Unire** due ticket in uno
-- **Eliminare** un ticket dalla lista
-- **Aggiungere** un ticket non rilevato
+- **Approvare** il mapping così com'è
+- **Modificare** titolo, tipo o repo di un ticket
+- **Dividere** una richiesta in più ticket
+- **Unire** più richieste in un unico ticket
+- **Aggiungere** un ticket non mappato
 
-Attendi approvazione esplicita della lista prima di procedere al loop.
+Attendi approvazione esplicita del mapping prima di procedere al loop.
 
 ---
 
