@@ -166,6 +166,18 @@ Usa solo i campi presenti nelle `rules()` del Form Request. Non inviare campi no
 
 Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico referenziato come `oc:<ID>` (es. `oc:7815`).
 
+All'inizio del workflow, presenta sempre questo menu all'utente:
+
+> Come vuoi procedere?
+> - **A)** Ho un ticket esistente (`oc:<ID>`)
+> - **B)** Voglio creare un nuovo ticket
+> - **C)** Ho una trascrizione/brief cliente → crea tag con più ticket
+
+In base alla scelta:
+- **A** → segui `### ticket: caso-a`
+- **B** → segui `### ticket: caso-b`
+- **C** → segui `### ticket: caso-c`
+
 ### ticket: caso-a
 
 Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket via API seguendo `## Orchestrator API → Lettura ticket`:
@@ -251,6 +263,12 @@ curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
 Se il PATCH fallisce, avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
 
 Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug. La domanda progress non viene posta.
+
+### ticket: caso-c
+
+L'utente ha una trascrizione Meet, un brief cliente o qualsiasi materiale da cui estrarre più ticket raggruppati in un tag Orchestrator.
+
+Invoca immediatamente `wm-skills:wm-tag`, passando come contesto qualsiasi testo o link già fornito dall'utente in questa sessione. Da questo momento il controllo del flusso passa interamente a `wm-tag` — non proseguire con nessun'altra fase di `wm-plan`.
 
 ### ticket: aggiornamenti-espliciti
 
