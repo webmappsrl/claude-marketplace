@@ -584,6 +584,67 @@ Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, agg
 
 ---
 
+## Fase: estimation
+
+**Eseguita solo se il ticket è di tipo Feature.** Per Bug, Task o altri tipi, salta questa fase e procedi direttamente a `Fase: write-plan`.
+
+In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a write-plan).
+
+### estimation: analisi
+
+Basandoti sull'overview approvato, produci una stima ragionata in ore con questa struttura:
+
+> **Stima proposta: \<N\> ore**
+>
+> Motivazione:
+> - \<componente 1\>: \<X\>h — \<motivazione tecnica\>
+> - \<componente 2\>: \<Y\>h — \<motivazione tecnica\>
+> - Buffer rischio: \<Z\>h — \<motivazione: complessità, dipendenze esterne, incertezze\>
+>
+> Confidenza: alta / media / bassa
+> *(alta = requisiti chiari e stack noto; media = qualche incertezza tecnica; bassa = dipendenze esterne o requisiti aperti)*
+
+Regole per la stima:
+- Includi sempre un buffer rischio (minimo 10% del totale, mai zero)
+- La confidenza deve essere coerente con i rischi emersi nella Fase: challenge
+- Non stimare meno di 1h per qualsiasi feature che tocchi più di un file
+
+### estimation: conferma
+
+Chiedi al dev:
+
+> "Accetti questa stima di **\<N\> ore**, o vuoi modificarla?"
+
+Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev.
+
+### estimation: scrittura su Orchestrator
+
+Mostra il preview della modifica e chiedi conferma prima di eseguire:
+
+> **Aggiornamento ticket oc:\<ID\>**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `estimated_hours` | `<N>` |
+>
+> Procedo?
+
+Solo dopo la conferma:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"estimated_hours": <N>}'
+```
+
+Se il PATCH fallisce (risposta non 2xx), avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
+
+---
+
 ## Fase: write-plan
 
 **Prima di invocare writing-plans**, leggi esplicitamente tutti gli `overview.md` generati in Fase: overview (uno per ogni repo coinvolto) e costruisci un briefing strutturato da passare come contesto a writing-plans. Il briefing deve contenere:
