@@ -63,6 +63,8 @@ Alcune skill condividono un contratto su artefatti o comportamenti. Quando modif
 | Skill A | Skill B | Contratto condiviso |
 |---|---|---|
 | `wm-plan` | `wm-review-ticket` | `wm-plan` è fonte autoritativa del contratto artefatti `docs/features/<slug>/`. `wm-review-ticket` lo referenzia, non lo duplica. Modificare la struttura artefatti richiede solo aggiornare `wm-plan`. |
+| `wm-tag` | `wm-plan` | `wm-tag` invoca `wm-plan` in tag-mode passando titolo, tipo, repo e TAG_ID. `wm-plan` è responsabile di reverse-interaction, overview, challenge, estimation e scrittura della description del ticket. `wm-tag` gestisce tag, lista ticket e loop. |
+| `wm-plan` | `wm-tag` | `caso-c` in Fase: ticket switcha su `wm-tag` cedendo il controllo del flusso. |
 
 ### Convenzioni di naming
 
@@ -110,6 +112,7 @@ Per tornare alla versione remota:
 |---|---|
 | `wm-plan` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
 | `wm-review-ticket` | Eseguire la code review di un ticket Orchestrator — sia quando un collega assegna un ticket da rivedere, sia al termine di una feature wm-plan prima del merge. |
+| `wm-tag` | Analizzare trascrizioni/brief cliente per creare tag Orchestrator con ticket figli strutturati e stimati. |
 
 Ogni skill può dipendere o comporre skill di `superpowers` (già installato come plugin separato).
 
@@ -132,6 +135,13 @@ I ticket Webmapp vivono su **Orchestrator** (`webmappsrl/orchestrator`), piattaf
 cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/marketplace.json`.
 
 ## Decisioni architetturali
+
+### wm-tag skill e fase estimation in wm-plan (oc:8157)
+- **tag-mode in wm-plan**: quando invocato da `wm-tag`, `wm-plan` salta write-plan/execution/notes/update-context — l'overview va nella description del ticket, non nel filesystem
+- **Fase: estimation solo per Feature**: i bug non si stimano in ore (costo nella diagnosi, non nella fix) — solo Feature ricevono `estimated_hours`
+- **repos.json per navigazione multi-repo**: dizionario persistente `~/.config/webmapp/repos.json` aggiornato incrementalmente — non riscritto da zero per preservare path manuali
+- **Naming tag `[RDO][CLIENTE][ANNO]N`**: N calcolato dinamicamente contando tag esistenti per stesso cliente+anno su Orchestrator — evita conflitti senza coordinazione manuale
+- **Regola scritture estesa a tag**: la regola preview+conferma di `wm-plan` per le story si applica identicamente a tutti i POST/PATCH su Orchestrator, incluse le operazioni sui tag
 
 ### wm-plan slug e environment-setup (oc:8102)
 - **Slug al posto dei numeri nelle fasi**: `## Fase: ticket`, `## Fase: environment-setup`, ecc. — inserire nuove fasi non richiede mai rinumerazione
@@ -158,3 +168,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
 | wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
 | wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |
+| wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
