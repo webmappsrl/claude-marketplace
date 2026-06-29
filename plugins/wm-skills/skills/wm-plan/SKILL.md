@@ -34,6 +34,86 @@ find docs/features/ -maxdepth 1 -type d | grep "<ID>"
 
 ---
 
+## Modalità tag-mode
+
+`wm-plan` può essere invocato da `wm-skills:wm-tag` in **tag-mode**. In questo caso riceve nel contesto della conversazione:
+- Titolo del ticket da creare
+- Tipo (Feature / Bug / Task)
+- Repo di destinazione (ricavabile da `~/.config/webmapp/repos.json`)
+- ID del tag padre su Orchestrator
+- Flag esplicito `tag-mode: true`
+
+### tag-mode: flusso
+
+In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
+
+1. `Fase: ticket` — crea il ticket su Orchestrator (usando il titolo e tipo già forniti da `wm-tag`)
+2. `Fase: environment-setup` — rileva stack e repo (consulta `repos.json` per la path del repo di destinazione)
+3. `Fase: init-context` — legge il CLAUDE.md del repo di destinazione
+4. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
+5. `Fase: overview` — produce l'overview con la struttura canonica
+6. `Fase: challenge` — analisi adversariale sull'overview
+7. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
+8. **Scrittura overview nel ticket** — vedi sezione sotto
+9. **Stop** — restituisce il controllo a `wm-tag`
+
+Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**.
+
+**Importante:** l'overview **non viene salvata nel filesystem** del repo. Nessun file `docs/features/` viene creato o modificato.
+
+### tag-mode: scrittura overview nel ticket
+
+Dopo l'approvazione dell'overview (e dell'estimation se Feature), costruisci il payload per il PATCH del ticket. La `description` del ticket deve contenere il testo completo dell'overview in una sezione `## Overview`:
+
+```
+## Overview
+
+### Cosa cambia
+<testo>
+
+### Perché
+<testo>
+
+### Requisiti
+- [ ] ...
+
+### Rischi
+<testo>
+
+### Out of scope
+<testo>
+
+### Moduli toccati
+<testo>
+```
+
+Mostra preview e chiedi conferma (regola generale scritture):
+
+> **Aggiornamento ticket oc:\<ID\>**
+>
+> | Campo | Valore |
+> |-------|--------|
+> | `description` | `## Overview\n### Cosa cambia\n<prime 200 caratteri...>` |
+> | `tags` | `[<tag-id>]` |
+>
+> Procedo?
+
+Solo dopo la conferma:
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"description": "<overview-markdown>", "tags": [<tag-id>]}'
+```
+
+Al termine mostra: `✅ Ticket oc:<ID> aggiornato e associato al tag <nome-tag>.`
+
+---
+
 ## Orchestrator API
 
 Queste istruzioni valgono per tutte le chiamate HTTP a Orchestrator. Usale ogni volta che una fase richiede di leggere o scrivere un ticket.
