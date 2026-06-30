@@ -47,23 +47,22 @@ find docs/features/ -maxdepth 1 -type d | grep "<ID>"
 
 In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
 
-1. `Fase: ticket` — crea il ticket su Orchestrator (usando il titolo e tipo già forniti da `wm-tag`)
-2. `Fase: environment-setup` — rileva stack e repo (consulta `repos.json` per la path del repo di destinazione)
-3. `Fase: init-context` — legge il CLAUDE.md del repo di destinazione
-4. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
-5. `Fase: overview` — produce l'overview con la struttura canonica
-6. `Fase: challenge` — analisi adversariale sull'overview
-7. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
-8. **Scrittura overview nel ticket** — vedi sezione sotto
-9. **Stop** — restituisce il controllo a `wm-tag`
+1. `Fase: environment-setup` — rileva stack e repo (consulta `repos.json` per la path del repo di destinazione)
+2. `Fase: init-context` — legge il CLAUDE.md del repo di destinazione
+3. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
+4. `Fase: overview` — produce l'overview con la struttura canonica
+5. `Fase: challenge` — analisi adversariale sull'overview
+6. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
+7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`, `tags` (tag padre)
+8. **Stop** — restituisce il controllo a `wm-tag`
 
 Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**.
 
 **Importante:** l'overview **non viene salvata nel filesystem** del repo. Nessun file `docs/features/` viene creato o modificato.
 
-### tag-mode: scrittura overview nel ticket
+### tag-mode: creazione ticket con overview
 
-Dopo l'approvazione dell'overview (e dell'estimation se Feature), costruisci il payload per il PATCH del ticket. La `description` del ticket deve contenere il testo completo dell'overview in una sezione `## Overview`:
+Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. La `description` deve contenere il testo completo dell'overview in una sezione `## Overview`:
 
 ```
 ## Overview
@@ -89,11 +88,15 @@ Dopo l'approvazione dell'overview (e dell'estimation se Feature), costruisci il 
 
 Mostra preview e chiedi conferma (regola generale scritture):
 
-> **Aggiornamento ticket oc:\<ID\>**
+> **Creazione ticket**
 >
 > | Campo | Valore |
 > |-------|--------|
+> | `name` | `<titolo>` |
+> | `type` | `<tipo>` |
+> | `customer_request` | `<prime 200 caratteri...>` |
 > | `description` | `## Overview\n### Cosa cambia\n<prime 200 caratteri...>` |
+> | `estimated_hours` | `<N>` |
 > | `tags` | `[<tag-id>]` |
 >
 > Procedo?
@@ -103,14 +106,14 @@ Solo dopo la conferma:
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
 TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"description": "<overview-markdown>", "tags": [<tag-id>]}'
+  -d '{"name": "<titolo>", "type": "<tipo>", "customer_request": "<testo>", "description": "<overview-markdown>", "estimated_hours": <N>, "tags": [<tag-id>]}'
 ```
 
-Al termine mostra: `✅ Ticket oc:<ID> aggiornato e associato al tag <nome-tag>.`
+Al termine mostra: `✅ Ticket oc:<ID> creato e associato al tag <nome-tag>.`
 
 ---
 
