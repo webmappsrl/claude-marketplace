@@ -21,22 +21,21 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
+**Versione installata:** v1.0.0
+
+Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
+
+Mostra `Versione installata: v1.0.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
 ```bash
-SKILL_PATH=$(find ~/.claude/plugins/cache -maxdepth 5 -path '*/wm-skills/*/skills/wm-plan/SKILL.md' 2>/dev/null | head -1)
+SKILL_PATH=$(find ~/.claude/plugins/cache -maxdepth 7 -path '*/wm-skills/*/skills/wm-plan/SKILL.md' 2>/dev/null | head -1)
 REPO_PATH=$(git -C "$(dirname "$SKILL_PATH")" rev-parse --show-toplevel 2>/dev/null)
 ```
 
-- **Se `SKILL_PATH` o `REPO_PATH` sono vuoti** (skill non installata via marketplace, es. sviluppo locale con `/plugin marketplace add .`): mostra `⚠️ Check versione non disponibile.` e salta il resto di questa sotto-sezione.
-- **Altrimenti**, usa `REPO_PATH` come base e mostra la versione installata:
-
-```bash
-INSTALLED_VERSION=$(jq -r '.version // empty' "$REPO_PATH/plugins/wm-skills/.claude-plugin/plugin.json" 2>/dev/null)
-```
-
-- Se `INSTALLED_VERSION` non è vuota: mostra `Versione installata: v$INSTALLED_VERSION`.
-- Se `INSTALLED_VERSION` è vuota (campo `version` assente in `plugin.json`, es. installazione precedente al versioning o sviluppo locale senza bump): mostra `Versione installata: dev (nessun tag)`.
+- **Se `SKILL_PATH` o `REPO_PATH` sono vuoti** (skill non installata via marketplace, es. sviluppo locale con `/plugin marketplace add .`): mostra `⚠️ Check aggiornamenti non disponibile.` e salta il resto di questa sotto-sezione.
+- **Altrimenti**, usa `REPO_PATH` come base:
 
 ```bash
 git -C "$REPO_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null
@@ -47,7 +46,7 @@ git -C "$REPO_PATH" status --porcelain -- plugins/wm-skills/skills/wm-plan/SKILL
 
 Mostra:
 ```
-🔧 modalità sviluppo locale — check versione saltato
+🔧 modalità sviluppo locale — check aggiornamenti saltato
 ```
 e salta il resto di questa sotto-sezione (nessun confronto hash remoto).
 
@@ -59,7 +58,7 @@ REMOTE_HASH=$(curl -s "https://api.github.com/repos/webmappsrl/claude-marketplac
 LOCAL_DATE=$(git -C "$REPO_PATH" log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null)
 ```
 
-- Se `LOCAL_HASH` e `REMOTE_HASH` non sono ottenibili (rete assente, comando fallito, output vuoto): mostra `⚠️ Check versione non disponibile.` e prosegui senza bloccare.
+- Se `LOCAL_HASH` e `REMOTE_HASH` non sono ottenibili (rete assente, comando fallito, output vuoto): mostra `⚠️ Check aggiornamenti non disponibile.` e prosegui senza bloccare.
 - Se `LOCAL_HASH` == `REMOTE_HASH`: mostra `✅ wm-plan aggiornato (ultima modifica: $LOCAL_DATE)`.
 - Se `LOCAL_HASH` != `REMOTE_HASH`: mostra `⬆️ Aggiornamento disponibile per wm-plan (ultima modifica locale: $LOCAL_DATE) — esegui \`/plugin marketplace update\` per aggiornare.`
 

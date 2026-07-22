@@ -35,16 +35,25 @@ impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore d
 
 **Ha un campo `version` (semver), aggiornato ad ogni release.** Il flusso è cadenzato: ad ogni
 release si fa il bump di `version` in questo file e si tagga il commit corrispondente su
-`claude-marketplace` con un tag `v<version>` (es. `v1.1.0`). L'header di sessione di `wm-plan`
-(`Header di sessione` → `### header: versione` in `plugins/wm-skills/skills/wm-plan/SKILL.md`)
-legge questo campo dal plugin installato in cache e mostra `Versione installata: v<version>`. Se
-il campo è assente (installazione precedente al versioning) mostra `dev (nessun tag)` come
-fallback, senza bloccare.
+`claude-marketplace` con un tag `v<version>` (es. `v1.1.0`).
 
-**Checklist di release:**
-1. Bump `version` in questo file (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
-2. Commit del bump su `main`.
-3. Tag del commit: `git tag v<version> && git push origin v<version>`.
+## Versioning del plugin wm-skills
+
+La versione installata mostrata nell'header di sessione di `wm-plan` (`Header di sessione` →
+`### header: versione` in `plugins/wm-skills/skills/wm-plan/SKILL.md`) **è un valore statico
+scritto direttamente in quella skill**, non letto a runtime da `plugin.json`, dalla cache dei
+plugin o da git. Motivo: la cache dei plugin (`~/.claude/plugins/cache/...`) non è un repository
+git e il path del repo installato varia a seconda di come l'utente ha aggiunto il marketplace —
+provare a risolverlo a runtime si è rivelato fragile. Lo stesso pattern è già usato per l'URL
+dell'Artifact del diagramma (`### header: diagramma`): un valore statico aggiornato manualmente
+ad ogni modifica rilevante, che resta intrinsecamente allineato ad ogni `/plugin marketplace
+update` perché viaggia con il resto del contenuto della skill.
+
+**Checklist di release (obbligatoria, in quest'ordine):**
+1. Bump `version` in `plugins/wm-skills/.claude-plugin/plugin.json` (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
+2. Aggiorna la riga `**Versione installata:** v<version>` in `plugins/wm-skills/skills/wm-plan/SKILL.md` → `### header: versione` con lo stesso valore del bump.
+3. Commit di entrambi i file su `main`.
+4. Tag del commit: `git tag v<version> && git push origin v<version>`.
 
 ## Aggiungere una nuova skill del team
 
