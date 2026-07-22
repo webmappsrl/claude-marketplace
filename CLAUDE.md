@@ -136,6 +136,14 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Decisioni architetturali
 
+### Rivedere criteri di stima ore in wm-plan (oc:8278)
+- **Classificazione per-componente invece di buffer forfettario**: ogni componente della stima è "scrittura pura" (zero domande aperte dopo overview+challenge, buffer 0%) o "decisioni aperte" (UX/reverse-engineering legacy, buffer 20-30%) — motivato da analisi Orchestrator su ticket luglio 2026 che mostrava overstima sistematica su task ben specificati
+- **Buffer di integrazione trasversale 5%**: separato dal buffer per-componente, copre il rischio di interazione tra componenti che nessun componente singolo cattura
+- **Tempo di pianificazione misurato, non stimato**: timestamp reale registrato in `Fase: ticket` (`planning_start_at`) e confrontato con quello a fine `Fase: estimation` — mostrato al dev come "Misurato + Stimato = Totale", mai un numero unico fuso
+- **Marcatore di versione `[stima v2 — per-componente]`** su ogni stima scritta su Orchestrator: garantisce che i dati storici restino distinguibili tra criterio vecchio e nuovo per calibrazioni future
+- **Coefficiente di velocità per-dev esplicitamente rimandato**: Orchestrator non espone oggi un endpoint di listing/aggregazione stimato-vs-effettivo per utente, e il campione per dev è troppo piccolo (8-15 ticket) per un coefficiente affidabile
+- **`execution: re-estimation`**: se durante l'esecuzione emerge un imprevisto stimabile, si propone al dev una revisione della stima con conferma esplicita, prima del PATCH `estimated_hours`
+
 ### wm-tag skill e fase estimation in wm-plan (oc:8157)
 - **tag-mode in wm-plan**: quando invocato da `wm-tag`, `wm-plan` salta write-plan/execution/notes/update-context — l'overview va nella description del ticket, non nel filesystem
 - **Fase: estimation solo per Feature**: i bug non si stimano in ore (costo nella diagnosi, non nella fix) — solo Feature ricevono `estimated_hours`
@@ -169,3 +177,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 | wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
 | wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |
 | wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
+| Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |
