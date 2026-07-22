@@ -151,6 +151,11 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 
 ## Decisioni architetturali
 
+### Fix diagramma header cross-repo in wm-plan
+- **Fetch remoto sempre, nessun fallback locale**: `### header: diagramma` legge sempre `CLAUDE.md` di `claude-marketplace` via `curl -sf` sull'URL raw GitHub, anche quando `wm-plan` gira dentro lo stesso repo `claude-marketplace` — scelta di semplicità del codice rispetto a un'ottimizzazione locale, accettata esplicitamente durante `Fase: challenge`
+- **`curl -sf`, non `curl -s`**: emerso in verifica che `curl -s` da solo non fallisce su risposte HTTP non-2xx (un 404 restituisce comunque exit code 0 con il body dell'errore) — il flag `-f` è necessario per distinguere realmente "fetch fallito" da "sezione assente nel contenuto"
+- **Due messaggi distinti per due fallimenti diversi**: `⚠️ Diagramma di flusso non verificabile` (fetch HTTP fallito) vs `📊 Diagramma di flusso: non ancora pubblicato` (fetch riuscito ma sezione/URL assente) — evita di far interpretare un problema di rete temporaneo come "Artifact mai pubblicato"
+
 ### Intestazione ASCII per skill wm-plan con info versione/aggiornamenti e diagramma di flusso (oc:8283)
 - **Header mostrato solo alla prima invocazione di sessione**: nessun meccanismo di stato programmato — è una regola comportamentale in prosa che Claude segue, dato che le skill non hanno un tracciamento di sessione nativo garantito
 - **Check versione senza stato locale aggiuntivo**: confronto tra hash HEAD del repo git installato e hash ultimo commit remoto via GitHub API — evita il problema di un file di stato che verrebbe sovrascritto ad ogni `marketplace update` o che partirebbe senza baseline su nuove installazioni
@@ -212,3 +217,4 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 | Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |
 | Clear del context in wm-plan dopo reverse-interaction e dopo implementation | oc:8282 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Isolamento sempre attivo del riepilogo diff in `execution: review-gate` tramite subagente cieco (stesso pattern di `challenge`); fallback esplicito se `planning_start_at` non è stato registrato in `Fase: estimation` |
 | Intestazione ASCII per skill wm-plan con info versione/aggiornamenti e diagramma di flusso | oc:8283 | `plugins/wm-skills/skills/wm-plan/SKILL.md`, `CLAUDE.md` | Nuova sezione "Header di sessione" (banner ASCII, check versione via hash HEAD vs remoto, modalità sviluppo locale, link Artifact diagramma); nuova sezione `## Diagramma di flusso wm-plan` in CLAUDE.md con URL e regola di rigenerazione post-modifica repo |
+| Fix diagramma header cross-repo in wm-plan | — (nessun ticket) | `plugins/wm-skills/skills/wm-plan/SKILL.md` | `### header: diagramma` legge sempre il `CLAUDE.md` di `claude-marketplace` via fetch remoto (`curl -sf`), non più il `CLAUDE.md` del repo target — corregge il falso "non ancora pubblicato" quando wm-plan è invocato da altri repo |
