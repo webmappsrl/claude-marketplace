@@ -135,7 +135,30 @@ I ticket Webmapp vivono su **Orchestrator** (`webmappsrl/orchestrator`), piattaf
 `superpowers` è pinato a `ref: main` di `obra/superpowers`. Per pinnare a una versione stabile,
 cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/marketplace.json`.
 
+## Diagramma di flusso wm-plan
+
+**URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
+
+Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esecuzione). L'header di sessione di `wm-plan` (vedi `plugins/wm-skills/skills/wm-plan/SKILL.md` → `## Header di sessione` → `### header: diagramma`) legge l'URL da questa sezione.
+
+**Regola di rigenerazione (obbligatoria per Claude Code):** dopo qualsiasi modifica ai file di questo repo effettuata in una sessione, prima di concludere il lavoro, rigenera l'Artifact del diagramma di flusso usando lo stesso `file_path` e la stessa chiamata di pubblicazione già usata in precedenza (redeploy sullo stesso URL, mai un nuovo Artifact). Questo vale per qualsiasi modifica al repo, non solo per modifiche a `wm-plan`.
+
+**Gestione errori (fail-soft):** la pubblicazione avviene per tentativo diretto, senza check preventivo dell'account attivo. Se il redeploy fallisce, avvisa l'utente con `⚠️ Impossibile aggiornare l'Artifact del diagramma — potrebbe servire switchare all'account Claude del team Webmapp.` e prosegui comunque con il resto della sessione, senza bloccare.
+
+**Template grafico congelato (obbligatorio per Claude Code):** il layout definito in oc:8283 — due colonne di pari altezza (diagramma Mermaid a sinistra, dettaglio fasi a destra con scroll interno), legenda a piena larghezza sotto, palette e tipografia definite — è la versione approvata e **non va ridisegnato** ad ogni rigenerazione. Ogni redeploy successivo deve limitarsi ad aggiornare il **contenuto** (nodi del diagramma, paragrafi di dettaglio, se una fase viene aggiunta/rinominata/rimossa in `wm-plan/SKILL.md`) mantenendo invariati struttura HTML, CSS e stile visivo. Se una modifica al repo non tocca il workflow di `wm-plan`, non è necessario alcun cambiamento al contenuto del diagramma stesso, ma il redeploy va comunque eseguito (vedi regola di rigenerazione sopra) per mantenere l'Artifact "vivo" sullo stesso URL.
+
+Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** qui sopra con il link reale.
+
 ## Decisioni architetturali
+
+### Intestazione ASCII per skill wm-plan con info versione/aggiornamenti e diagramma di flusso (oc:8283)
+- **Header mostrato solo alla prima invocazione di sessione**: nessun meccanismo di stato programmato — è una regola comportamentale in prosa che Claude segue, dato che le skill non hanno un tracciamento di sessione nativo garantito
+- **Check versione senza stato locale aggiuntivo**: confronto tra hash HEAD del repo git installato e hash ultimo commit remoto via GitHub API — evita il problema di un file di stato che verrebbe sovrascritto ad ogni `marketplace update` o che partirebbe senza baseline su nuove installazioni
+- **Modalità sviluppo locale esplicita nell'header**: se il branch non è `main` o `SKILL.md` ha modifiche non committate, il check versione viene sostituito da un'indicazione visibile ("🔧 modalità sviluppo locale"), non disattivato silenziosamente — pensato per chi lavora su `wm-plan` in locale (workflow `/plugin marketplace add .`)
+- **Trigger di rigenerazione Artifact non ristretto ai soli file di `wm-plan`**: scatta su qualsiasi modifica al repo `claude-marketplace`, anche se il diagramma rappresenta solo il workflow di `wm-plan` — scelta esplicita dell'utente, accettato lo spreco occasionale di redeploy non necessari
+- **Pubblicazione Artifact per tentativo diretto, nessun check preventivo di account**: dato che due account Claude diversi possono condividere la stessa email (caso reale riscontrato: webmapp e net7 sulla stessa mail), non esiste un segnale di sessione affidabile per distinguerli — l'unico modo verificato è il fallimento del redeploy stesso, con avviso esplicito di switchare account
+- **Drift documentale tra Artifact e stato reale di `SKILL.md` accettato come rischio consapevole**: nessuna verifica automatica di sincronia (es. hash di pubblicazione) — la responsabilità di notare e correggere è dell'utente, decisione presa esplicitamente in Fase: challenge
+- **URL Artifact versionato in `CLAUDE.md`**, non in un file di config locale (`~/.config/webmapp/`) — è un link condiviso da tutto il team, non un dato personale, quindi va distribuito automaticamente via git a chiunque cloni il repo
 
 ### Clear del context in wm-plan dopo reverse-interaction e dopo implementation (oc:8282)
 - **Nessun clear reale del context principale**: il pivot deciso durante la Fase: reverse-interaction ha scartato l'idea di "svuotare" il context — l'isolamento si ottiene solo delegando a subagenti nei punti dove serve un giudizio non contaminato dal ragionamento pregresso (motivazione primaria: indipendenza di giudizio, non economia di context)
@@ -188,3 +211,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 | wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
 | Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |
 | Clear del context in wm-plan dopo reverse-interaction e dopo implementation | oc:8282 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Isolamento sempre attivo del riepilogo diff in `execution: review-gate` tramite subagente cieco (stesso pattern di `challenge`); fallback esplicito se `planning_start_at` non è stato registrato in `Fase: estimation` |
+| Intestazione ASCII per skill wm-plan con info versione/aggiornamenti e diagramma di flusso | oc:8283 | `plugins/wm-skills/skills/wm-plan/SKILL.md`, `CLAUDE.md` | Nuova sezione "Header di sessione" (banner ASCII, check versione via hash HEAD vs remoto, modalità sviluppo locale, link Artifact diagramma); nuova sezione `## Diagramma di flusso wm-plan` in CLAUDE.md con URL e regola di rigenerazione post-modifica repo |
