@@ -47,23 +47,22 @@ find docs/features/ -maxdepth 1 -type d | grep "<ID>"
 
 In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
 
-1. `Fase: ticket` — crea il ticket su Orchestrator (usando il titolo e tipo già forniti da `wm-tag`)
-2. `Fase: environment-setup` — rileva stack e repo (consulta `repos.json` per la path del repo di destinazione)
-3. `Fase: init-context` — legge il CLAUDE.md del repo di destinazione
-4. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
-5. `Fase: overview` — produce l'overview con la struttura canonica
-6. `Fase: challenge` — analisi adversariale sull'overview
-7. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
-8. **Scrittura overview nel ticket** — vedi sezione sotto
-9. **Stop** — restituisce il controllo a `wm-tag`
+1. `Fase: environment-setup` — rileva stack e repo (consulta `repos.json` per la path del repo di destinazione)
+2. `Fase: init-context` — legge il CLAUDE.md del repo di destinazione
+3. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
+4. `Fase: overview` — produce l'overview con la struttura canonica
+5. `Fase: challenge` — analisi adversariale sull'overview
+6. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
+7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`, `tags` (tag padre)
+8. **Stop** — restituisce il controllo a `wm-tag`
 
 Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**.
 
 **Importante:** l'overview **non viene salvata nel filesystem** del repo. Nessun file `docs/features/` viene creato o modificato.
 
-### tag-mode: scrittura overview nel ticket
+### tag-mode: creazione ticket con overview
 
-Dopo l'approvazione dell'overview (e dell'estimation se Feature), costruisci il payload per il PATCH del ticket. La `description` del ticket deve contenere il testo completo dell'overview in una sezione `## Overview`:
+Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. La `description` deve contenere il testo completo dell'overview in una sezione `## Overview`:
 
 ```
 ## Overview
@@ -89,11 +88,15 @@ Dopo l'approvazione dell'overview (e dell'estimation se Feature), costruisci il 
 
 Mostra preview e chiedi conferma (regola generale scritture):
 
-> **Aggiornamento ticket oc:\<ID\>**
+> **Creazione ticket**
 >
 > | Campo | Valore |
 > |-------|--------|
+> | `name` | `<titolo>` |
+> | `type` | `<tipo>` |
+> | `customer_request` | `<prime 200 caratteri...>` |
 > | `description` | `## Overview\n### Cosa cambia\n<prime 200 caratteri...>` |
+> | `estimated_hours` | `<N>` |
 > | `tags` | `[<tag-id>]` |
 >
 > Procedo?
@@ -103,14 +106,14 @@ Solo dopo la conferma:
 ```bash
 ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
 TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"description": "<overview-markdown>", "tags": [<tag-id>]}'
+  -d '{"name": "<titolo>", "type": "<tipo>", "customer_request": "<testo>", "description": "<overview-markdown>", "estimated_hours": <N>, "tags": [<tag-id>]}'
 ```
 
-Al termine mostra: `✅ Ticket oc:<ID> aggiornato e associato al tag <nome-tag>.`
+Al termine mostra: `✅ Ticket oc:<ID> creato e associato al tag <nome-tag>.`
 
 ---
 
@@ -245,6 +248,14 @@ Usa solo i campi presenti nelle `rules()` del Form Request. Non inviare campi no
 ## Fase: ticket
 
 Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico referenziato come `oc:<ID>` (es. `oc:7815`).
+
+**Registra subito il timestamp di inizio pianificazione** (`planning_start_at`), eseguendo:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%S%z"
+```
+
+Tieni questo valore attivo per tutto il workflow — serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato).
 
 All'inizio del workflow, presenta sempre questo menu all'utente:
 
@@ -672,30 +683,49 @@ In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a writ
 
 ### estimation: analisi
 
-Basandoti sull'overview approvato, produci una stima ragionata in ore con questa struttura:
+Basandoti sull'overview approvato e sull'esito della Fase: challenge, classifica ogni componente della stima in una di due categorie:
 
-> **Stima proposta: \<N\> ore**
+- **Scrittura pura** — zero domande aperte residue su "come deve comportarsi" dopo overview + challenge (specifica già completa: campi, endpoint, comportamento, edge case). Buffer 0%.
+- **Decisioni aperte** — restano scelte UX/comportamentali da prendere, o reverse-engineering di comportamento legacy non documentato. Buffer 20-30%.
+
+**Calcola il tempo di pianificazione misurato:**
+
+```bash
+NOW=$(date -u +"%Y-%m-%dT%H:%M:%S%z")
+```
+
+Confronta `NOW` con `planning_start_at` (registrato in Fase: ticket) e calcola la differenza in ore — questo è un dato misurato, non stimato.
+
+Produci la stima con questa struttura:
+
+> **Stima proposta**
 >
-> Motivazione:
-> - \<componente 1\>: \<X\>h — \<motivazione tecnica\>
-> - \<componente 2\>: \<Y\>h — \<motivazione tecnica\>
-> - Buffer rischio: \<Z\>h — \<motivazione: complessità, dipendenze esterne, incertezze\>
+> | Componente | Classificazione | Ore | Buffer | Note |
+> |---|---|---|---|---|
+> | Pianificazione (ticket → reverse-interaction → overview → challenge → estimation) | — | \<M\>h (misurata) | — | Timestamp reali: \<planning_start_at\> → \<NOW\> |
+> | \<componente 1\> | Scrittura pura / Decisioni aperte | \<X\>h | 0% / 20-30% | \<motivazione tecnica\> |
+> | \<componente 2\> | Scrittura pura / Decisioni aperte | \<Y\>h | 0% / 20-30% | \<motivazione tecnica\> |
+> | Buffer integrazione trasversale (solo se più di un componente) | — | — | 5% sul totale implementazione | Rischio di interazione tra componenti, non attribuibile a un singolo componente |
+>
+> **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h**
 >
 > Confidenza: alta / media / bassa
 > *(alta = requisiti chiari e stack noto; media = qualche incertezza tecnica; bassa = dipendenze esterne o requisiti aperti)*
 
 Regole per la stima:
-- Includi sempre un buffer rischio (minimo 10% del totale, mai zero)
+- Il buffer rischio è sempre per-componente (0% scrittura pura, 20-30% decisioni aperte), mai un unico valore forfettario finale
+- Aggiungi il buffer di integrazione trasversale (5% sul totale implementazione, esclusa la pianificazione) solo quando la feature coinvolge più di un componente
 - La confidenza deve essere coerente con i rischi emersi nella Fase: challenge
-- Non stimare meno di 1h per qualsiasi feature che tocchi più di un file
+- Non stimare meno di 0.5h per qualsiasi feature che tocchi più di un file (era 1h)
+- Il coefficiente di velocità per-dev NON va applicato in questo ciclo — resta out of scope
 
 ### estimation: conferma
 
-Chiedi al dev:
+Chiedi al dev, riportando sempre la scomposizione (mai un numero unico fuso):
 
-> "Accetti questa stima di **\<N\> ore**, o vuoi modificarla?"
+> "Accetti questa stima — **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h** — o vuoi modificarla?"
 
-Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev.
+Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev. Se il dev modifica solo la quota stimata (implementazione) lasciando invariata quella misurata (pianificazione), aggiorna solo `<S>` e ricalcola `<N>`.
 
 ### estimation: scrittura su Orchestrator
 
@@ -706,6 +736,8 @@ Mostra il preview della modifica e chiedi conferma prima di eseguire:
 > | Campo | Valore |
 > |-------|--------|
 > | `estimated_hours` | `<N>` |
+>
+> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `[stima v2 — per-componente] Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
 >
 > Procedo?
 
@@ -720,6 +752,8 @@ curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -H "Accept: application/json" \
   -d '{"estimated_hours": <N>}'
 ```
+
+Il marcatore `[stima v2 — per-componente]` identifica le stime prodotte con questo criterio, distinguendole nei dati storici Orchestrator da quelle prodotte con il criterio precedente (buffer forfettario unico) — necessario per validare in cicli futuri se il nuovo criterio riduce davvero il bias di overstima.
 
 Se il PATCH fallisce (risposta non 2xx), avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
 
@@ -810,6 +844,16 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
+### execution: re-estimation (solo se il ticket è di tipo Feature)
+
+Se durante l'implementazione emerge un problema non previsto nell'overview e nella stima originale, e questo problema è stimabile in ore (non un semplice imprevisto trascurabile), proponi al dev una revisione della stima prima di proseguire:
+
+> "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
+
+Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale, mantenendo lo stesso marcatore di versione (`[stima v2 — per-componente]`) usato in `estimation: scrittura su Orchestrator`.
+
+Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
+
 ### execution: review-gate (obbligatorio, non skippabile)
 
 <HARD-GATE>
@@ -854,6 +898,7 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
 - **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
+- **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.
 
 **Struttura consigliata:**
 
