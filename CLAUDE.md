@@ -33,9 +33,18 @@ impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore d
 
 ### `plugins/wm-skills/.claude-plugin/plugin.json`
 
-**Non ha campo `version` di proposito.** Questo significa che ogni commit su `main` viene trattato
-come nuova versione e arriva al team al primo `marketplace update`. Se in futuro volete passare a
-release cadenzate, aggiungete `"version": "1.0.0"` e bumpate a ogni release.
+**Ha un campo `version` (semver), aggiornato ad ogni release.** Il flusso è cadenzato: ad ogni
+release si fa il bump di `version` in questo file e si tagga il commit corrispondente su
+`claude-marketplace` con un tag `v<version>` (es. `v1.1.0`). L'header di sessione di `wm-plan`
+(`Header di sessione` → `### header: versione` in `plugins/wm-skills/skills/wm-plan/SKILL.md`)
+legge questo campo dal plugin installato in cache e mostra `Versione installata: v<version>`. Se
+il campo è assente (installazione precedente al versioning) mostra `dev (nessun tag)` come
+fallback, senza bloccare.
+
+**Checklist di release:**
+1. Bump `version` in questo file (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
+2. Commit del bump su `main`.
+3. Tag del commit: `git tag v<version> && git push origin v<version>`.
 
 ## Aggiungere una nuova skill del team
 

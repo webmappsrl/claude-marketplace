@@ -29,7 +29,14 @@ REPO_PATH=$(git -C "$(dirname "$SKILL_PATH")" rev-parse --show-toplevel 2>/dev/n
 ```
 
 - **Se `SKILL_PATH` o `REPO_PATH` sono vuoti** (skill non installata via marketplace, es. sviluppo locale con `/plugin marketplace add .`): mostra `⚠️ Check versione non disponibile.` e salta il resto di questa sotto-sezione.
-- **Altrimenti**, usa `REPO_PATH` come base:
+- **Altrimenti**, usa `REPO_PATH` come base e mostra la versione installata:
+
+```bash
+INSTALLED_VERSION=$(jq -r '.version // empty' "$REPO_PATH/plugins/wm-skills/.claude-plugin/plugin.json" 2>/dev/null)
+```
+
+- Se `INSTALLED_VERSION` non è vuota: mostra `Versione installata: v$INSTALLED_VERSION`.
+- Se `INSTALLED_VERSION` è vuota (campo `version` assente in `plugin.json`, es. installazione precedente al versioning o sviluppo locale senza bump): mostra `Versione installata: dev (nessun tag)`.
 
 ```bash
 git -C "$REPO_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null
