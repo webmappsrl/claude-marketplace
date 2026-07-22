@@ -51,10 +51,17 @@ LOCAL_DATE=$(git log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills
 
 ### header: diagramma
 
-Leggi la sezione `## Diagramma di flusso wm-plan` dal `CLAUDE.md` del repo target (root del progetto).
+Esegui il fetch del `CLAUDE.md` di `claude-marketplace` direttamente da GitHub (sempre da remoto, anche se `wm-plan` è invocato all'interno del repo `claude-marketplace` stesso — nessuna lettura da filesystem locale):
 
-- Se la sezione esiste e contiene un URL: mostra `📊 Diagramma di flusso: <URL>`
-- Se la sezione non esiste o non contiene un URL valido (Artifact non ancora pubblicato): mostra `📊 Diagramma di flusso: non ancora pubblicato` — non bloccare l'esecuzione della skill in nessun caso
+```bash
+curl -sf --max-time 5 "https://raw.githubusercontent.com/webmappsrl/claude-marketplace/main/CLAUDE.md"
+```
+
+Dal contenuto restituito, cerca la sezione `## Diagramma di flusso wm-plan` ed estrai l'URL indicato dopo `**URL Artifact:**`.
+
+- **Se il comando `curl` fallisce** (nessun output, errore di rete, timeout, o risposta HTTP non 2xx): mostra `⚠️ Diagramma di flusso non verificabile` — non bloccare l'esecuzione della skill in nessun caso.
+- **Se il fetch riesce ma la sezione non esiste o non contiene un URL valido** (Artifact non ancora pubblicato): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
+- **Se il fetch riesce e la sezione contiene un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
 
 ---
 
