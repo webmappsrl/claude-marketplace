@@ -21,12 +21,19 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-Determina la path del repo marketplace installato (dove risiede questo `SKILL.md`) ed esegui:
+Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
 ```bash
-cd "$(dirname "$(realpath plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null || echo .)")/../../../.." 2>/dev/null
-git rev-parse --abbrev-ref HEAD 2>/dev/null
-git status --porcelain -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null
+SKILL_PATH=$(find ~/.claude/plugins/cache -maxdepth 5 -path '*/wm-skills/*/skills/wm-plan/SKILL.md' 2>/dev/null | head -1)
+REPO_PATH=$(git -C "$(dirname "$SKILL_PATH")" rev-parse --show-toplevel 2>/dev/null)
+```
+
+- **Se `SKILL_PATH` o `REPO_PATH` sono vuoti** (skill non installata via marketplace, es. sviluppo locale con `/plugin marketplace add .`): mostra `⚠️ Check versione non disponibile.` e salta il resto di questa sotto-sezione.
+- **Altrimenti**, usa `REPO_PATH` come base:
+
+```bash
+git -C "$REPO_PATH" rev-parse --abbrev-ref HEAD 2>/dev/null
+git -C "$REPO_PATH" status --porcelain -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null
 ```
 
 **Se il branch non è `main` OPPURE `git status --porcelain` restituisce output non vuoto per `SKILL.md`:**
@@ -40,9 +47,9 @@ e salta il resto di questa sotto-sezione (nessun confronto hash remoto).
 **Altrimenti (branch `main`, nessuna modifica locale non committata):**
 
 ```bash
-LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null)
+LOCAL_HASH=$(git -C "$REPO_PATH" rev-parse HEAD 2>/dev/null)
 REMOTE_HASH=$(curl -s "https://api.github.com/repos/webmappsrl/claude-marketplace/commits/main" | jq -r '.sha' 2>/dev/null)
-LOCAL_DATE=$(git log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null)
+LOCAL_DATE=$(git -C "$REPO_PATH" log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null)
 ```
 
 - Se `LOCAL_HASH` e `REMOTE_HASH` non sono ottenibili (rete assente, comando fallito, output vuoto): mostra `⚠️ Check versione non disponibile.` e prosegui senza bloccare.
@@ -51,17 +58,12 @@ LOCAL_DATE=$(git log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills
 
 ### header: diagramma
 
-Esegui il fetch del `CLAUDE.md` di `claude-marketplace` direttamente da GitHub (sempre da remoto, anche se `wm-plan` è invocato all'interno del repo `claude-marketplace` stesso — nessuna lettura da filesystem locale):
+L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad ogni redeploy (vedi regola di rigenerazione in `CLAUDE.md` → `## Diagramma di flusso wm-plan`). Nessun fetch remoto necessario: essendo scritto in `SKILL.md`, è sempre disponibile insieme al resto del contenuto della skill già caricato, e viaggia allineato ad ogni `/plugin marketplace update`.
 
-```bash
-curl -sf --max-time 5 "https://raw.githubusercontent.com/webmappsrl/claude-marketplace/main/CLAUDE.md"
-```
+**URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
 
-Dal contenuto restituito, cerca la sezione `## Diagramma di flusso wm-plan` ed estrai l'URL indicato dopo `**URL Artifact:**`.
-
-- **Se il comando `curl` fallisce** (nessun output, errore di rete, timeout, o risposta HTTP non 2xx): mostra `⚠️ Diagramma di flusso non verificabile` — non bloccare l'esecuzione della skill in nessun caso.
-- **Se il fetch riesce ma la sezione non esiste o non contiene un URL valido** (Artifact non ancora pubblicato): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
-- **Se il fetch riesce e la sezione contiene un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
+- **Se il valore sopra è un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
+- **Se il valore sopra è assente o è un placeholder** (Artifact non ancora pubblicato la prima volta): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
 
 ---
 

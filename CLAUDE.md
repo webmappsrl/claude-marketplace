@@ -137,9 +137,9 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Diagramma di flusso wm-plan
 
-**URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
+**URL Artifact:** versionato direttamente in `plugins/wm-skills/skills/wm-plan/SKILL.md` → `## Header di sessione` → `### header: diagramma` (non più qui in `CLAUDE.md`). Motivo: l'URL cambia solo quando si modifica la skill, condizione che coincide sempre con un aggiornamento di `SKILL.md` — spostarlo lì elimina il fetch remoto necessario per leggerlo e lo mantiene intrinsecamente allineato ad ogni `/plugin marketplace update`, senza rischio di staleness.
 
-Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esecuzione). L'header di sessione di `wm-plan` (vedi `plugins/wm-skills/skills/wm-plan/SKILL.md` → `## Header di sessione` → `### header: diagramma`) legge l'URL da questa sezione.
+Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esecuzione).
 
 **Regola di rigenerazione (obbligatoria per Claude Code):** dopo qualsiasi modifica ai file di questo repo effettuata in una sessione, prima di concludere il lavoro, rigenera l'Artifact del diagramma di flusso usando lo stesso `file_path` e la stessa chiamata di pubblicazione già usata in precedenza (redeploy sullo stesso URL, mai un nuovo Artifact). Questo vale per qualsiasi modifica al repo, non solo per modifiche a `wm-plan`.
 
@@ -147,14 +147,14 @@ Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esec
 
 **Template grafico congelato (obbligatorio per Claude Code):** il layout definito in oc:8283 — due colonne di pari altezza (diagramma Mermaid a sinistra, dettaglio fasi a destra con scroll interno), legenda a piena larghezza sotto, palette e tipografia definite — è la versione approvata e **non va ridisegnato** ad ogni rigenerazione. Ogni redeploy successivo deve limitarsi ad aggiornare il **contenuto** (nodi del diagramma, paragrafi di dettaglio, se una fase viene aggiunta/rinominata/rimossa in `wm-plan/SKILL.md`) mantenendo invariati struttura HTML, CSS e stile visivo. Se una modifica al repo non tocca il workflow di `wm-plan`, non è necessario alcun cambiamento al contenuto del diagramma stesso, ma il redeploy va comunque eseguito (vedi regola di rigenerazione sopra) per mantenere l'Artifact "vivo" sullo stesso URL.
 
-Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** qui sopra con il link reale.
+Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** in `SKILL.md` (non più qui) con il link reale.
 
 ## Decisioni architetturali
 
-### Fix diagramma header cross-repo in wm-plan
-- **Fetch remoto sempre, nessun fallback locale**: `### header: diagramma` legge sempre `CLAUDE.md` di `claude-marketplace` via `curl -sf` sull'URL raw GitHub, anche quando `wm-plan` gira dentro lo stesso repo `claude-marketplace` — scelta di semplicità del codice rispetto a un'ottimizzazione locale, accettata esplicitamente durante `Fase: challenge`
-- **`curl -sf`, non `curl -s`**: emerso in verifica che `curl -s` da solo non fallisce su risposte HTTP non-2xx (un 404 restituisce comunque exit code 0 con il body dell'errore) — il flag `-f` è necessario per distinguere realmente "fetch fallito" da "sezione assente nel contenuto"
-- **Due messaggi distinti per due fallimenti diversi**: `⚠️ Diagramma di flusso non verificabile` (fetch HTTP fallito) vs `📊 Diagramma di flusso: non ancora pubblicato` (fetch riuscito ma sezione/URL assente) — evita di far interpretare un problema di rete temporaneo come "Artifact mai pubblicato"
+### Fix path cross-repo header wm-plan (versione via cache plugin, URL diagramma via SKILL.md statico)
+- **`### header: versione` risolve il repo via cache plugin, non più via path relativo alla cwd**: il comando precedente (`realpath plugins/wm-skills/skills/wm-plan/SKILL.md` relativo alla cwd) funzionava solo se `wm-plan` veniva invocato da dentro il repo `claude-marketplace` — da qualsiasi altro repo falliva silenziosamente e il check versione andava sempre in `⚠️ Check versione non disponibile`. Fix: `find ~/.claude/plugins/cache -maxdepth 5 -path '*/wm-skills/*/skills/wm-plan/SKILL.md'` individua il path della skill installata indipendentemente dalla cwd, poi `git -C "$(dirname ...)" rev-parse --show-toplevel` deriva la root del repo in modo robusto (niente `../../../..` fisso)
+- **`### header: diagramma` non fa più fetch remoto di `CLAUDE.md`**: l'URL dell'Artifact è ora un valore statico scritto direttamente in `SKILL.md` invece che in `CLAUDE.md` — dato che l'URL cambia solo quando si modifica la skill stessa (stessa sessione in cui si aggiorna `SKILL.md`), tenerlo in `SKILL.md` lo mantiene intrinsecamente sincronizzato ad ogni `/plugin marketplace update`, elimina la dipendenza da rete/GitHub per questa parte dell'header, e non introduce rischio di staleness (a differenza di quanto temuto inizialmente in fase di discussione)
+- **Superata la decisione precedente "Fetch remoto sempre" per il diagramma**: la decisione originale di `curl -sf` su `raw.githubusercontent.com/.../CLAUDE.md` per leggere l'URL è superata da questo fix — resta valida solo per il check versione (`### header: versione`, hash `LOCAL_HASH` vs `REMOTE_HASH` via GitHub API), che continua a dover leggere un dato realmente remoto (l'ultimo commit su `main`)
 
 ### Intestazione ASCII per skill wm-plan con info versione/aggiornamenti e diagramma di flusso (oc:8283)
 - **Header mostrato solo alla prima invocazione di sessione**: nessun meccanismo di stato programmato — è una regola comportamentale in prosa che Claude segue, dato che le skill non hanno un tracciamento di sessione nativo garantito
