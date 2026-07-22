@@ -3,6 +3,61 @@ name: wm-plan
 description: "Use when asked to implement, build, add, or refactor a non-trivial feature — anything that touches multiple files, changes architecture, or introduces new behaviour. Do NOT invoke for simple bug fixes, typo corrections, or read-only questions."
 ---
 
+## Header di sessione
+
+**Mostra questa sezione solo alla prima invocazione di `wm-plan` in questa conversazione.** Se `wm-plan` è già stato invocato in precedenza in questa stessa sessione (es. richiamato una seconda volta per un altro ticket), salta l'intero Header di sessione e vai direttamente a `Fase: ticket`.
+
+**Nessuna narrazione prima, durante o dopo l'header.** Non annunciare cosa stai per fare ("ora leggo il CLAUDE.md", "faccio i check di versione", "vedo che hai eseguito wm-plan"), non commentare i comandi eseguiti, non introdurre l'header con un saluto. Il primo output della conversazione deve essere il banner stesso, seguito immediatamente — senza testo intermedio — dalle righe prodotte da `### header: versione` e `### header: diagramma`. Il tutto è un unico blocco di output compatto, poi si passa direttamente a `Fase: ticket` senza commento di transizione.
+
+Alla prima invocazione, mostra questo banner come primissimo output, prima di qualsiasi altro testo:
+
+```
+┌──────────────────────────────┐
+│         W M · P L A N         │
+└──────────────────────────────┘
+```
+
+Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra le informazioni di stato raccolte nelle sotto-sezioni seguenti (`### header: versione`, `### header: diagramma`), poi procedi a `Fase: ticket`.
+
+### header: versione
+
+Determina la path del repo marketplace installato (dove risiede questo `SKILL.md`) ed esegui:
+
+```bash
+cd "$(dirname "$(realpath plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null || echo .)")/../../../.." 2>/dev/null
+git rev-parse --abbrev-ref HEAD 2>/dev/null
+git status --porcelain -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null
+```
+
+**Se il branch non è `main` OPPURE `git status --porcelain` restituisce output non vuoto per `SKILL.md`:**
+
+Mostra:
+```
+🔧 modalità sviluppo locale — check versione saltato
+```
+e salta il resto di questa sotto-sezione (nessun confronto hash remoto).
+
+**Altrimenti (branch `main`, nessuna modifica locale non committata):**
+
+```bash
+LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null)
+REMOTE_HASH=$(curl -s "https://api.github.com/repos/webmappsrl/claude-marketplace/commits/main" | jq -r '.sha' 2>/dev/null)
+LOCAL_DATE=$(git log -1 --format=%ad --date=format:%Y-%m-%d -- plugins/wm-skills/skills/wm-plan/SKILL.md 2>/dev/null)
+```
+
+- Se `LOCAL_HASH` e `REMOTE_HASH` non sono ottenibili (rete assente, comando fallito, output vuoto): mostra `⚠️ Check versione non disponibile.` e prosegui senza bloccare.
+- Se `LOCAL_HASH` == `REMOTE_HASH`: mostra `✅ wm-plan aggiornato (ultima modifica: $LOCAL_DATE)`.
+- Se `LOCAL_HASH` != `REMOTE_HASH`: mostra `⬆️ Aggiornamento disponibile per wm-plan (ultima modifica locale: $LOCAL_DATE) — esegui \`/plugin marketplace update\` per aggiornare.`
+
+### header: diagramma
+
+Leggi la sezione `## Diagramma di flusso wm-plan` dal `CLAUDE.md` del repo target (root del progetto).
+
+- Se la sezione esiste e contiene un URL: mostra `📊 Diagramma di flusso: <URL>`
+- Se la sezione non esiste o non contiene un URL valido (Artifact non ancora pubblicato): mostra `📊 Diagramma di flusso: non ancora pubblicato` — non bloccare l'esecuzione della skill in nessun caso
+
+---
+
 # Webmapp Feature Workflow
 
 Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per feature o refactor non banali. Segui le fasi in ordine senza saltarne nessuna.
@@ -1008,6 +1063,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
+- [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Diagramma di flusso wm-plan`
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
