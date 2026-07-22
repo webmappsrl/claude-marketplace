@@ -696,6 +696,12 @@ NOW=$(date -u +"%Y-%m-%dT%H:%M:%S%z")
 
 Confronta `NOW` con `planning_start_at` (registrato in Fase: ticket) e calcola la differenza in ore — questo è un dato misurato, non stimato.
 
+**Se `planning_start_at` non è stato registrato** (es. la Fase: ticket è stata eseguita senza eseguire il comando `date -u` previsto), non calcolare una quota "misurata" fittizia e non presentarla come se il dato fosse disponibile. Segnala esplicitamente all'utente:
+
+> "⚠️ Non ho registrato il timestamp di inizio pianificazione in Fase: ticket — la quota 'Misurato' non è disponibile per questa stima. Propongo solo la quota 'Stimato', senza il confronto Misurato + Stimato = Totale."
+
+Poi procedi con la tabella sottostante omettendo la riga "Pianificazione" e il calcolo `<M>h`.
+
 Produci la stima con questa struttura:
 
 > **Stima proposta**
@@ -860,24 +866,53 @@ Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemen
 Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto.
 </HARD-GATE>
 
-Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`:
+Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`, il riepilogo del diff viene prodotto da un **subagente isolato**, non dal context principale — lo stesso principio di `challenge: subagent`: chi ha scritto/coordinato il codice tende a confermare le proprie scelte invece di valutarle a freddo; un subagente che non ha visto il ragionamento implementativo ha più probabilità di notare un'incongruenza tra intenzione e codice reale.
 
-1. Esegui `git diff --stat` e poi `git diff` per ogni repo coinvolto (principale + submodule).
-2. Presenta all'utente un riepilogo strutturato:
-   - File creati / modificati / eliminati per repo
-   - Breve descrizione del contenuto di ogni file significativo
-3. Chiedi conferma esplicita con questo messaggio:
+**Questo isolamento si applica sempre**, indipendentemente da quanto sia stata "pesante" l'implementazione e da quale entry point Superpowers sia stato usato (anche se `subagent-driven-development` ha già eseguito review isolate per-task e una review finale whole-branch, il riepilogo di review-gate resta comunque affidato a un subagente dedicato — è un controllo ridondante ma intenzionale, non un costo da evitare con soglie o condizioni).
 
-   > "Ho completato l'implementazione. Ecco il diff completo. **Rivedi il codice prima di procedere.** Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
+#### review-gate: subagent
+
+Lancia un subagente con questo prompt — e **nient'altro** (nessun riassunto della conversazione precedente, nessuna spiegazione di cosa è stato implementato o perché):
+
+```
+Nel repository al percorso <path-repo> (branch <nome-branch>), analizza le
+modifiche non ancora committate.
+
+Esegui, in questo ordine:
+1. `git diff --stat`
+2. `git diff --name-status --find-renames --find-copies` (per distinguere
+   correttamente rename/copy da coppie "nuovo file + file cancellato")
+3. `git diff` (diff completo)
+
+Produci un riepilogo strutturato:
+- File creati / modificati / eliminati / rinominati (usa l'esito del punto 2
+  per non descrivere un rename come "nuovo + cancellato")
+- Breve descrizione del contenuto di ogni file significativo
+
+Ripeti per ogni repo coinvolto se ne viene indicato più di uno (es. submodule).
+```
+
+Se sono coinvolti più repo (principale + submodule), passa al subagente l'elenco dei path da analizzare — questa è informazione strutturale (dove guardare), non il ragionamento implementativo che l'isolamento deve escludere.
+
+**Fallback fail-soft:** se lo spawn del subagente fallisce (errore tool, timeout, rate limit), segnala `⚠️ Impossibile isolare il riepilogo del diff — procedo mostrando il diff nel context principale.` ed esegui tu stesso, nel context principale, `git diff --stat` + `git diff` per ogni repo coinvolto, come comportamento di fallback. Non bloccare mai il workflow per questo motivo.
+
+#### review-gate: dialog
+
+1. Presenta all'utente il riepilogo prodotto dal subagente (o dal fallback).
+2. Chiedi conferma esplicita con questo messaggio:
+
+   > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo prima di procedere** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
    >
    > 💡 **Review formale opzionale:** vuoi eseguire una code review strutturata prima dei commit? Invoca `wm-skills:wm-review-ticket oc:<ID>` per finder paralleli e aggiornamento automatico del ticket. Rispondi **sì** per eseguirla ora, **no** per procedere direttamente ai commit.
+   >
+   > ℹ️ **Differenza con la review formale:** questo riepilogo del subagente è un controllo obbligatorio e leggero (solo diff strutturato). `wm-review-ticket` è un'analisi più approfondita e opzionale.
 
-4. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
-5. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase: notes e la Fase: update-context — così tutti i file vengono inclusi nello stesso commit.
-6. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
+3. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
+4. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase: notes e la Fase: update-context — così tutti i file vengono inclusi nello stesso commit.
+5. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+6. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
-**Nessuna eccezione.** Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
+**Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
 ### execution: formal-review
 
