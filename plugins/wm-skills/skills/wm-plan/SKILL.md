@@ -5,11 +5,11 @@ description: "Use when asked to implement, build, add, or refactor a non-trivial
 
 ## Header di sessione
 
-**Mostra questa sezione solo alla prima invocazione di `wm-plan` in questa conversazione.** Se `wm-plan` è già stato invocato in precedenza in questa stessa sessione (es. richiamato una seconda volta per un altro ticket), salta l'intero Header di sessione e vai direttamente a `Fase: ticket`.
+**Mostra questa sezione ad ogni invocazione di `wm-plan`, senza eccezioni.** Anche se `wm-plan` è già stato invocato in precedenza nella stessa conversazione (es. richiamato una seconda volta per un altro ticket), l'Header di sessione va comunque mostrato per intero prima di procedere a `Fase: ticket`.
 
-**Nessuna narrazione prima, durante o dopo l'header.** Non annunciare cosa stai per fare ("ora leggo il CLAUDE.md", "faccio i check di versione", "vedo che hai eseguito wm-plan"), non commentare i comandi eseguiti, non introdurre l'header con un saluto. Il primo output della conversazione deve essere il banner stesso, seguito immediatamente — senza testo intermedio — dalle righe prodotte da `### header: versione` e `### header: diagramma`. Il tutto è un unico blocco di output compatto, poi si passa direttamente a `Fase: ticket` senza commento di transizione.
+**Nessuna narrazione prima, durante o dopo l'header.** Non annunciare cosa stai per fare ("ora leggo il CLAUDE.md", "faccio i check di versione", "vedo che hai eseguito wm-plan"), non commentare i comandi eseguiti, non introdurre l'header con un saluto. Il primo output di ogni invocazione deve essere il banner stesso, seguito immediatamente — senza testo intermedio — dalle righe prodotte da `### header: versione` e `### header: diagramma`. Il tutto è un unico blocco di output compatto, poi si passa direttamente a `Fase: ticket` senza commento di transizione.
 
-Alla prima invocazione, mostra questo banner come primissimo output, prima di qualsiasi altro testo:
+Ad ogni invocazione, mostra questo banner come primissimo output, prima di qualsiasi altro testo:
 
 ```
 ┌──────────────────────────────┐
