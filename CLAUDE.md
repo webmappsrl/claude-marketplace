@@ -65,6 +65,7 @@ Alcune skill condividono un contratto su artefatti o comportamenti. Quando modif
 | `wm-plan` | `wm-review-ticket` | `wm-plan` è fonte autoritativa del contratto artefatti `docs/features/<slug>/`. `wm-review-ticket` lo referenzia, non lo duplica. Modificare la struttura artefatti richiede solo aggiornare `wm-plan`. |
 | `wm-tag` | `wm-plan` | `wm-tag` invoca `wm-plan` in tag-mode passando titolo, tipo, repo e TAG_ID. `wm-plan` è responsabile di reverse-interaction, overview, challenge, estimation e scrittura della description del ticket. `wm-tag` gestisce tag, lista ticket e loop. |
 | `wm-plan` | `wm-tag` | `caso-c` in Fase: ticket switcha su `wm-tag` cedendo il controllo del flusso. |
+| `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path/istruzioni, nessun riassunto della conversazione precedente). Se il pattern di isolamento cambia in una sotto-fase, verificare se va aggiornato anche nell'altra. |
 
 ### Convenzioni di naming
 
@@ -136,6 +137,14 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Decisioni architetturali
 
+### Clear del context in wm-plan dopo reverse-interaction e dopo implementation (oc:8282)
+- **Nessun clear reale del context principale**: il pivot deciso durante la Fase: reverse-interaction ha scartato l'idea di "svuotare" il context — l'isolamento si ottiene solo delegando a subagenti nei punti dove serve un giudizio non contaminato dal ragionamento pregresso (motivazione primaria: indipendenza di giudizio, non economia di context)
+- **`Fase: overview` resta invariata**: scritta dal context principale, perché in quel punto del workflow il context è ancora leggero e chi ha condotto `reverse-interaction` ha un vantaggio informativo che un subagente isolato non recupererebbe da un riassunto di seconda mano
+- **`execution: review-gate` isola sempre il riepilogo del diff**, senza soglie né eccezioni per la skill di implementazione usata — anche la ridondanza con le review per-task di `subagent-driven-development` è accettata come controllo doppio intenzionale
+- **`--find-renames --find-copies` obbligatori** nel subagente di review-gate, per non descrivere un file rinominato come "nuovo + cancellato"
+- **Il riepilogo del subagente non sostituisce mai la lettura del diff da parte del developer** — resta un ausilio di orientamento, il gate reale è l'approvazione esplicita del developer sul diff completo
+- **Coordinamento tra sottoagenti paralleli durante l'implementazione è fuori scope**: già gestito da `subagent-driven-development` (esecuzione sequenziale, non parallela, con ledger di progresso) — eventuali miglioramenti vanno proposti upstream su `obra/superpowers`, non in `wm-skills`
+
 ### Rivedere criteri di stima ore in wm-plan (oc:8278)
 - **Classificazione per-componente invece di buffer forfettario**: ogni componente della stima è "scrittura pura" (zero domande aperte dopo overview+challenge, buffer 0%) o "decisioni aperte" (UX/reverse-engineering legacy, buffer 20-30%) — motivato da analisi Orchestrator su ticket luglio 2026 che mostrava overstima sistematica su task ben specificati
 - **Buffer di integrazione trasversale 5%**: separato dal buffer per-componente, copre il rischio di interazione tra componenti che nessun componente singolo cattura
@@ -178,3 +187,4 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 | wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |
 | wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
 | Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |
+| Clear del context in wm-plan dopo reverse-interaction e dopo implementation | oc:8282 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Isolamento sempre attivo del riepilogo diff in `execution: review-gate` tramite subagente cieco (stesso pattern di `challenge`); fallback esplicito se `planning_start_at` non è stato registrato in `Fase: estimation` |
