@@ -359,7 +359,105 @@ Dal JSON restituito estrai:
 - `description` → note tecniche già raccolte, può orientare le domande in Fase: reverse-interaction
 - `type` → orienta il tono dell'overview
 
+Se `type == "Help desk"`, esegui `### ticket: caso-a-split-detection` prima di mostrare qualunque riepilogo. Altrimenti procedi direttamente al riepilogo standard sotto.
+
 Mostra all'utente un riepilogo del ticket letto prima di procedere alla Fase: init-context.
+
+### ticket: caso-a-split-detection
+
+Analizza `customer_request` e determina, con giudizio diretto sul testo (nessuna euristica meccanica su keyword o conteggio paragrafi), se contiene **più richieste distinte** scritte dal cliente in un unico ticket.
+
+- **Se rilevi una sola richiesta:** non fare nulla, prosegui al riepilogo standard di `caso-a` come oggi.
+- **Se rilevi N ≥ 2 richieste distinte:** estrai N partizioni di testo **verbatim** (nessuna riformulazione), in ordine di apparizione nel testo originale. Genera anche un titolo sintetico per ciascuna partizione. Poi mostra:
+
+  > **Rilevate {N} richieste distinte nel ticket oc:{ID} ("{name originale}"):**
+  >
+  > | # | Ruolo | Titolo proposto | Testo (verbatim) |
+  > |---|---|---|---|
+  > | 1 | Ticket originale (rinominato) | `{titolo sintetico 1}` | "{partizione 1}" |
+  > | 2 | Nuovo ticket | `{titolo sintetico 2}` | "{partizione 2}" |
+  > | ... | | | |
+  >
+  > Procedo con lo split? (puoi modificare titoli o testo prima di confermare)
+
+  Attendi conferma esplicita.
+
+  - **Se l'utente rifiuta:** il ticket originale resta intatto, prosegui al riepilogo standard di `caso-a` come oggi (nessuno split).
+  - **Se l'utente conferma (con eventuali modifiche a titoli/testo):** procedi con `### ticket: caso-a-split-execution`.
+
+### ticket: caso-a-split-execution
+
+Esegui le scritture seguendo comunque `## Orchestrator API → Regola generale scritture` (preview tabellare + conferma esplicita per ogni singola chiamata, anche se il contenuto è già stato approvato nel riepilogo di `caso-a-split-detection`):
+
+1. **PATCH sul ticket originale `oc:{ID}`:**
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"name": "<titolo sintetico 1>", "customer_request": "<partizione 1 verbatim>"}'
+```
+
+Tag e `creator_id` del ticket originale non vengono toccati da questa PATCH.
+
+2. **POST per ciascuna partizione 2..N:**
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"name": "<titolo sintetico N>", "type": "Help desk", "customer_request": "<partizione N verbatim>", "creator_id": <creator_id originale>, "tags": [<id tag originali>]}'
+```
+
+`type` è sempre `"Help desk"` — nessuna riclassificazione automatica in questa fase. Salva l'`id` restituito per ogni ticket creato. Mostra `✅ Ticket oc:<nuovo-ID> creato.` per ciascuno.
+
+3. **Tag di raggruppamento opzionale (uso interno dev):**
+
+Chiedi:
+
+> "Vuoi raggruppare questi {N} ticket in un tag?"
+
+- **Se sì:**
+  - Cerca tra i tag del ticket originale uno riconoscibile come identificativo cliente (es. `ass_cammini_italia`). Se trovato, proponi nome default `<tag-cliente>-<titolo originale kebab-case>`.
+  - Se nessun tag è riconoscibile come cliente, chiedi al dev di indicare manualmente il nome cliente da usare.
+  - Il dev può modificare il nome proposto prima della creazione.
+  - Crea il tag (stesso endpoint di `wm-skills:wm-tag`):
+
+```bash
+ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
+TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
+curl -s -X POST "$ORCHESTRATOR_URL/api/tags" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"name": "<nome-tag>", "description": "<customer_request originale completo, pre-split>"}'
+```
+
+  - Associa il tag restituito a tutti i ticket del gruppo (originale + nuovi) tramite PATCH `tags` su ciascuno (preview + conferma per ciascuna PATCH, come da regola generale).
+- **Se no:** salta questo step, nessun tag creato.
+
+4. **Selezione ticket su cui continuare:**
+
+Mostra l'elenco di tutti i ticket del gruppo:
+
+> **Ticket generati dallo split di oc:{ID originale}:**
+>
+> | Ticket | Titolo |
+> |---|---|
+> | oc:{ID originale} | {titolo 1} |
+> | oc:{nuovo ID 2} | {titolo 2} |
+> | ... | |
+>
+> Su quale vuoi continuare il workflow ora? (oppure "nessuno" per tornare al menu)
+
+- **Se l'utente sceglie un ticket:** prosegui il workflow in `Fase: init-context` usando i dati già noti di quel ticket (senza rifare la GET).
+- **Se l'utente risponde "nessuno":** torna al menu A/B/C di `Fase: ticket`.
 
 ### ticket: progress
 
