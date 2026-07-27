@@ -1,0 +1,551 @@
+<title>wm-plan — Diagramma di flusso</title>
+<style>
+  :root {
+    --ink: #1b2430;
+    --ink-soft: #4a5560;
+    --paper: #edeff0;
+    --panel: #ffffff;
+    --line: #b9c2c9;
+    --accent: #b85c28;
+    --accent-soft: #e4c3ac;
+    --steel: #3b6e8f;
+    --good: #3f7d53;
+    --violet: #6d4a9c;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #e7ebee;
+      --ink-soft: #a7b2bc;
+      --paper: #14181c;
+      --panel: #1b2126;
+      --line: #333d45;
+      --accent: #e08a4f;
+      --accent-soft: #4a3324;
+      --steel: #7fb3d5;
+      --good: #6bbf86;
+      --violet: #b295d8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e7ebee;
+    --ink-soft: #a7b2bc;
+    --paper: #14181c;
+    --panel: #1b2126;
+    --line: #333d45;
+    --accent: #e08a4f;
+    --accent-soft: #4a3324;
+    --steel: #7fb3d5;
+    --good: #6bbf86;
+    --violet: #b295d8;
+  }
+  :root[data-theme="light"] {
+    --ink: #1b2430;
+    --ink-soft: #4a5560;
+    --paper: #edeff0;
+    --panel: #ffffff;
+    --line: #b9c2c9;
+    --accent: #b85c28;
+    --accent-soft: #e4c3ac;
+    --steel: #3b6e8f;
+    --good: #3f7d53;
+    --violet: #6d4a9c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 56px 28px 80px;
+  }
+
+  .intro {
+    max-width: 74ch;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 28px;
+    align-items: stretch;
+    margin-bottom: 40px;
+  }
+
+  .layout > .schematic,
+  .layout > .detail-panel {
+    height: 100%;
+  }
+
+  @media (max-width: 980px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .layout > .schematic,
+    .layout > .detail-panel {
+      height: auto;
+    }
+
+    .detail-panel {
+      max-height: 70vh;
+    }
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--steel);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    background: var(--steel);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.6rem, 3.6vw, 2.3rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 14px 0 6px;
+    text-wrap: balance;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 1rem;
+    max-width: 62ch;
+    line-height: 1.55;
+    margin: 0 0 34px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 5px 10px;
+    color: var(--ink-soft);
+    background: var(--panel);
+  }
+
+  .schematic {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 34px 22px 22px;
+  }
+
+  .schematic::before,
+  .schematic::after,
+  .corner-br,
+  .corner-bl {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--accent);
+    border-style: solid;
+  }
+  .schematic::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .schematic::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .schematic-label {
+    position: absolute;
+    top: -11px;
+    left: 20px;
+    background: var(--panel);
+    padding: 0 8px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .diagram-scroll {
+    overflow-x: auto;
+  }
+
+  pre.mermaid {
+    display: flex;
+    justify-content: center;
+    min-width: 560px;
+  }
+
+  section.legend {
+    margin-bottom: 40px;
+  }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px 24px;
+  }
+
+  .legend-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .swatch {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 6px;
+    border-radius: 2px;
+  }
+
+  .legend-item h3 {
+    margin: 0 0 3px;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .legend-item p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .swatch.phase { background: var(--steel); }
+  .swatch.gate { background: var(--accent); }
+  .swatch.branch { background: var(--good); }
+  .swatch.subagent { background: var(--violet); }
+  .swatch.external {
+    background: none;
+    border: 1.5px dashed var(--ink-soft);
+  }
+
+  .detail-panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 34px 22px 22px;
+    overflow-y: auto;
+  }
+
+  .detail-panel::before,
+  .detail-panel::after,
+  .detail-panel .corner-bl,
+  .detail-panel .corner-br {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--steel);
+    border-style: solid;
+  }
+  .detail-panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .detail-panel::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .detail-panel .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .detail-panel .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .detail-panel .schematic-label {
+    color: var(--steel);
+  }
+
+  .detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .detail-item h3 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .detail-item .tag {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .tag.phase { color: var(--steel); border: 1px solid var(--steel); }
+  .tag.gate { color: var(--accent); border: 1px solid var(--accent); }
+  .tag.subagent { color: var(--violet); border: 1px solid var(--violet); }
+  .tag.branch { color: var(--good); border: 1px solid var(--good); }
+
+  .detail-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 62ch;
+  }
+
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+  }
+
+  footer a {
+    color: var(--steel);
+  }
+
+  a { color: var(--steel); }
+</style>
+
+<div class="page">
+  <div class="eyebrow">wm-skills · claude-marketplace</div>
+  <h1>wm-plan — diagramma di flusso</h1>
+  <p class="sub">
+    Mappa delle fasi eseguite da <code>wm-plan</code>, dalla creazione del ticket
+    Orchestrator fino alla checklist di completamento. Ogni modifica al repo
+    <code>claude-marketplace</code> rigenera questo diagramma sullo stesso URL.
+  </p>
+
+  <div class="meta-row">
+    <span class="chip">skill: wm-plan</span>
+    <span class="chip">repo: webmappsrl/claude-marketplace</span>
+    <span class="chip">rif: split ticket Help desk multi-richiesta</span>
+  </div>
+
+  <div class="layout">
+  <div class="schematic">
+    <span class="schematic-label">workflow</span>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+    <div class="diagram-scroll">
+<pre class="mermaid">
+flowchart TD
+    T["Fase: ticket\nMenu A/B/C — collega o crea il ticket Orchestrator"] --> ENV["Fase: environment-setup\nRileva stack, Docker, UX detection"]
+    T -. caso C .-> TAG(["wm-skills:wm-tag\ntrascrizione/brief → tag + ticket"])
+    T -. caso A, Help desk .-> SPLIT{{"ticket: caso-a-split-detection\nSubagente cieco — rileva richieste multiple"}}
+    SPLIT -- 1 sola richiesta --> ENV
+    SPLIT -- "N ≥ 2 richieste, dev conferma" --> SPLITEXE["ticket: caso-a-split-execution\nPATCH originale (1ª richiesta) + POST per ogni richiesta successiva"]
+    SPLITEXE -. tag opzionale .-> SPLITTAG(["POST /api/tags\nraggruppamento uso interno dev"])
+    SPLITEXE --> ENV
+
+    ENV --> INIT["Fase: init-context\nLegge il CLAUDE.md del progetto target"]
+    ENV -. se UI rilevata .-> UXSKILL(["ui-ux-pro-max\nconsiglio UX/UI su richiesta"])
+
+    INIT --> REV["Fase: reverse-interaction\nDialogo socratico, minimo 5 domande"]
+    REV --> OV["Fase: overview\nScrive overview.md, approvazione utente"]
+    OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
+    CH --> TYPE{"Tipo ticket?"}
+    TYPE -- Feature --> EST["Fase: estimation\nStima per-componente, approvata dal dev"]
+    TYPE -- Bug / Task --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
+    EST --> WP
+    WP -. delega a .-> WPLAN(["superpowers:writing-plans\ngenera plan.md da briefing"])
+
+    WP --> EXE["Fase: execution"]
+    EXE --> BR[["execution: branch\nHARD-GATE — crea branch dedicato"]]
+    BR --> IMPL["execution: implementation"]
+    IMPL -. delega a .-> IMPLSKILL(["subagent-driven-development /\nexecuting-plans / brainstorming"])
+
+    IMPL --> GATE{{"execution: review-gate\nHARD-GATE — subagente cieco riassume il diff"}}
+    GATE -. opzionale .-> REVSKILL(["wm-skills:wm-review-ticket\nreview formale prima dei commit"])
+
+    GATE --> NOTES["Fase: notes\nRegistra deviazioni e decisioni on-the-fly"]
+    NOTES --> CTX["Fase: update-context\nAggiorna CLAUDE.md del progetto"]
+    CTX --> DONE["Checklist di completamento\nVerifica che tutti gli artefatti esistano"]
+
+    classDef phase fill:#3b6e8f,stroke:#3b6e8f,color:#fff;
+    classDef gate fill:#b85c28,stroke:#b85c28,color:#fff,stroke-width:3px;
+    classDef subagent fill:#6d4a9c,stroke:#6d4a9c,color:#fff;
+    classDef external fill:none,stroke:#8a94a0,color:#8a94a0,stroke-dasharray: 4 3;
+    classDef branch fill:#3f7d53,stroke:#3f7d53,color:#fff;
+
+    class T,ENV,INIT,REV,OV,EST,WP,EXE,IMPL,NOTES,CTX,DONE,SPLITEXE phase;
+    class BR,GATE gate;
+    class CH,SPLIT subagent;
+    class TAG,UXSKILL,WPLAN,IMPLSKILL,REVSKILL,SPLITTAG external;
+    class TYPE branch;
+</pre>
+    </div>
+  </div>
+
+  <div class="detail-panel">
+    <span class="schematic-label">dettaglio fasi</span>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+    <div class="detail-list">
+      <div class="detail-item">
+        <h3>Fase: ticket<span class="tag phase">fase</span></h3>
+        <p>Il punto di ingresso del workflow: presenta all'utente un menu a tre opzioni. Caso A collega un ticket Orchestrator già esistente leggendone titolo, richiesta cliente e note tecniche via API; caso B crea un ticket nuovo a partire da una descrizione fornita al momento; caso C rileva che l'input è una trascrizione o un brief cliente e cede subito il controllo a <code>wm-tag</code>, che estrae più ticket raggruppati in un tag Orchestrator. Solo dopo aver stabilito l'ID (o l'assenza di uno) il workflow prosegue verso l'ambiente.</p>
+      </div>
+      <div class="detail-item">
+        <h3>ticket: caso-a-split-detection<span class="tag subagent">rilevamento</span></h3>
+        <p>Attiva solo quando il ticket letto in caso A ha <code>type: "Help desk"</code>: analizza <code>customer_request</code> con giudizio diretto sul testo (nessuna euristica su keyword) per capire se contiene più richieste distinte del cliente in un unico ticket. Se ne trova N ≥ 2, mostra un riepilogo con partizioni verbatim (nessuna riformulazione) e chiede conferma esplicita prima di qualsiasi scrittura.</p>
+      </div>
+      <div class="detail-item">
+        <h3>ticket: caso-a-split-execution<span class="tag phase">fase</span></h3>
+        <p>Dopo conferma, la prima richiesta (in ordine di apparizione) resta sul ticket originale via PATCH (rinominato, <code>customer_request</code> ridotto); ogni richiesta successiva diventa un nuovo ticket via POST, sempre <code>type: "Help desk"</code>, con <code>creator_id</code> e tag replicati dal ticket originale — così il cliente resta visibile come creatore. Un tag di raggruppamento opzionale (uso interno dev, default <code>&lt;customer&gt;-&lt;titolo&gt;</code>) può collegare tutti i ticket del gruppo. Al termine, il dev sceglie su quale ticket continuare il workflow.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: environment-setup<span class="tag phase">fase</span></h3>
+        <p>Normalizza l'ambiente prima di qualsiasi altra operazione: rileva lo stack tecnologico (Laravel, frontend Vue/Angular/React, fullstack), la presenza di submodule e Docker, e valuta se la feature ha componenti UI abbastanza rilevanti da richiedere il parere di <code>ui-ux-pro-max</code>. È una fase fail-soft — un Docker daemon spento o un check fallito non bloccano mai il resto del workflow, producono solo un avviso.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: init-context<span class="tag phase">fase</span></h3>
+        <p>Legge il <code>CLAUDE.md</code> del repo target per estrarre stack, convenzioni di test, struttura delle cartelle e istruzioni specifiche del team. È tenuta volutamente separata dal rilevamento tecnico di environment-setup perché rappresenta un atto diverso: comprendere le convenzioni del progetto, non misurarne lo stack.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: reverse-interaction<span class="tag phase">fase</span></h3>
+        <p>Un dialogo socratico obbligatorio, una domanda alla volta: minimo cinque domande, ciascuna costruita sulla risposta precedente, mai preparate in anticipo. Prima di ogni domanda la fase impone di cercare la risposta nel codice e nel database locale — solo se entrambe le ricerche falliscono la domanda viene posta, arricchita da un consiglio di best practice esplicito. È la fase con più vincoli procedurali dell'intero workflow.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: overview<span class="tag phase">fase</span></h3>
+        <p>Trasforma quanto emerso dal dialogo in un documento strutturato — cosa cambia, perché, requisiti, rischi, out of scope, moduli toccati — salvato in <code>docs/features/&lt;slug&gt;/overview.md</code>. Se la feature coinvolge più repo (submodule), ogni repo riceve il proprio overview: la documentazione segue il codice, non si accentra artificialmente nel repo principale. Richiede approvazione esplicita dell'utente prima di proseguire.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: challenge<span class="tag subagent">subagente isolato</span></h3>
+        <p>Un subagente che riceve in pasto solo il percorso di <code>overview.md</code> — nessun riassunto della conversazione precedente — con l'unico mandato di trovare criticità sui cinque assi: assunzioni fragili, rischi architetturali, blind spot, worst case, difficoltà di rollback. L'isolamento è deliberato: garantisce un giudizio non contaminato dall'ottimismo accumulato nel dialogo precedente. L'esito viene poi discusso con l'utente un asse alla volta, in ordine di criticità.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: estimation<span class="tag branch">solo Feature</span></h3>
+        <p>Eseguita solo se il ticket è di tipo Feature — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. Ogni componente viene classificato come "scrittura pura" (buffer 0%) o "decisioni aperte" (buffer 20-30%), a cui si somma un buffer di integrazione trasversale del 5% se i componenti sono più di uno. La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: write-plan<span class="tag phase">fase</span></h3>
+        <p>Costruisce un briefing strutturato da tutti gli overview approvati — requisiti, rischi, moduli, vincoli tecnici — e lo passa a <code>superpowers:writing-plans</code>, che lo trasforma in un piano di task bite-sized salvato in <code>plan.md</code>. Il briefing esiste perché <code>writing-plans</code> non ha memoria della conversazione: senza di esso partirebbe cieco.</p>
+      </div>
+      <div class="detail-item">
+        <h3>execution: branch<span class="tag gate">hard-gate</span></h3>
+        <p>Un cancello duro, non aggirabile: nessun file può essere creato o modificato prima che esista un branch dedicato alla feature, con o senza ticket Orchestrator. Il nome deriva sempre dallo slug della feature, ripetuto identico in ogni submodule coinvolto.</p>
+      </div>
+      <div class="detail-item">
+        <h3>execution: implementation<span class="tag phase">fase</span></h3>
+        <p>Sceglie l'entry point Superpowers più adatto al piano — <code>brainstorming</code> se restano dubbi, <code>executing-plans</code> per task lineari, <code>subagent-driven-development</code> per task paralleli su più domini — dichiarando sempre la motivazione della scelta. Prima di invocarlo impone un override esplicito: nessun commit automatico, per nessun motivo, nemmeno a fine task.</p>
+      </div>
+      <div class="detail-item">
+        <h3>execution: review-gate<span class="tag gate">hard-gate</span></h3>
+        <p>Il secondo cancello duro: dopo l'implementazione, un subagente cieco (stesso pattern di challenge, con <code>--find-renames --find-copies</code> per non travisare i file rinominati) riassume il diff completo, ma il riepilogo non sostituisce mai la lettura diretta da parte del developer — resta un ausilio di orientamento. Solo un'approvazione esplicita ("procedi con i commit", non un "ok" generico) sblocca i commit.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: notes<span class="tag phase">fase</span></h3>
+        <p>Registra in <code>notes.md</code> ogni deviazione dal piano, bug scoperti durante l'implementazione, decisioni prese al volo e falsi negativi di classificazione emersi rispetto alla stima iniziale. Un notes.md con "nessuna deviazione" è valido; la sua assenza non lo è mai.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: update-context<span class="tag phase">fase</span></h3>
+        <p>Aggiorna il <code>CLAUDE.md</code> del progetto target con una riga nella tabella "Feature disponibili" e un nuovo blocco in cima a "Decisioni architetturali" — le decisioni recenti sono le più rilevanti per chi lavorerà sul repo in futuro, quindi vanno in cima, non in coda.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Checklist di completamento<span class="tag phase">fase</span></h3>
+        <p>Verifica finale che overview, plan e notes esistano davvero nel filesystem — sempre, con o senza ticket — e che il <code>CLAUDE.md</code> sia stato aggiornato. Se esiste un ticket Orchestrator, aggiunge la scelta dello status finale, il link alla documentazione e le bozze di nota tecnica e risposta cliente, entrambe da approvare esplicitamente prima dell'invio.</p>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <section class="legend">
+    <h2>Chiave di lettura</h2>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <span class="swatch phase"></span>
+        <div>
+          <h3>Fase</h3>
+          <p>Uno step sequenziale del workflow, eseguito nel contesto principale della conversazione.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch gate"></span>
+        <div>
+          <h3>Hard-gate</h3>
+          <p>Punto di blocco esplicito: nessun file può essere toccato o commit eseguito prima dell'approvazione richiesta.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch branch"></span>
+        <div>
+          <h3>Diramazione</h3>
+          <p>Il percorso cambia in base al tipo di ticket (Feature vs Bug/Task) o al caso scelto in Fase: ticket.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch subagent"></span>
+        <div>
+          <h3>Subagente isolato</h3>
+          <p>Fase delegata a un subagente cieco che riceve solo un file da leggere (overview.md o il diff), senza riassunto della conversazione precedente — garantisce un giudizio non contaminato dal ragionamento già fatto nel contesto principale.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch external"></span>
+        <div>
+          <h3>Chiamata a skill esterna</h3>
+          <p>Il controllo passa (temporaneamente o in modo definitivo) a una skill diversa da <code>wm-plan</code> — <code>wm-tag</code>, <code>writing-plans</code>, <code>subagent-driven-development</code>, <code>wm-review-ticket</code> o <code>ui-ux-pro-max</code>, a seconda del ramo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>wm-plan v1.1.0 · split automatico ticket Help desk multi-richiesta</span>
+    <span><a href="https://github.com/webmappsrl/claude-marketplace">webmappsrl/claude-marketplace</a></span>
+  </footer>
+</div>
