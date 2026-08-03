@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.1.0
+**Versione installata:** v1.1.1
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.1.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.1.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -132,28 +132,30 @@ Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono esegu
 
 ### tag-mode: creazione ticket con overview
 
-Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. La `description` deve contenere il testo completo dell'overview in una sezione `## Overview`:
+Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. Il campo `description` è renderizzato da un editor WYSIWYG lato Orchestrator (nessun parsing Markdown): costruisci il contenuto in **HTML**, non in Markdown, convertendo la struttura canonica dell'overview 1:1 in tag HTML (`<h2>`/`<h3>` per le sezioni, `<p>` per il testo, `<ul><li>` per liste e requisiti):
 
-```
-## Overview
+```html
+<h2>Overview</h2>
 
-### Cosa cambia
-<testo>
+<h3>Cosa cambia</h3>
+<p><testo></p>
 
-### Perché
-<testo>
+<h3>Perché</h3>
+<p><testo></p>
 
-### Requisiti
-- [ ] ...
+<h3>Requisiti</h3>
+<ul>
+  <li><requisito></li>
+</ul>
 
-### Rischi
-<testo>
+<h3>Rischi</h3>
+<p><testo></p>
 
-### Out of scope
-<testo>
+<h3>Out of scope</h3>
+<p><testo></p>
 
-### Moduli toccati
-<testo>
+<h3>Moduli toccati</h3>
+<p><testo></p>
 ```
 
 Mostra preview e chiedi conferma (regola generale scritture):
@@ -165,7 +167,7 @@ Mostra preview e chiedi conferma (regola generale scritture):
 > | `name` | `<titolo>` |
 > | `type` | `<tipo>` |
 > | `customer_request` | `<prime 200 caratteri...>` |
-> | `description` | `## Overview\n### Cosa cambia\n<prime 200 caratteri...>` |
+> | `description` | `<h2>Overview</h2><h3>Cosa cambia</h3><p><prime 200 caratteri...>` |
 > | `estimated_hours` | `<N>` |
 > | `tags` | `[<tag-id>]` |
 >
@@ -180,7 +182,7 @@ curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"name": "<titolo>", "type": "<tipo>", "customer_request": "<testo>", "description": "<overview-markdown>", "estimated_hours": <N>, "tags": [<tag-id>]}'
+  -d '{"name": "<titolo>", "type": "<tipo>", "customer_request": "<testo>", "description": "<overview-html>", "estimated_hours": <N>, "tags": [<tag-id>]}'
 ```
 
 Al termine mostra: `✅ Ticket oc:<ID> creato e associato al tag <nome-tag>.`
@@ -498,7 +500,7 @@ description:
 <approccio tecnico iniziale, da raffinare dopo le fasi successive>
 ```
 
-Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
+Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Il campo `description` è renderizzato da un editor WYSIWYG (nessun parsing Markdown): se il testo approvato usa formattazione (titoli, liste, grassetto), convertila in tag HTML equivalenti (`<h3>`, `<ul><li>`, `<strong>`) prima di inviarla nel payload — non inviare Markdown grezzo. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
 
 **Il ticket va creato prima di procedere alla Fase: init-context.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
 
