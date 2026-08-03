@@ -485,7 +485,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>execution: review-gate<span class="tag gate">hard-gate</span></h3>
-        <p>Il secondo cancello duro: dopo l'implementazione, un subagente cieco (stesso pattern di challenge, con <code>--find-renames --find-copies</code> per non travisare i file rinominati) riassume il diff completo, ma il riepilogo non sostituisce mai la lettura diretta da parte del developer — resta un ausilio di orientamento. Solo un'approvazione esplicita ("procedi con i commit", non un "ok" generico) sblocca i commit.</p>
+        <p>Il secondo cancello duro: dopo l'implementazione, un subagente cieco (stesso pattern di challenge, con <code>--find-renames --find-copies</code> per non travisare i file rinominati) riassume il diff completo, ma il riepilogo non sostituisce mai la lettura diretta da parte del developer — resta un ausilio di orientamento. Se il repo è Laravel con PHPStan configurato in CI, prima della conferma commit gira anche un check PHPStan automatico: errori sul diff corrente o fallimenti infrastrutturali bloccano di default, con un override sempre motivato e tracciato in <code>notes.md</code>; il debito preesistente fuori dal diff non blocca ma propone un ticket dedicato. Solo un'approvazione esplicita ("procedi con i commit", non un "ok" generico) sblocca i commit.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: notes<span class="tag phase">fase</span></h3>

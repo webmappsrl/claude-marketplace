@@ -236,6 +236,8 @@ fi
 
 Prepara il riepilogo tecnico della review (finding, esito, eventuali azioni richieste) e mostra il preview all'utente prima di inviare.
 
+Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi il riepilogo in HTML (`<h3>`/`<p>`/`<ul><li>`, `<strong>` per il verdetto) prima di inviarlo nel payload della PATCH — non inviare il Markdown dell'output di Fase 5d as-is.
+
 Leggi gli status disponibili da:
 ```
 https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryStatus.php
