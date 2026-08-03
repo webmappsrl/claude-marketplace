@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.1.2
+**Versione installata:** v1.1.3
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.1.2` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.1.3` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -565,6 +565,10 @@ git submodule status 2>/dev/null
 
 # 4. Rileva cartelle frontend Laravel
 ls resources/views/ resources/js/components/ 2>/dev/null | head -3
+
+# 5. Rileva PHPStan configurato (file di config + step CI)
+ls phpstan.neon phpstan.neon.dist 2>/dev/null
+grep -ilr "phpstan" .github/workflows/ 2>/dev/null
 ```
 
 **Flag interni da impostare:**
@@ -582,6 +586,8 @@ ls resources/views/ resources/js/components/ 2>/dev/null | head -3
 | `stack_ui` | `react` | trovato `react` |
 | `stack_ui` | `laravel-blade` | `stack_type: laravel` + trovata `resources/views/` |
 | `stack_ui` | `false` | nessun segnale |
+| `has_phpstan_ci` | `true` | trovato `phpstan.neon`/`phpstan.neon.dist` nella root **E** keyword `phpstan` (case-insensitive) in almeno un file `.github/workflows/*.yml` |
+| `has_phpstan_ci` | `false` | manca almeno una delle due condizioni |
 
 ### environment-setup: domain-mapping
 
@@ -1066,9 +1072,58 @@ Se sono coinvolti più repo (principale + submodule), passa al subagente l'elenc
 
 **Fallback fail-soft:** se lo spawn del subagente fallisce (errore tool, timeout, rate limit), segnala `⚠️ Impossibile isolare il riepilogo del diff — procedo mostrando il diff nel context principale.` ed esegui tu stesso, nel context principale, `git diff --stat` + `git diff` per ogni repo coinvolto, come comportamento di fallback. Non bloccare mai il workflow per questo motivo.
 
+#### review-gate: phpstan-check
+
+Eseguito **solo se `has_phpstan_ci: true`**, subito dopo `review-gate: subagent` e prima di `review-gate: dialog`.
+
+**Esecuzione:**
+
+```bash
+if [ "$has_docker" = "true" ]; then
+  timeout 300 docker compose -f local.compose.yml exec -T "$DOCKER_PROJECT_DIR_NAME" vendor/bin/phpstan analyse --error-format=json
+else
+  timeout 300 vendor/bin/phpstan analyse --error-format=json
+fi
+PHPSTAN_EXIT=$?
+```
+
+- **`PHPSTAN_EXIT` diverso da 0 e diverso da 1** (comando non trovato, crash, timeout — `timeout` restituisce `124` allo scadere) → **fallimento infrastrutturale**. Tratta questo caso come un blocco (vedi `review-gate: phpstan-override` sotto), con motivazione di default proposta: "PHPStan non è riuscito a completare l'analisi (exit code $PHPSTAN_EXIT) — verificare ambiente/timeout."
+- **`PHPSTAN_EXIT` == 1** (PHPStan ha girato e ha trovato errori) → prosegui al cross-check diff sotto.
+- **`PHPSTAN_EXIT` == 0** → nessun errore, nessun blocco, prosegui direttamente a `review-gate: dialog`.
+
+**Cross-check diff vs preesistenti (solo se `PHPSTAN_EXIT == 1`):**
+
+```bash
+git diff --name-only > /tmp/wm-plan-diff-files.txt
+# Incrocia i file riportati negli errori PHPStan (`.file` nel JSON) con /tmp/wm-plan-diff-files.txt
+```
+
+- Per ogni errore riportato da PHPStan, verifica se il file corrispondente è presente in `/tmp/wm-plan-diff-files.txt`.
+- **Se almeno un errore è su un file del diff corrente** → blocco (vedi `review-gate: phpstan-override` sotto), motivazione di default: "PHPStan ha trovato N errori sui file modificati in questo task."
+- **Se tutti gli errori sono su file fuori dal diff corrente** (debito preesistente) → nessun blocco. Presenta all'utente:
+
+  > "PHPStan ha trovato N errori preesistenti su file non toccati da questa feature ([lista file]). Vuoi che crei un ticket Orchestrator separato per tracciare questo debito tecnico?"
+
+  Se sì, crea il ticket seguendo `## Orchestrator API → Creazione ticket` (preview + conferma, `type: "Task"`, `name` sintetico, `customer_request` con l'elenco degli errori). Poi prosegui a `review-gate: dialog` senza bloccare il commit.
+
+#### review-gate: phpstan-override
+
+Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff corrente o fallimento infrastrutturale).
+
+1. Presenta all'utente gli errori/il fallimento riscontrato.
+2. Proponi (o deduci dal contesto) una motivazione per un eventuale bypass — es. "Errore preesistente in un file limitrofo non toccato direttamente" o "Falso positivo noto di PHPStan su questo pattern".
+3. Mostra la motivazione proposta in preview e chiedi al dev di confermarla o modificarla.
+4. Chiedi conferma esplicita e distinta dalla conferma generica di commit di `review-gate: dialog`, con questo messaggio:
+
+   > "PHPStan blocca il commit per [errori di codice sul diff / fallimento infrastrutturale]. Vuoi bypassare questo blocco specifico? Verrà registrato in notes.md con la motivazione: \"[motivazione confermata]\"."
+
+5. Solo se il dev conferma esplicitamente il bypass (non basta il "procedi" generico del punto 3 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
+6. Se il dev non conferma il bypass, il workflow resta bloccato su questo punto: nessun commit finché gli errori non sono risolti o il bypass non viene confermato.
+
 #### review-gate: dialog
 
 1. Presenta all'utente il riepilogo prodotto dal subagente (o dal fallback).
+1bis. Se `has_phpstan_ci: true`, esegui `review-gate: phpstan-check` ora, prima di procedere al punto 2. Se ne emerge un blocco, gestiscilo con `review-gate: phpstan-override` prima di continuare.
 2. Chiedi conferma esplicita con questo messaggio:
 
    > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo prima di procedere** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
