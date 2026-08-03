@@ -131,6 +131,8 @@ Proponi il nome al dev e attendi conferma:
 
 Analizza il testo del brief/trascrizione e produce la descrizione del tag in Markdown. **Non essere scarno: ogni macro area deve contenere abbastanza contesto da capire cosa vuole il cliente senza dover rileggere la trascrizione.**
 
+Il campo `description` dei tag è renderizzato da un editor Markdown (Toast UI, non un WYSIWYG HTML): resta in Markdown, a differenza del campo `description` dei ticket (`Story`), che invece è HTML — non convertire.
+
 ```markdown
 **Fonte:** <URL Drive o "Testo fornito in chat">
 
