@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.1.3
+**Versione installata:** v1.2.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.1.3` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.2.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -859,10 +859,26 @@ In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a writ
 
 ### estimation: analisi
 
-Basandoti sull'overview approvato e sull'esito della Fase: challenge, classifica ogni componente della stima in una di due categorie:
+Il ticket viene eseguito da un agente Claude Code in una sessione continua, non da uno sviluppatore umano con context-switch, riunioni e digitazione manuale — la stima deve modellare il costo reale di **questo** modo di lavorare, non un dev-hours generico calibrato su un ritmo umano. Un moltiplicatore unico applicato al solo tempo di scrittura codice (es. "tempo macchina × 2") si è dimostrato inaffidabile: nasconde dentro un solo numero rischi di natura diversa che vanno stimati separatamente.
 
-- **Scrittura pura** — zero domande aperte residue su "come deve comportarsi" dopo overview + challenge (specifica già completa: campi, endpoint, comportamento, edge case). Buffer 0%.
-- **Decisioni aperte** — restano scelte UX/comportamentali da prendere, o reverse-engineering di comportamento legacy non documentato. Buffer 20-30%.
+Scomponi sempre la stima in tre voci indipendenti:
+
+**A. Tempo di esecuzione (macchina), per componente**
+
+Per ogni componente del piano, stima il tempo che impiegheresti tu stesso a scrivere codice e test seguendo il piano approvato. Nessun buffer percentuale qui: è il tuo tempo di scrittura, sei nella posizione migliore per stimarlo con precisione diretta.
+
+**B. Buffer di novità del dominio (valore assoluto, una sola volta sull'intera feature — mai una percentuale per-componente)**
+
+Chiediti: esiste già nel codebase un pattern equivalente a quello che sto per scrivere (stessa forma di relazione, stesso tipo di Nova Resource, stesso genere di scoping)?
+
+- **Pattern noto, già visto altrove nel codebase** → +20-30 min
+- **Prima entità/pattern del suo genere, nessun precedente locale da cui copiare** → +1-2h
+
+Questo buffer copre un rischio specifico e diverso da "requisiti poco chiari": bug di comportamento che **solo il test manuale sull'interfaccia reale può far emergere**, non la fase di challenge (che riduce il rischio sui requisiti noti, non sui difetti di implementazione verificabili solo usando l'interfaccia). Più la feature è priva di precedenti nel codebase, più è probabile che esistano e vengano scoperti in QA — non prima.
+
+**C. Deliverable extra dichiarati a priori**
+
+Se in Fase: reverse-interaction o Fase: challenge è già chiaro che la feature richiederà, oltre al codice, anche documentazione utente, screenshot, guide o altri artefatti non di codice, aggiungi una riga dedicata con stima propria. Non va assunta "gratis" dentro il tempo di esecuzione, né scoperta a metà implementazione quando il dev la richiede.
 
 **Calcola il tempo di pianificazione misurato:**
 
@@ -882,23 +898,26 @@ Produci la stima con questa struttura:
 
 > **Stima proposta**
 >
-> | Componente | Classificazione | Ore | Buffer | Note |
-> |---|---|---|---|---|
-> | Pianificazione (ticket → reverse-interaction → overview → challenge → estimation) | — | \<M\>h (misurata) | — | Timestamp reali: \<planning_start_at\> → \<NOW\> |
-> | \<componente 1\> | Scrittura pura / Decisioni aperte | \<X\>h | 0% / 20-30% | \<motivazione tecnica\> |
-> | \<componente 2\> | Scrittura pura / Decisioni aperte | \<Y\>h | 0% / 20-30% | \<motivazione tecnica\> |
-> | Buffer integrazione trasversale (solo se più di un componente) | — | — | 5% sul totale implementazione | Rischio di interazione tra componenti, non attribuibile a un singolo componente |
+> | Componente | Ore | Note |
+> |---|---|---|
+> | Pianificazione (ticket → reverse-interaction → overview → challenge → estimation) | \<M\>h (misurata) | Timestamp reali: \<planning_start_at\> → \<NOW\> |
+> | \<componente 1\> (tempo di esecuzione) | \<X\>h | \<motivazione tecnica\> |
+> | \<componente 2\> (tempo di esecuzione) | \<Y\>h | \<motivazione tecnica\> |
+> | Buffer integrazione trasversale (solo se più di un componente) | \<Z\>h | 5% sul totale dei tempi di esecuzione (A) |
+> | Buffer novità di dominio | \<B\>h | Pattern noto (+20-30min) / Prima nel suo genere (+1-2h) — \<motivazione: cosa esiste già nel codebase o cosa manca\> |
+> | Deliverable extra (solo se previsti) | \<D\>h | es. documentazione utente con screenshot, guida, asset |
 >
 > **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h**
 >
 > Confidenza: alta / media / bassa
-> *(alta = requisiti chiari e stack noto; media = qualche incertezza tecnica; bassa = dipendenze esterne o requisiti aperti)*
+> *(alta = pattern noto nel codebase e requisiti chiari; media = pattern noto ma alcune incertezze tecniche residue; bassa = prima entità del suo genere senza precedenti locali, o dipendenze esterne)*
 
 Regole per la stima:
-- Il buffer rischio è sempre per-componente (0% scrittura pura, 20-30% decisioni aperte), mai un unico valore forfettario finale
-- Aggiungi il buffer di integrazione trasversale (5% sul totale implementazione, esclusa la pianificazione) solo quando la feature coinvolge più di un componente
-- La confidenza deve essere coerente con i rischi emersi nella Fase: challenge
-- Non stimare meno di 0.5h per qualsiasi feature che tocchi più di un file (era 1h)
+- Il buffer di novità dominio (B) è un valore assoluto sull'intera feature, mai una percentuale applicata ai singoli componenti: è un rischio di natura diversa da "requisiti aperti" (quelli li ha già chiusi la Fase: reverse-interaction/challenge) e non si somma bene come percentuale dello stesso numero
+- I deliverable extra (C) vanno dichiarati esplicitamente in questa fase se già prevedibili dal contesto raccolto, non aggiunti a stima già scritta quando il dev li richiede a sorpresa
+- Il buffer di integrazione trasversale si applica solo al totale dei tempi di esecuzione (A), non al buffer di novità dominio
+- Confidenza bassa di default per qualsiasi feature "prima nel suo genere" nel codebase, anche con overview e challenge solidi — quelle fasi riducono il rischio sui requisiti noti, non sui bug di comportamento verificabili solo in QA manuale
+- Non stimare meno di 0.5h per qualsiasi feature che tocchi più di un file
 - Il coefficiente di velocità per-dev NON va applicato in questo ciclo — resta out of scope
 
 ### estimation: conferma
@@ -919,7 +938,7 @@ Mostra il preview della modifica e chiedi conferma prima di eseguire:
 > |-------|--------|
 > | `estimated_hours` | `<N>` |
 >
-> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `[stima v2 — per-componente] Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
+> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `[stima v3 — tempo agente + novità dominio] Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
 >
 > Procedo?
 
@@ -935,7 +954,7 @@ curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -d '{"estimated_hours": <N>}'
 ```
 
-Il marcatore `[stima v2 — per-componente]` identifica le stime prodotte con questo criterio, distinguendole nei dati storici Orchestrator da quelle prodotte con il criterio precedente (buffer forfettario unico) — necessario per validare in cicli futuri se il nuovo criterio riduce davvero il bias di overstima.
+Il marcatore `[stima v3 — tempo agente + novità dominio]` identifica le stime prodotte con questo criterio, distinguendole nei dati storici Orchestrator dai criteri precedenti (`v2 — per-componente`, buffer percentuale su dev-hours; e quello ancora precedente, buffer forfettario unico) — necessario per validare in cicli futuri se il nuovo criterio riduce davvero lo scarto tra stima e tempo reale.
 
 Se il PATCH fallisce (risposta non 2xx), avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
 
@@ -1032,7 +1051,7 @@ Se durante l'implementazione emerge un problema non previsto nell'overview e nel
 
 > "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
 
-Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale, mantenendo lo stesso marcatore di versione (`[stima v2 — per-componente]`) usato in `estimation: scrittura su Orchestrator`.
+Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale, mantenendo lo stesso marcatore di versione (`[stima v3 — tempo agente + novità dominio]`) usato in `estimation: scrittura su Orchestrator`.
 
 Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
 
