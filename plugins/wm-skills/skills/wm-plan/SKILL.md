@@ -876,6 +876,23 @@ Chiediti: esiste già nel codebase un pattern equivalente a quello che sto per s
 
 Questo buffer copre un rischio specifico e diverso da "requisiti poco chiari": bug di comportamento che **solo il test manuale sull'interfaccia reale può far emergere**, non la fase di challenge (che riduce il rischio sui requisiti noti, non sui difetti di implementazione verificabili solo usando l'interfaccia). Più la feature è priva di precedenti nel codebase, più è probabile che esistano e vengano scoperti in QA — non prima.
 
+**Dove collocarsi dentro la forbetta: due indicatori misurabili, non a sentimento.**
+
+Le due forbette sopra sono ampie. Per scegliere se stare al minimo o al massimo, usa questi due numeri — entrambi disponibili a piano scritto, entrambi oggettivi:
+
+1. **Quanti file elenca la sezione "Moduli toccati"** dell'overview. Indicativamente: 1-3 file → estremo basso della forbetta; 4-10 → centro; oltre 10 → estremo alto.
+2. **Quanti file leggono il simbolo che stai modificando**, quando la modifica tocca qualcosa di condiviso (un case di enum, un metodo di trait, una costante, una firma di interfaccia). Si ottiene con un comando:
+
+   ```bash
+   grep -rl "<NomeSimbolo>" app/ database/ routes/ resources/ | wc -l
+   ```
+
+   Se i **lettori** sono molti più dei file toccati, colloca il buffer **verso l'estremo alto** anche quando la feature sembra minima in scrittura.
+
+Il secondo indicatore copre un modo di sbagliare che il solo asse "pattern noto/ignoto" non vede: **il punto di lettura dimenticato**. Una feature può essere di pattern notissimo e di peso minimo in scrittura (aggiungere un case a un enum: una riga) e avere comunque decine di punti da verificare, perché le liste di stati/tipi/ruoli sono tipicamente hardcodate in posti non centralizzati. Il rischio non è un bug di comportamento nuovo, è una lista che nessuno ha aggiornato — e non lo si scopre in QA su una schermata, ma settimane dopo su un conteggio sbagliato.
+
+**Non trasformare questi indicatori in una matrice né in un secondo buffer sommato**: restano criteri per posizionarsi dentro l'unica forbetta scelta al punto precedente. Il buffer di novità dominio resta **uno**, in valore assoluto, sull'intera feature.
+
 **C. Deliverable extra dichiarati a priori**
 
 Se in Fase: reverse-interaction o Fase: challenge è già chiaro che la feature richiederà, oltre al codice, anche documentazione utente, screenshot, guide o altri artefatti non di codice, aggiungi una riga dedicata con stima propria. Non va assunta "gratis" dentro il tempo di esecuzione, né scoperta a metà implementazione quando il dev la richiede.
@@ -938,7 +955,7 @@ Mostra il preview della modifica e chiedi conferma prima di eseguire:
 > |-------|--------|
 > | `estimated_hours` | `<N>` |
 >
-> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `[stima v3 — tempo agente + novità dominio] Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
+> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
 >
 > Procedo?
 
@@ -954,7 +971,7 @@ curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
   -d '{"estimated_hours": <N>}'
 ```
 
-Il marcatore `[stima v3 — tempo agente + novità dominio]` identifica le stime prodotte con questo criterio, distinguendole nei dati storici Orchestrator dai criteri precedenti (`v2 — per-componente`, buffer percentuale su dev-hours; e quello ancora precedente, buffer forfettario unico) — necessario per validare in cicli futuri se il nuovo criterio riduce davvero lo scarto tra stima e tempo reale.
+**Nessun marcatore di versione della metodologia va scritto nella nota.** La stima di un ticket parte **sempre** dal presupposto che l'esecuzione avvenga con un LLM: è il default, non una variante da segnalare. Un marcatore suggerirebbe che esista ancora una baseline alternativa in dev-hours umane, che non è più il caso.
 
 Se il PATCH fallisce (risposta non 2xx), avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
 
@@ -1051,7 +1068,7 @@ Se durante l'implementazione emerge un problema non previsto nell'overview e nel
 
 > "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
 
-Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale, mantenendo lo stesso marcatore di versione (`[stima v3 — tempo agente + novità dominio]`) usato in `estimation: scrittura su Orchestrator`.
+Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale.
 
 Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
 
