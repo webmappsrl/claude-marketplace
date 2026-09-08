@@ -249,7 +249,7 @@ Per ogni ticket nella lista approvata, nell'ordine:
 1. Annuncia: "Processo ticket \<N\>/\<TOT\>: **\<titolo\>**"
 2. Invoca `wm-skills:wm-plan` passando questo contesto nel tuo messaggio di invocazione:
    - Titolo del ticket
-   - Tipo (Feature / Bug / Task)
+   - Tipo (uno dei valori validi dell'enum `StoryType` — leggilo come descritto in `wm-skills:wm-plan` → `## Orchestrator API → Tipi disponibili`)
    - Repo di destinazione (path da `repos.json`)
    - ID tag padre (`<TAG_ID>`)
    - Flag `tag-mode: true`

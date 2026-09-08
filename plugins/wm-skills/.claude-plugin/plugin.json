@@ -1,6 +1,6 @@
 {
   "name": "wm-skills",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Skill interne del team Webmapp: convenzioni di codice, checklist PR, processo di deploy",
   "author": {
     "name": "Webmapp"
