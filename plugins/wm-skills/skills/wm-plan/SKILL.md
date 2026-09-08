@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.2.0
+**Versione installata:** v1.2.1
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.2.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.2.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -108,7 +108,7 @@ find docs/features/ -maxdepth 1 -type d | grep "<ID>"
 
 `wm-plan` può essere invocato da `wm-skills:wm-tag` in **tag-mode**. In questo caso riceve nel contesto della conversazione:
 - Titolo del ticket da creare
-- Tipo (Feature / Bug / Task)
+- Tipo (uno dei valori validi dell'enum `StoryType` — vedi `## Orchestrator API → Tipi disponibili`)
 - Repo di destinazione (ricavabile da `~/.config/webmapp/repos.json`)
 - ID del tag padre su Orchestrator
 - Flag esplicito `tag-mode: true`
@@ -300,6 +300,16 @@ https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StorySt
 ```
 
 Estrai i valori dell'enum e presentali all'utente come lista numerata. Suggerisci quello più appropriato al contesto ma aspetta sempre la scelta esplicita dell'utente.
+
+### Tipi disponibili (letti dinamicamente)
+
+Prima di proporre un tipo di ticket o di costruire un payload che contiene il campo `type`, leggi i valori aggiornati da:
+
+```
+https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryType.php
+```
+
+Estrai i valori dell'enum e usa **solo** quelli. Attenzione: il valore da inviare è il **valore stringa** del case, non il nome del case (i due possono differire). Non dedurre un tipo dal senso comune né riusare un valore visto altrove: un `type` non presente nell'enum viene rifiutato dall'API con `422 — Il valore selezionato per type non è valido`.
 
 ### Campi accettati (letti dinamicamente)
 
@@ -853,7 +863,7 @@ Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, agg
 
 ## Fase: estimation
 
-**Eseguita solo se il ticket è di tipo Feature.** Per Bug, Task o altri tipi, salta questa fase e procedi direttamente a `Fase: write-plan`.
+**Eseguita solo se il ticket è di tipo `Feature`.** Per qualsiasi altro tipo dell'enum `StoryType` (vedi `## Orchestrator API → Tipi disponibili`), salta questa fase e procedi direttamente a `Fase: write-plan`.
 
 In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a write-plan).
 
@@ -1140,7 +1150,7 @@ git diff --name-only > /tmp/wm-plan-diff-files.txt
 
   > "PHPStan ha trovato N errori preesistenti su file non toccati da questa feature ([lista file]). Vuoi che crei un ticket Orchestrator separato per tracciare questo debito tecnico?"
 
-  Se sì, crea il ticket seguendo `## Orchestrator API → Creazione ticket` (preview + conferma, `type: "Task"`, `name` sintetico, `customer_request` con l'elenco degli errori). Poi prosegui a `review-gate: dialog` senza bloccare il commit.
+  Se sì, crea il ticket seguendo `## Orchestrator API → Creazione ticket` (preview + conferma, `name` sintetico, `customer_request` con l'elenco degli errori). Per il campo `type` usa `type: "<tipo-da-StoryType>"`: leggi l'enum come descritto in `## Orchestrator API → Tipi disponibili` e scegli il valore che rappresenta un intervento di manutenzione pianificato — non inventare un valore né darne uno per scontato. Poi prosegui a `review-gate: dialog` senza bloccare il commit.
 
 #### review-gate: phpstan-override
 
