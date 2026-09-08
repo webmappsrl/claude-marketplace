@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.2.0
+**Versione installata:** v1.3.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.2.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.3.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -1195,6 +1195,17 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
 - **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
 - **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.
+- **Divergenze dal piano: annotarle nel piano con un rimando, non riscriverlo.** Quando l'implementazione devia da un task di `plan.md`, il contenuto della divergenza va scritto **una sola volta**, in `notes.md`, sotto una sezione `## Divergenze dal piano, task per task` con un sottotitolo `### <task>` per ciascuna. In `plan.md`, all'inizio del task divergente, va una riga sola che rimanda alla nota:
+
+  ```markdown
+  > ⚠️ L'implementazione ha deviato da questo task: [notes.md](notes.md#task-4-registrazione-condizionale)
+  ```
+
+  Motivo: tiene separate due domande — "cosa avevamo deciso" (il piano) e "cosa è successo" (le note) — senza che il piano possa ingannare chi lo apre a metà, senza sapere che quel pezzo è superato. Le alternative sono tutte peggiori: riscrivere il piano cancella la storia del cambiamento, lasciarlo muto trae in inganno, duplicare il testo nei due file crea due verità che divergono al primo aggiornamento. In più un'ancora rotta è verificabile a macchina, una spiegazione duplicata no.
+
+  **Nota tecnica:** l'ancora segue lo slug GitHub del titolo (minuscolo, punteggiatura rimossa, spazi convertiti in trattini) e va verificata dopo averla scritta.
+
+  **Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione — in quel caso conviene riscriverlo invece di continuare ad annotarlo.
 
 **Struttura consigliata:**
 
