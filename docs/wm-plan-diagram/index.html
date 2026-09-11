@@ -372,7 +372,7 @@
   <div class="meta-row">
     <span class="chip">skill: wm-plan</span>
     <span class="chip">repo: webmappsrl/claude-marketplace</span>
-    <span class="chip">rif: split ticket Help desk multi-richiesta</span>
+    <span class="chip">rif: tipi ticket letti da StoryType</span>
   </div>
 
   <div class="layout">
@@ -399,7 +399,7 @@ flowchart TD
     OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
     CH --> TYPE{"Tipo ticket?"}
     TYPE -- Feature --> EST["Fase: estimation\nStima per-componente, approvata dal dev"]
-    TYPE -- Bug / Task --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
+    TYPE -- altri tipi --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
     EST --> WP
     WP -. delega a .-> WPLAN(["superpowers:writing-plans\ngenera plan.md da briefing"])
 
@@ -469,7 +469,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: estimation<span class="tag branch">solo Feature</span></h3>
-        <p>Eseguita solo se il ticket è di tipo Feature — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. Ogni componente viene classificato come "scrittura pura" (buffer 0%) o "decisioni aperte" (buffer 20-30%), a cui si somma un buffer di integrazione trasversale del 5% se i componenti sono più di uno. La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
+        <p>Eseguita solo se il ticket è di tipo <code>Feature</code> — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. La stima presuppone sempre l'esecuzione da parte di un agente, e si scompone in tre voci indipendenti: tempo di esecuzione per componente (nessun buffer percentuale), un buffer di novità di dominio in valore assoluto una sola volta sull'intera feature (+20-30 min se il pattern esiste già nel codebase, +1-2h se è il primo del suo genere), ed eventuali deliverable extra dichiarati a priori. Il tempo di pianificazione non è stimato ma misurato da timestamp reali, e mostrato separato: «Misurato + Stimato = Totale». La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: write-plan<span class="tag phase">fase</span></h3>
@@ -524,7 +524,7 @@ flowchart TD
         <span class="swatch branch"></span>
         <div>
           <h3>Diramazione</h3>
-          <p>Il percorso cambia in base al tipo di ticket (Feature vs Bug/Task) o al caso scelto in Fase: ticket.</p>
+          <p>Il percorso cambia in base al tipo di ticket (<code>Feature</code> vs gli altri valori dell'enum <code>StoryType</code>) o al caso scelto in Fase: ticket.</p>
         </div>
       </div>
       <div class="legend-item">
@@ -545,7 +545,7 @@ flowchart TD
   </section>
 
   <footer>
-    <span>wm-plan v1.1.0 · split automatico ticket Help desk multi-richiesta</span>
+    <span>wm-plan v1.2.1 · tipi ticket letti dinamicamente da StoryType</span>
     <span><a href="https://github.com/webmappsrl/claude-marketplace">webmappsrl/claude-marketplace</a></span>
   </footer>
 </div>
