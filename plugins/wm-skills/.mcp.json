@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "orchestrator": {
+      "command": "${CLAUDE_PLUGIN_ROOT}/bin/orchestrator-mcp",
+      "env": {
+        "ORCHESTRATOR_MCP_GROUPS": "tags"
+      }
+    }
+  }
+}

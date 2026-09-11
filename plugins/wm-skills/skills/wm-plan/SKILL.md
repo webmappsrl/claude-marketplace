@@ -21,11 +21,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.2.1
+**Versione installata:** v1.3.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.2.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.3.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -108,7 +108,7 @@ find docs/features/ -maxdepth 1 -type d | grep "<ID>"
 
 `wm-plan` può essere invocato da `wm-skills:wm-tag` in **tag-mode**. In questo caso riceve nel contesto della conversazione:
 - Titolo del ticket da creare
-- Tipo (uno dei valori validi dell'enum `StoryType` — vedi `## Orchestrator API → Tipi disponibili`)
+- Tipo (uno dei valori ammessi per `type` in `create_story`/`update_story`)
 - Repo di destinazione (ricavabile da `~/.config/webmapp/repos.json`)
 - ID del tag padre su Orchestrator
 - Flag esplicito `tag-mode: true`
@@ -123,7 +123,7 @@ In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
 4. `Fase: overview` — produce l'overview con la struttura canonica
 5. `Fase: challenge` — analisi adversariale sull'overview
 6. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
-7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`, `tags` (tag padre)
+7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`; il tag padre si associa **dopo**, con `attach_story_to_tag`, mai passando `tags` a `create_story`
 8. **Stop** — restituisce il controllo a `wm-tag`
 
 Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**.
@@ -158,172 +158,38 @@ Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket
 <p><testo></p>
 ```
 
-Mostra preview e chiedi conferma (regola generale scritture):
+Chiama `create_story` con `name`, `type`, `customer_request`, `description` (l'overview in HTML) ed `estimated_hours`, prima senza `confirm` per mostrare al dev l'anteprima calcolata dal tool, poi con `confirm: true` dopo l'approvazione esplicita.
 
-> **Creazione ticket**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `name` | `<titolo>` |
-> | `type` | `<tipo>` |
-> | `customer_request` | `<prime 200 caratteri...>` |
-> | `description` | `<h2>Overview</h2><h3>Cosa cambia</h3><p><prime 200 caratteri...>` |
-> | `estimated_hours` | `<N>` |
-> | `tags` | `[<tag-id>]` |
->
-> Procedo?
-
-Solo dopo la conferma:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"name": "<titolo>", "type": "<tipo>", "customer_request": "<testo>", "description": "<overview-html>", "estimated_hours": <N>, "tags": [<tag-id>]}'
-```
+Salvato l'`id` del ticket restituito, associalo al tag padre con `attach_story_to_tag` (`tag_id`, `story_id`) — mai passando `tags` a `create_story`/`update_story`, che sostituirebbe l'intero elenco — di nuovo prima senza `confirm` poi con `confirm: true`.
 
 Al termine mostra: `✅ Ticket oc:<ID> creato e associato al tag <nome-tag>.`
 
 ---
 
-## Orchestrator API
+## Orchestrator
 
-Queste istruzioni valgono per tutte le chiamate HTTP a Orchestrator. Usale ogni volta che una fase richiede di leggere o scrivere un ticket.
+Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, distribuito con questo plugin. Non costruire chiamate HTTP a mano.
 
-### Configurazione
+| Operazione | Tool |
+|---|---|
+| Leggere un ticket | `get_story` |
+| Creare un ticket | `create_story` |
+| Modificare un ticket | `update_story` |
+| Utente corrente | `me` |
+| Tag: elenco, lettura, creazione, modifica | `list_tags`, `get_tag`, `create_tag`, `update_tag` |
+| Associare o togliere un ticket da un tag | `attach_story_to_tag`, `detach_story_from_tag` |
 
-- **URL base:** leggi `$ORCHESTRATOR_URL` dall'environment. Se non è impostata usa `https://orchestrator.maphub.it` come default.
-- **Auth:** salvato in `~/.config/webmapp/orchestrator-auth.json` (JSON con campi `token`, `id`, `name`, `email`). Se il file non esiste o la chiamata restituisce 401, esegui il login (vedi sotto). Se esiste solo il file legacy `~/.config/webmapp/orchestrator-token`, esegui la migrazione (vedi sotto).
+**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri.
 
-### Login (solo se auth assente o scaduto)
+**Tipi e stati.** Non scrivere valori a memoria: il tool rifiuta i valori fuori elenco e ti dice quali sono ammessi.
 
-Chiedi email e password all'utente, poi:
+**Formato dei campi.** `description` e `customer_request` di un ticket sono resi da un editor visuale: vanno scritti in HTML, non in Markdown. La `description` di un tag è invece in Markdown.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(curl -s -X POST "$ORCHESTRATOR_URL/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"<email>","password":"<password>"}' \
-  | jq -r '.token')
-USER=$(curl -s -X GET "$ORCHESTRATOR_URL/api/me" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json")
-mkdir -p ~/.config/webmapp
-echo $USER | jq --arg token "$TOKEN" '. + {token: $token}' > ~/.config/webmapp/orchestrator-auth.json
-```
+**Associazione a un tag.** Usa `attach_story_to_tag`, mai il campo `tags` di `update_story`: quel campo sostituisce l'elenco completo e cancella i tag già presenti.
 
-### Migrazione da file legacy (solo se `orchestrator-auth.json` assente ma `orchestrator-token` presente)
+**Credenziali.** Il server legge `~/.config/webmapp/orchestrator-auth.json`. Se un tool segnala credenziali assenti o scadute, guida il dev a rifare l'accesso; il server non lo fa da sé e non chiede mai la password.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(cat ~/.config/webmapp/orchestrator-token)
-USER=$(curl -s -X GET "$ORCHESTRATOR_URL/api/me" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json")
-echo $USER | jq --arg token "$TOKEN" '. + {token: $token}' > ~/.config/webmapp/orchestrator-auth.json
-```
-
-Se `GET /api/me` risponde 401 durante la migrazione, il token legacy è scaduto: cancella `orchestrator-token` ed esegui il login completo sopra.
-
-### Lettura ticket (GET — nessuna conferma richiesta)
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-Se risponde 401: cancella il file auth e ripeti il login prima di ritentare.
-
-### Creazione ticket (POST — richiede conferma esplicita)
-
-Prima di eseguire, mostra un riepilogo tabellare e chiedi conferma esplicita:
-
-> **Creazione ticket**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `<campo>` | `<valore>` |
->
-> Procedo?
-
-Solo dopo la conferma:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '<json payload>'
-```
-
-Salva l'ID restituito (`$.id`) come `<ID>` del ticket per il resto del workflow.
-
-### Aggiornamento ticket (PATCH — richiede conferma esplicita)
-
-Prima di eseguire, mostra sempre un riepilogo tabellare:
-
-> **Aggiornamento ticket oc:\<ID\>**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `<campo>` | `<valore>` |
-> | `<campo>` | `<valore>` |
->
-> Procedo?
-
-Solo dopo la conferma:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '<json payload>'
-```
-
-### Status disponibili (letti dinamicamente)
-
-Prima di proporre uno status, leggi i valori aggiornati da:
-
-```
-https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryStatus.php
-```
-
-Estrai i valori dell'enum e presentali all'utente come lista numerata. Suggerisci quello più appropriato al contesto ma aspetta sempre la scelta esplicita dell'utente.
-
-### Tipi disponibili (letti dinamicamente)
-
-Prima di proporre un tipo di ticket o di costruire un payload che contiene il campo `type`, leggi i valori aggiornati da:
-
-```
-https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryType.php
-```
-
-Estrai i valori dell'enum e usa **solo** quelli. Attenzione: il valore da inviare è il **valore stringa** del case, non il nome del case (i due possono differire). Non dedurre un tipo dal senso comune né riusare un valore visto altrove: un `type` non presente nell'enum viene rifiutato dall'API con `422 — Il valore selezionato per type non è valido`.
-
-### Campi accettati (letti dinamicamente)
-
-Prima di costruire un payload POST o PATCH, leggi i campi validati da:
-
-```
-https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Http/Requests/Api/StoryApiRequest.php
-```
-
-Usa solo i campi presenti nelle `rules()` del Form Request. Non inviare campi non dichiarati.
-
-### Regola generale scritture
-
-**Qualsiasi operazione di scrittura su Orchestrator (POST o PATCH) richiede conferma esplicita con preview della modifica prima di eseguire la chiamata HTTP. Nessuna eccezione.**
+**Se i tool non sono disponibili** (server non avviato o in errore), segnalalo al dev, poi leggi `${CLAUDE_PLUGIN_ROOT}/shared/orchestrator-fallback.md` e segui quelle istruzioni per questa sessione. Non ricostruire le chiamate a memoria: quel file è l'unica forma ammessa di ripiego.
 
 ---
 
@@ -353,17 +219,9 @@ In base alla scelta:
 
 ### ticket: caso-a
 
-Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket via API seguendo `## Orchestrator API → Lettura ticket`:
+Se l'utente scrive `oc:<ID>` (con o senza contenuto aggiuntivo), leggi il ticket chiamando `get_story` con `story_id: <ID>`.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json 2>/dev/null)
-curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-Se il file auth non esiste, controlla se esiste `~/.config/webmapp/orchestrator-token` ed esegui la migrazione (vedi `## Orchestrator API → Migrazione da file legacy`). Se la risposta è 401, cancella il file auth ed esegui il login completo.
+Se il tool segnala credenziali assenti o scadute, guida il dev a rifare l'accesso (vedi `## Orchestrator → Credenziali`).
 
 Dal JSON restituito estrai:
 - `name` → titolo, usato per il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>`
@@ -399,33 +257,13 @@ Analizza `customer_request` e determina, con giudizio diretto sul testo (nessuna
 
 ### ticket: caso-a-split-execution
 
-Esegui le scritture seguendo comunque `## Orchestrator API → Regola generale scritture` (preview tabellare + conferma esplicita per ogni singola chiamata, anche se il contenuto è già stato approvato nel riepilogo di `caso-a-split-detection`):
+Esegui le scritture seguendo comunque la regola generale sulle scritture del server `orchestrator` (anteprima senza `confirm` + conferma esplicita per ogni singola chiamata, anche se il contenuto è già stato approvato nel riepilogo di `caso-a-split-detection`):
 
-1. **PATCH sul ticket originale `oc:{ID}`:**
+1. **Aggiorna il ticket originale `oc:{ID}`:** chiama `update_story` con `story_id: {ID}`, `name: "<titolo sintetico 1>"`, `customer_request: "<partizione 1 verbatim>"`, prima senza `confirm` per l'anteprima, poi con `confirm: true`.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"name": "<titolo sintetico 1>", "customer_request": "<partizione 1 verbatim>"}'
-```
+Tag e `creator_id` del ticket originale non vengono toccati da questa chiamata.
 
-Tag e `creator_id` del ticket originale non vengono toccati da questa PATCH.
-
-2. **POST per ciascuna partizione 2..N:**
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X POST "$ORCHESTRATOR_URL/api/stories" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"name": "<titolo sintetico N>", "type": "Help desk", "customer_request": "<partizione N verbatim>", "creator_id": <creator_id originale>, "tags": [<id tag originali>]}'
-```
+2. **Crea un ticket per ciascuna partizione 2..N:** chiama `create_story` con `name: "<titolo sintetico N>"`, `type: "Help desk"`, `customer_request: "<partizione N verbatim>"`, `creator_id: <creator_id originale>`, prima senza `confirm` poi con `confirm: true`. Poi associa ciascuno ai tag del ticket originale con `attach_story_to_tag` (uno per tag).
 
 `type` è sempre `"Help desk"` — nessuna riclassificazione automatica in questa fase. Salva l'`id` restituito per ogni ticket creato. Mostra `✅ Ticket oc:<nuovo-ID> creato.` per ciascuno.
 
@@ -439,19 +277,8 @@ Chiedi:
   - Cerca tra i tag del ticket originale uno riconoscibile come identificativo cliente (es. `ass_cammini_italia`). Se trovato, proponi nome default `<tag-cliente>-<titolo originale kebab-case>`.
   - Se nessun tag è riconoscibile come cliente, chiedi al dev di indicare manualmente il nome cliente da usare.
   - Il dev può modificare il nome proposto prima della creazione.
-  - Crea il tag (stesso endpoint di `wm-skills:wm-tag`):
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X POST "$ORCHESTRATOR_URL/api/tags" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"name": "<nome-tag>", "description": "<customer_request originale completo, pre-split>"}'
-```
-
-  - Associa il tag restituito a tutti i ticket del gruppo (originale + nuovi) tramite PATCH `tags` su ciascuno (preview + conferma per ciascuna PATCH, come da regola generale).
+  - Crea il tag chiamando `create_tag` con `name` e `description` (il `customer_request` originale completo, pre-split, in Markdown), prima senza `confirm` poi con `confirm: true`.
+  - Associa il tag restituito a tutti i ticket del gruppo (originale + nuovi) con `attach_story_to_tag`, uno per ticket (anteprima + conferma per ciascuna chiamata).
 - **Se no:** salta questo step, nessun tag creato.
 
 4. **Selezione ticket su cui continuare:**
@@ -477,20 +304,9 @@ Dopo il riepilogo, chiedi:
 
 > "Vuoi impostare lo status del ticket a **progress** e assegnartelo?"
 
-Se l'utente risponde sì, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con:
+Se l'utente risponde sì, chiama `me` per ottenere `user_id`, poi `update_story` con `story_id`, `status: "progress"` e quel `user_id`, prima senza `confirm` per mostrare la differenza, poi con `confirm: true` dopo l'approvazione.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-USER_ID=$(jq -r '.id' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d "{\"status\": \"progress\", \"user_id\": $USER_ID}"
-```
-
-Se il PATCH fallisce (risposta non 2xx o errore di rete), avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
+Se il tool restituisce un errore, avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
 
 Se l'utente risponde no, procedi direttamente alla Fase: init-context senza modificare il ticket.
 
@@ -510,7 +326,7 @@ description:
 <approccio tecnico iniziale, da raffinare dopo le fasi successive>
 ```
 
-Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket via API seguendo `## Orchestrator API → Creazione ticket`. Il campo `description` è renderizzato da un editor WYSIWYG (nessun parsing Markdown): se il testo approvato usa formattazione (titoli, liste, grassetto), convertila in tag HTML equivalenti (`<h3>`, `<ul><li>`, `<strong>`) prima di inviarla nel payload — non inviare Markdown grezzo. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
+Chiedi all'utente di confermarlo o modificarlo. Una volta approvato, crea il ticket chiamando `create_story` con `name`, `type`, `customer_request` e `description`, prima senza `confirm` per mostrare l'anteprima calcolata dal tool, poi con `confirm: true`. Il campo `description` è reso da un editor visuale (nessun parsing Markdown): se il testo approvato usa formattazione (titoli, liste, grassetto), convertila in tag HTML equivalenti (`<h3>`, `<ul><li>`, `<strong>`) prima di passarla al tool — non inviare Markdown grezzo. Salva l'ID restituito e usalo come `<ID>` per tutto il resto del workflow.
 
 **Il ticket va creato prima di procedere alla Fase: init-context.** I campi `description` e `customer_request` potranno essere aggiornati a fine workflow (Checklist) con le informazioni emerse dalle fasi successive.
 
@@ -518,20 +334,9 @@ Una volta creato il ticket e salvato l'ID, chiedi:
 
 > "Vuoi impostare lo status del ticket a **progress** e assegnartelo?"
 
-Se l'utente risponde sì, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con:
+Se l'utente risponde sì, chiama `me` per ottenere `user_id`, poi `update_story` con `story_id`, `status: "progress"` e quel `user_id`, prima senza `confirm` per mostrare la differenza, poi con `confirm: true` dopo l'approvazione.
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-USER_ID=$(jq -r '.id' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d "{\"status\": \"progress\", \"user_id\": $USER_ID}"
-```
-
-Se il PATCH fallisce, avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
+Se il tool restituisce un errore, avvisa l'utente con un messaggio ("⚠️ Impossibile aggiornare lo status del ticket — procedo comunque con il workflow.") e continua.
 
 Se l'utente non vuole creare il ticket ora, procedi senza ID: usa solo il titolo kebab-case come slug. La domanda progress non viene posta.
 
@@ -543,7 +348,7 @@ Invoca immediatamente `wm-skills:wm-tag`, passando come contesto qualsiasi testo
 
 ### ticket: aggiornamenti-espliciti
 
-Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), esegui un PATCH seguendo `## Orchestrator API → Aggiornamento ticket`. Mostra sempre il preview della modifica e attendi conferma prima di inviare.
+Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), chiama `update_story`. Chiamalo sempre prima senza `confirm` per mostrare la differenza al dev, e solo dopo l'approvazione esplicita richiamalo con `confirm: true`.
 
 ### ticket: estrazione
 
@@ -863,7 +668,7 @@ Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, agg
 
 ## Fase: estimation
 
-**Eseguita solo se il ticket è di tipo `Feature`.** Per qualsiasi altro tipo dell'enum `StoryType` (vedi `## Orchestrator API → Tipi disponibili`), salta questa fase e procedi direttamente a `Fase: write-plan`.
+**Eseguita solo se il ticket è di tipo `Feature`.** Per qualsiasi altro tipo (fra quelli ammessi da `create_story`/`update_story`), salta questa fase e procedi direttamente a `Fase: write-plan`.
 
 In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a write-plan).
 
@@ -957,33 +762,11 @@ Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza dis
 
 ### estimation: scrittura su Orchestrator
 
-Mostra il preview della modifica e chiedi conferma prima di eseguire:
-
-> **Aggiornamento ticket oc:\<ID\>**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `estimated_hours` | `<N>` |
->
-> Nota interna (non inviata al campo `estimated_hours`, va aggiunta come nota/description se il campo lo consente): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`
->
-> Procedo?
-
-Solo dopo la conferma:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"estimated_hours": <N>}'
-```
+Chiama `update_story` con `story_id` ed `estimated_hours: <N>`, prima senza `confirm` per mostrare al dev la differenza calcolata dal tool rispetto al valore attuale, poi con `confirm: true` dopo l'approvazione esplicita. Nota interna da tenere a mente nel dialogo con il dev (non un campo separato da inviare): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`.
 
 **Nessun marcatore di versione della metodologia va scritto nella nota.** La stima di un ticket parte **sempre** dal presupposto che l'esecuzione avvenga con un LLM: è il default, non una variante da segnalare. Un marcatore suggerirebbe che esista ancora una baseline alternativa in dev-hours umane, che non è più il caso.
 
-Se il PATCH fallisce (risposta non 2xx), avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
+Se il tool restituisce un errore, avvisa l'utente con `⚠️ Impossibile aggiornare la stima su Orchestrator — procedo comunque.` e continua.
 
 ---
 
@@ -1078,7 +861,7 @@ Se durante l'implementazione emerge un problema non previsto nell'overview e nel
 
 > "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
 
-Se il dev conferma, applica `## Orchestrator API → Aggiornamento ticket` (preview + conferma esplicita) per il PATCH `estimated_hours` con il nuovo totale.
+Se il dev conferma, chiama `update_story` con `estimated_hours` pari al nuovo totale, prima senza `confirm` poi con `confirm: true` dopo l'approvazione esplicita.
 
 Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
 
@@ -1150,7 +933,7 @@ git diff --name-only > /tmp/wm-plan-diff-files.txt
 
   > "PHPStan ha trovato N errori preesistenti su file non toccati da questa feature ([lista file]). Vuoi che crei un ticket Orchestrator separato per tracciare questo debito tecnico?"
 
-  Se sì, crea il ticket seguendo `## Orchestrator API → Creazione ticket` (preview + conferma, `name` sintetico, `customer_request` con l'elenco degli errori). Per il campo `type` usa `type: "<tipo-da-StoryType>"`: leggi l'enum come descritto in `## Orchestrator API → Tipi disponibili` e scegli il valore che rappresenta un intervento di manutenzione pianificato — non inventare un valore né darne uno per scontato. Poi prosegui a `review-gate: dialog` senza bloccare il commit.
+  Se sì, crea il ticket chiamando `create_story` con `name` sintetico e `customer_request` con l'elenco degli errori, prima senza `confirm` per l'anteprima poi con `confirm: true`. Per il campo `type` scegli, fra i valori ammessi dal tool, quello che rappresenta un intervento di manutenzione pianificato — non inventare un valore né darne uno per scontato. Poi prosegui a `review-gate: dialog` senza bloccare il commit.
 
 #### review-gate: phpstan-override
 
@@ -1283,8 +1066,8 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
-- [ ] Leggi lo status attuale del ticket via `## Orchestrator API → Lettura ticket`
-- [ ] Leggi gli status disponibili da `StoryStatus.php` su GitHub (vedi `## Orchestrator API → Status disponibili`)
+- [ ] Leggi lo status attuale del ticket con `get_story`
+- [ ] Prova a impostare uno status non ammesso con `update_story` (senza `confirm`) e usa l'elenco che il tool restituisce nell'errore, oppure consulta lo schema del tool
 - [ ] Suggerisci lo status più appropriato al contesto (es. `testing` se ci sono test da verificare, `done` se tutto è completato e i test passano) e presenta la lista completa — aspetta la scelta esplicita dell'utente
 - [ ] Prepara la bozza di `description` (note dev) con:
   - Link cliccabile HTML alla cartella `docs/features/<feature-slug>/` — il campo è interpretato come HTML, usa:
@@ -1299,6 +1082,6 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
   - Niente nomi di file, classi, branch o dettagli implementativi
   - Tono chiaro e orientato al beneficio per l'utente finale
 - [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
-- [ ] Solo dopo approvazione esplicita, esegui il PATCH seguendo `## Orchestrator API → Aggiornamento ticket` con i campi: `status`, `description`, `customer_request`
+- [ ] Solo dopo approvazione esplicita, chiama `update_story` con i campi `status`, `description`, `customer_request` — prima senza `confirm` per mostrare la differenza, poi con `confirm: true`
 
   **Importante:** manda solo il testo pulito nei campi `customer_request` e `description` — il backend chiama internamente `addResponse()` e `addDevNote()` che gestiscono formato HTML, timestamp, prepend e notifiche. Non costruire HTML manualmente.

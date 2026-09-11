@@ -17,51 +17,15 @@ Cerca la sezione `## Contratto artefatti` nel file scaricato. Funziona anche se 
 
 ## Orchestrator API
 
-Stesse istruzioni di `wm-skills:wm-plan` — auth, login, migrazione token legacy, lettura e scrittura ticket. Riferisciti alla sezione `## Orchestrator API` di wm-plan per i dettagli completi.
-
-Sintesi operativa:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json 2>/dev/null)
-# Se il file non esiste o risponde 401: esegui login come da wm-plan
-```
-
----
-
-## Fase 0 — Autenticazione
-
-Verifica che `~/.config/webmapp/orchestrator-auth.json` esista e contenga un token valido.
-
-- Se non esiste ma esiste `~/.config/webmapp/orchestrator-token`: esegui la migrazione (vedi `## Orchestrator API → Migrazione` in wm-plan).
-- Se non esiste nessun file auth: esegui il login completo — chiedi email e password, poi:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(curl -s -X POST "$ORCHESTRATOR_URL/api/auth/login" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"<email>","password":"<password>"}' \
-  | jq -r '.token')
-USER=$(curl -s -X GET "$ORCHESTRATOR_URL/api/me" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json")
-mkdir -p ~/.config/webmapp
-echo $USER | jq --arg token "$TOKEN" '. + {token: $token}' > ~/.config/webmapp/orchestrator-auth.json
-```
-
-- Verifica con `GET /api/me` — se risponde 401, cancella il file e ripeti il login.
+Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`: vedi `wm-skills:wm-plan` → `## Orchestrator`. La regola dell'anteprima prima della scrittura vale identica qui.
 
 ---
 
 ## Fase 1 — Lettura ticket
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X GET "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
+Chiama `get_story` con `story_id: <ID>`.
+
+Se il tool segnala credenziali assenti o scadute, guida il dev a rifare l'accesso (vedi `wm-skills:wm-plan` → `## Orchestrator → Credenziali`).
 
 Estrai dal JSON:
 - `name` → titolo, usato per ricavare il `<feature-slug>`: `<ID>-<titolo-in-kebab-case>`
@@ -238,37 +202,13 @@ Prepara il riepilogo tecnico della review (finding, esito, eventuali azioni rich
 
 Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi il riepilogo in HTML (`<h3>`/`<p>`/`<ul><li>`, `<strong>` per il verdetto) prima di inviarlo nel payload della PATCH — non inviare il Markdown dell'output di Fase 5d as-is.
 
-Leggi gli status disponibili da:
-```
-https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryStatus.php
-```
+Gli status disponibili sono elencati direttamente nello schema del tool `update_story` (campo `status`, letto dagli enum PHP di Orchestrator): non serve scaricare nulla da GitHub, il tool stesso rifiuta un valore fuori elenco.
 
 **Se nessun bloccante:**
 > "Review completata senza finding bloccanti. Quale status vuoi impostare?"
-> [Mostra lista completa da StoryStatus.php — suggerisci `testing` come default]
+> [Mostra la lista ammessa dallo schema del tool `update_story` — suggerisci `testing` come default]
 
 **Se ci sono bloccanti:**
 > "Trovati [N] finding bloccanti. Propongo di impostare lo status a `todo` per richiedere correzioni. Confermo?"
 
-Mostra sempre preview tabellare prima della PATCH:
-
-> **Aggiornamento ticket oc:\<ID\>**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `status` | `<status scelto>` |
-> | `description` | `<riepilogo review — max 3 righe preview>` |
->
-> Procedo?
-
-Solo dopo conferma esplicita:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X PATCH "$ORCHESTRATOR_URL/api/stories/<ID>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"status": "<status>", "description": "<riepilogo review>"}'
-```
+Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <riepilogo HTML>` senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
