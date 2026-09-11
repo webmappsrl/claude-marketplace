@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "orchestrator-dev": {
+      "command": "./plugins/wm-skills/bin/orchestrator-mcp",
+      "args": ["--base-url", "http://localhost:8099", "--auth-file", "/home/<utente>/.config/webmapp/orchestrator-auth-dev.json"],
+      "env": {
+        "ORCHESTRATOR_MCP_GROUPS": "tags,tasks,crm"
+      }
+    }
+  }
+}

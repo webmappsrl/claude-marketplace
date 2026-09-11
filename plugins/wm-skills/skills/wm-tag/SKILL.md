@@ -11,31 +11,7 @@ Questa skill trasforma un brief o una trascrizione cliente in un tag Orchestrato
 
 ## Orchestrator API
 
-Segui le stesse regole di `wm-skills:wm-plan` per auth, login e migrazione da file legacy. URL base: `${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}`. Auth: `~/.config/webmapp/orchestrator-auth.json`.
-
-**Regola generale scritture:** qualsiasi POST o PATCH — tag o story — richiede sempre un preview tabellare dei campi e conferma esplicita dell'utente prima di eseguire la chiamata HTTP. Nessuna eccezione.
-
-### API Tag
-
-**Lista tag (ricerca):**
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s "$ORCHESTRATOR_URL/api/tags?search=<query>" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json"
-```
-
-**Creazione tag:**
-```bash
-curl -s -X POST "$ORCHESTRATOR_URL/api/tags" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"name": "<nome>", "description": "<descrizione>"}'
-```
-
-Salva l'`id` restituito — serve per associare i ticket al tag.
+Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`: vedi `wm-skills:wm-plan` → `## Orchestrator`. La regola dell'anteprima prima della scrittura vale identica qui.
 
 ---
 
@@ -107,20 +83,7 @@ Esempio: `[RDO][CAMMINI][2026]1`
 
 **Calcolo di N:**
 
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-ANNO=$(date +%Y)
-
-# Cerca tag esistenti per questo cliente e anno
-curl -s "$ORCHESTRATOR_URL/api/tags?search=RDO" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Accept: application/json" | \
-  jq --arg cliente "<CLIENTE>" --arg anno "$ANNO" \
-  '[.[] | select(.name | contains($cliente) and contains($anno))] | length'
-```
-
-Il valore restituito è il numero di tag esistenti per quel cliente+anno. `N = conteggio + 1`.
+Chiama `list_tags` con `search: "RDO"`, poi conta tra i risultati quanti hanno nel nome sia `<CLIENTE>` sia l'anno corrente (`date +%Y`). Il conteggio è il numero di tag esistenti per quel cliente+anno. `N = conteggio + 1`.
 
 Proponi il nome al dev e attendi conferma:
 > "Nome tag proposto: `[RDO][CAMMINI][2026]2` (esistono già 1 tag per CAMMINI nel 2026). Confermo?"
@@ -161,28 +124,9 @@ Mostra la descrizione all'utente e attendi approvazione esplicita prima di proce
 
 ## Fase: tag-creation
 
-Mostra il preview tabellare e chiedi conferma:
+Chiama `create_tag` con `name` e `description` senza `confirm`: mostra l'anteprima calcolata dal tool sui campi reali. Presentala all'utente e attendi conferma esplicita.
 
-> **Creazione tag**
->
-> | Campo | Valore |
-> |-------|--------|
-> | `name` | `[RDO][CLIENTE][ANNO]N` |
-> | `description` | `<prime 200 caratteri della descrizione>...` |
->
-> Procedo?
-
-Solo dopo la conferma, esegui il POST:
-
-```bash
-ORCHESTRATOR_URL="${ORCHESTRATOR_URL:-https://orchestrator.maphub.it}"
-TOKEN=$(jq -r '.token' ~/.config/webmapp/orchestrator-auth.json)
-curl -s -X POST "$ORCHESTRATOR_URL/api/tags" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d "{\"name\": \"<nome-tag>\", \"description\": \"<descrizione-escaped>\"}"
-```
+Solo dopo la conferma, richiama `create_tag` con gli stessi campi e `confirm: true`.
 
 Salva l'`id` restituito come `<TAG_ID>` per l'associazione dei ticket.
 Al termine: `✅ Tag \`<nome-tag>\` creato (ID: <TAG_ID>).`
@@ -249,7 +193,7 @@ Per ogni ticket nella lista approvata, nell'ordine:
 1. Annuncia: "Processo ticket \<N\>/\<TOT\>: **\<titolo\>**"
 2. Invoca `wm-skills:wm-plan` passando questo contesto nel tuo messaggio di invocazione:
    - Titolo del ticket
-   - Tipo (uno dei valori validi dell'enum `StoryType` — leggilo come descritto in `wm-skills:wm-plan` → `## Orchestrator API → Tipi disponibili`)
+   - Tipo (uno dei valori validi dell'enum `StoryType` — leggili dallo schema del tool `create_story`/`update_story`, vedi `wm-skills:wm-plan` → `## Orchestrator`)
    - Repo di destinazione (path da `repos.json`)
    - ID tag padre (`<TAG_ID>`)
    - Flag `tag-mode: true`

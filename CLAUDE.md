@@ -52,6 +52,7 @@ update` perché viaggia con il resto del contenuto della skill.
 **Checklist di release (obbligatoria, in quest'ordine):**
 1. Bump `version` in `plugins/wm-skills/.claude-plugin/plugin.json` (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
 2. Aggiorna la riga `**Versione installata:** v<version>` in `plugins/wm-skills/skills/wm-plan/SKILL.md` → `### header: versione` con lo stesso valore del bump.
+2-bis. Aggiorna la costante `Version` in `plugins/wm-skills/mcp/internal/version/version.go` e ricompila il binario con `plugins/wm-skills/mcp/build.sh` — il binario compilato è versionato nel repo e va aggiornato a ogni rilascio.
 3. Commit di entrambi i file su `main`.
 4. Tag del commit: `git tag v<version> && git push origin v<version>`.
 
@@ -141,12 +142,26 @@ I ticket Webmapp vivono su **Orchestrator** (`webmappsrl/orchestrator`), piattaf
 
 **Formato ID ticket:** `oc:<numero>` (es. `oc:7815`)
 
-**Come fornire un ticket a Claude:** incollare il contenuto del ticket nella chat (Titolo, Richiesta, Note di sviluppo). Integrazione diretta via API/MCP pianificata per il futuro.
+**Come fornire un ticket a Claude:** basta l'ID (`oc:<numero>`) — le skill leggono il ticket via API. In alternativa si può incollare il contenuto nella chat (Titolo, Richiesta, Note di sviluppo).
+
+**L'API di Orchestrator è dedicata alle skill Claude.** Gli endpoint sotto `/api` (documentati in OpenAPI su <https://orchestrator.maphub.it/docs/api.json>) non sono un servizio terzo a cui adattarsi: sono stati costruiti per `wm-plan` e le altre skill `wm-skills`. Conseguenze operative:
+
+- **Se serve un endpoint che non esiste, si aggiunge.** Non vanno costruiti workaround lato skill per aggirare un buco dell'API — si apre un ticket su `webmappsrl/orchestrator` e si estende l'API. Esempio noto: manca `GET /stories` (lista/ricerca), mentre `/tasks`, `/quotes` e `/customers` hanno tutti un index con filtri e sort.
+- **Chi modifica l'API sta modificando il contratto delle skill.** Un cambio di campi, enum o regole di autorizzazione va propagato nello stesso giro alle skill che lo consumano.
+- **La spec OpenAPI è la fonte autoritativa** per campi, tipi ed enum — preferibile a leggere i singoli file PHP quando serve la superficie completa.
+
+**Dove provare le chiamate a Orchestrator (incluso il server MCP):** usa l'**istanza locale** di `webmappsrl/orchestrator`, avviata con Docker, puntandoci `ORCHESTRATOR_URL`. Non provare mai scritture contro la produzione (`https://orchestrator.maphub.it`): alcune scritture hanno effetti verso l'esterno non annullabili — `customer_request` su una story fa scattare `addResponse()`, che **notifica il cliente**, e i link PDF firmati dei preventivi restano validi fino a 90 giorni senza poter essere revocati.
+
+Esiste anche un'istanza di sviluppo, ma al momento **le manca un certificato HTTPS valido**: usala solo come verifica facoltativa su dati più realistici, e non introdurre l'accettazione dei certificati non validi come comportamento predefinito di nessuno strumento — va richiesta esplicitamente ogni volta, per non rischiare che diventi il comportamento normale anche verso la produzione.
 
 **Convenzioni nei documenti generati da skill:**
 - Ogni file `docs/features/` inizia con `> Ticket: oc:<ID>`
 - Feature slug: `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`)
 - Commit scope: `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
+
+## File `.mcp.json` locale
+
+Il repo ignora `.mcp.json` (contiene percorsi assoluti personali, es. il file di auth di sviluppo): copia `.mcp.json.example` in `.mcp.json` e adatta i percorsi al tuo ambiente prima di usare il server MCP `orchestrator-dev`.
 
 ## Aggiornare superpowers
 
@@ -170,6 +185,15 @@ Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esec
 Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** in `SKILL.md` (non più qui) con il link reale.
 
 ## Decisioni architetturali
+
+### Server MCP per Orchestrator
+- **Go compilato invece di un ambiente da installare**: il binario viaggia nel plugin, quindi nessuno deve installare nulla; Go produce un eseguibile di poche decine di MB senza dipendenze da scaricare a runtime, contro l'ambiente di esecuzione che un runtime interpretato si porterebbe dietro
+- **Comunicazione sui canali standard del processo (stdio), nessuna porta in ascolto**: esclude per costruzione ogni conflitto con i container Docker del team
+- **Elenchi dei valori ammessi (`type`, `status`) letti dagli enum PHP e non dalla specifica OpenAPI**: verificato in esecuzione che la specifica generata da Scramble non li espone (quei due campi risultano senza tipo e senza elenco); il server legge direttamente `StoryType.php` e `StoryStatus.php` con espressioni regolari. Il pacchetto `internal/spec`, che avrebbe dovuto leggere l'intera specifica OpenAPI per campi e tipi, è stato **eliminato** durante l'esecuzione (non riparato): la specifica reale di produzione usa per alcuni campi la sintassi OpenAPI 3.1 `"type": ["string","null"]`, che il pacchetto non interpretava, e il server si rifiutava di avviarsi per un dato — `deps.Spec` — che nessuna riga del programma leggeva. Campi e tipi vengono invece dalle strutture Go dichiarate a mano
+- **Gli elenchi dei valori ammessi finiscono nello schema del tool, non solo in un controllo interno**: verificato che l'SDK MCP accetta uno schema costruito a runtime — un valore fuori elenco (es. il tipo `Task`, inesistente) diventa così inesprimibile per costruzione, rifiutato dallo schema prima ancora che la chiamata parta, invece di affidarsi a una convalida interna che si potrebbe dimenticare di eseguire
+- **Nessuna conferma rafforzata per le scritture non annullabili** (eliminazione di un preventivo, collegamento PDF pubblico, `customer_request` che notifica il cliente): un meccanismo a codice con scadenza è stato scartato perché richiederebbe uno stato da conservare lato server; nessun parametro derivabile dai dati può comunque fermare l'agente che li ha appena letti, quindi una conferma "rafforzata" darebbe una falsa sicurezza. Al posto delle conferme rafforzate: il titolo/nome della risorsa colpita viene portato nei parametri a scopo informativo dentro la richiesta di autorizzazione, e la regola operativa — questi tool non vanno mai fra quelli approvati in automatico — resta una responsabilità umana, non tecnica
+- **Produzione e istanza locale sono due server MCP distinti, con nomi diversi (`orchestrator` e `orchestrator-dev`)**: il plugin distribuito dichiara solo `orchestrator`, fisso sulla produzione; `orchestrator-dev` esiste solo nel `.mcp.json` di questo repo, per il collaudo. Nomi diversi rendono l'ambiente visibile nella richiesta di autorizzazione senza doverlo stampare a parte. Il file delle credenziali è stato reso configurabile (`--auth-file`, non più fissato dentro il client) e separato per lo stesso motivo dopo un difetto scoperto nel collaudo dal vivo: i due server leggevano lo stesso file e non potevano essere usati in parallelo con identità diverse
+- **Le vecchie istruzioni `curl` sopravvivono come ripiego** in `plugins/wm-skills/shared/orchestrator-fallback.md`, letto dalle skill solo su richiesta e solo se i tool MCP non rispondono: costo zero nelle sessioni normali, aggiramento manuale disponibile se il server non parte
 
 ### Esecuzione automatica PHPStan pre-PR/merge in wm-plan (oc:8341)
 - **Blocco duro per errori sul diff corrente e per fallimenti infrastrutturali, stesso trattamento per entrambi**: inizialmente si era considerato un trattamento più permissivo (fail-soft) per i fallimenti infrastrutturali (comando non trovato, crash, timeout) rispetto agli errori di qualità reali — la decisione finale del dev in Fase: reverse-interaction ha uniformato i due casi allo stesso hard-block di default, per evitare un bypass implicito su problemi ambientali che potrebbero mascherare un errore reale
@@ -244,6 +268,7 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 
 | Feature | Ticket | Moduli toccati | Note |
 |---|---|---|---|
+| Server MCP per Orchestrator | — (nessun ticket) | `plugins/wm-skills/mcp/`, `plugins/wm-skills/.mcp.json`, le tre `SKILL.md` | Server MCP in Go che espone l'API di Orchestrator come tool tipizzati: valori ammessi (`type`, `status`) letti dagli enum PHP (`StoryType.php`, `StoryStatus.php`), campi e tipi dalle strutture Go; anteprima obbligatoria prima delle scritture tramite il parametro `confirm`; gruppi di tool attivabili. Le skill non costruiscono più chiamate HTTP a mano |
 | Tipi ticket Orchestrator letti dinamicamente in wm-plan e wm-tag | — (nessun ticket) | `plugins/wm-skills/skills/wm-plan/SKILL.md`, `plugins/wm-skills/skills/wm-tag/SKILL.md` | Rimosso il tipo inesistente `Task` (una POST `/api/stories` con `"type": "Task"` falliva con `422 — Il valore selezionato per type non è valido`). Nuova sezione `## Orchestrator API → Tipi disponibili (letti dinamicamente)` che rimanda a `StoryType.php` su GitHub, stesso pattern già usato per gli status: nessun valore di tipo è scritto nelle skill, così l'aggiunta o la rinomina di un tipo su Orchestrator non le fa invecchiare in silenzio |
 | Esecuzione automatica PHPStan pre-PR/merge in wm-plan | oc:8341 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | `execution: review-gate` esegue PHPStan automaticamente su repo Laravel con PHPStan in CI; hard-block su errori del diff corrente o fallimenti infrastrutturali; override motivato e tracciato in notes.md; errori preesistenti fuori dal diff propongono un ticket Orchestrator dedicato invece di bloccare |
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
