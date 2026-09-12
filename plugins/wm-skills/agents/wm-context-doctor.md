@@ -69,9 +69,22 @@ poche righe, ma riportali: il giorno in cui ne resta scoperto uno solo su venti,
 lo renderebbe invisibile — ed è esattamente il caso in cui il controllo serve.
 
 `SENZA CONOSCENZA` **è un difetto vero**: esiste il cantiere di un lavoro e nessuna pagina di
-conoscenza lo cita, quindi di quel lavoro non resta nulla di leggibile. Va riportato fra i
-problemi e proposto come intervento — non necessariamente una pagina nuova: spesso il posto
-giusto è una pagina di argomento che esiste già e va aggiornata.
+conoscenza lo cita, quindi di quel lavoro non resta nulla di leggibile.
+
+**Non fermarti alla diagnosi: proponi dove atterra.** Un nome in un elenco lascia a chi legge
+il lavoro di capire cosa farne, e finisce per restare lì. Per ciascun cantiere scoperto leggi
+l'`overview.md` e il `notes.md` nella sua cartella, stabilisci di quale tema parla, e proponi:
+
+- **il tema è già coperto da una pagina esistente** → nominala e di' cosa va aggiunto:
+  `8341-… → aggiornare docs/knowledge/wm-plan-gate-qualita.md con il blocco PHPStan`
+- **è la prima volta che si tocca quel tema** → proponi il nome della pagina nuova e in una
+  riga cosa contiene:
+  `8527-… → nuova docs/knowledge/wm-skills-delega-agentica.md: quali fasi si delegano, il
+  contratto degli agenti, cosa resta nel context principale`
+
+La prima forma è quella da preferire quando è possibile: un argomento nasce al secondo lavoro
+che lo tocca, non a ogni lavoro. Se proponi una pagina nuova per ogni cantiere scoperto, stai
+ricreando l'elenco per ticket che la struttura serve a evitare.
 
 Le pagine sono per **argomento** e i cantieri per **lavoro**, quindi il rapporto non è uno a
 uno: una pagina può citare più ticket, ed è la norma. Non segnalare come difetto una pagina che
