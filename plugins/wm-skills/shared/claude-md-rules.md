@@ -42,6 +42,18 @@ detto?» — non «dove altro compare questa frase?». Ogni riorganizzazione ne 
 qualcuno, perché chi sposta una sezione porta con sé i fatti che le servivano senza togliere
 quelli rimasti dove stavano.
 
+### La residenza vale anche fra il CLAUDE.md e i file che rimanda
+
+Spostare una procedura in `docs/howto/` non basta se nel `CLAUDE.md` ne resta un pezzo: «la
+versione si aggiorna insieme al tag sul commit» è il processo di release raccontato una seconda
+volta, in un punto che parla d'altro. Il controllo non si ferma ai confini del file: se un fatto
+ha residenza in un howto o in una pagina di conoscenza, nel `CLAUDE.md` resta **il rimando**,
+non una versione abbreviata.
+
+Attenzione al caso in cui la versione abbreviata perde una qualifica che l'originale aveva: se
+nell'howto quel passo è marcato «(dev)» e nel `CLAUDE.md` no, il riassunto descrive un'azione
+che la regola in cima vieta — ed è peggio dell'omissione, perché sembra completo.
+
 ### Quando un fatto ha due facce legittime
 
 Capita che lo stesso oggetto abbia due aspetti che appartengono a sezioni diverse: un file può
