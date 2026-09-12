@@ -31,35 +31,46 @@ Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sp
   del submodule, non in quello del repo principale — stesso principio già valido per gli
   `overview.md` in `wm-plan`.
 
-- **Un lavoro completato: una riga nell'indice, il resto in una pagina sua.** Il `CLAUDE.md`
-  conserva una riga sotto `## Lavori` (titolo, ticket, un gancio di una frase, il link); cosa
-  è stato deciso e perché sta in `docs/decisions/<slug>.md`.
+- **Due assi, non uno.** `docs/features/<slug>/` è il **cantiere**: per lavoro, immutabile,
+  racconta cosa fu fatto e quando. `docs/knowledge/<argomento>.md` è la **conoscenza**: per
+  argomento, mutabile, dice cosa vale oggi. Il primo si legge per capire com'è nata una cosa,
+  il secondo per non rifare un ragionamento già fatto. Nell'indice del `CLAUDE.md` compare la
+  conoscenza, non il cantiere.
 
-- **L'identificativo è il nome della cartella degli artefatti**, `docs/features/<slug>/`, e la
-  pagina porta lo stesso nome. Va **letto**, non ricalcolato da ID e titolo: se il titolo del
-  ticket cambia, ri-derivarlo produce un nome diverso da quello reale e il legame si rompe
-  senza che nessuno se ne accorga. Il controllo è meccanico: ogni pagina ha una cartella
-  omonima e viceversa.
+- **Le pagine di conoscenza sono per argomento, non per ticket.** Nessuno cerca per data:
+  chi tocca l'header di una skill non si chiede «cosa fu deciso nel ticket X», si chiede «come
+  funziona l'header e cosa è già stato provato». Tre decisioni successive sullo stesso tema non
+  sono tre voci con rimandi incrociati: sono **una voce che è cambiata tre volte**.
 
-- **Un solo indice, non due.** Le vecchie `## Feature disponibili` e
-  `## Decisioni architetturali` avevano la stessa granularità — una voce per lavoro — quindi
-  erano due indici dello stesso insieme, compilati in due momenti diversi dello stesso
-  workflow: si ripetevano per costruzione e divergevano alla prima modifica di una sola delle
-  due. Un `CLAUDE.md` che le ha ancora entrambe è un candidato alla riorganizzazione, non un
-  errore da correggere di nascosto.
+- **Un argomento nasce al secondo lavoro che lo tocca, non al primo.** Finché un tema è stato
+  affrontato una volta sola, la pagina porta il nome di quel lavoro; quando arriva il secondo,
+  i due si fondono in una pagina di argomento. Così la struttura emerge da ciò che accade
+  davvero, invece di richiedere una tassonomia decisa a tavolino che poi nessuno rispetta.
+
+- **Struttura di una pagina di argomento**: lo **stato attuale in cima** — cosa vale oggi — e
+  sotto *come ci siamo arrivati*, con le versioni precedenti e il motivo per cui sono cadute.
+  Chi apre la pagina sa subito cosa fare; chi deve cambiare qualcosa sa cosa è già stato
+  provato, e non ripropone fra sei mesi un'idea già scartata. Ogni voce porta il ticket da cui
+  proviene, così si può sempre risalire al cantiere.
+
+- **Aggiornare una pagina esistente è riscrittura, non aggiunta.** Si apre, si stabilisce cosa
+  è ancora valido, si riscrive lo stato e si sposta in fondo ciò che è caduto. È lavoro di
+  giudizio e può essere fatto male: non va eseguito in autonomia, e il cantiere resta la fonte
+  da cui recuperare se qualcosa va perso.
+
+- **Un solo indice.** Le vecchie `## Feature disponibili` e `## Decisioni architetturali`
+  avevano la stessa granularità — una voce per lavoro — quindi erano due elenchi dello stesso
+  insieme, compilati in due momenti diversi: si ripetevano per costruzione e divergevano alla
+  prima modifica di una sola delle due. Un `CLAUDE.md` che le ha ancora entrambe è un candidato
+  alla riorganizzazione, non un errore da correggere di nascosto.
 
 - **Altrove si cita l'identificativo e basta.** `oc:8278` è già un riferimento risolvibile:
   ripetere di cosa parlava crea la seconda copia che poi diverge.
 
-- **Cosa resta nel corpo del `CLAUDE.md`.** Il criterio è: *è nato da un lavoro?* Se sì ha una
-  pagina e una riga d'indice. Se no — struttura delle cartelle, convenzioni di naming, come si
+- **Cosa resta nel corpo del `CLAUDE.md`.** Il criterio è: *è nato da un lavoro?* Se sì sta in
+  una pagina di conoscenza. Se no — struttura delle cartelle, convenzioni di naming, come si
   valida prima del commit, come si testa in locale — non è la decisione di una feature, è il
   repo: resta una sezione normale, fuori dall'indice.
-
-- **Il cantiere non è ciò che resta.** `docs/features/<slug>/` racconta com'è andata (overview,
-  piano, note, deviazioni) e si legge per capire come è nata una feature.
-  `docs/decisions/<slug>.md` è ciò che vale ancora, e si legge per non rifare un ragionamento
-  già fatto. Un rilievo che confonde le due è un rilievo sbagliato.
 
 ## Cosa non si scrive
 

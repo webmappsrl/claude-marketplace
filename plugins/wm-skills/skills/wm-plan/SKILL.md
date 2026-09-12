@@ -1082,59 +1082,81 @@ nome diverso da quello reale, e il legame si romperebbe in silenzio.
 ls -d docs/features/*/ | grep "<ID>"      # con ticket
 ```
 
-### update-context: pagina del lavoro
+### update-context: pagina di conoscenza
 
-Scrivi `docs/decisions/<slug>.md` — stesso `<slug>` della cartella degli artefatti:
+Il sapere che deve sopravvivere a questo lavoro va in `docs/knowledge/<argomento>.md`,
+**organizzato per argomento e non per ticket**: chi domani tocca quel pezzo di sistema non si
+chiede «cosa fu deciso nel ticket X», si chiede «come funziona e cosa è già stato provato».
 
-```markdown
-> Ticket: oc:<ID>   ← ometti se non c'è ticket
+**Quale pagina.** Cerca fra le pagine esistenti una che copra il tema toccato:
 
-# <Titolo del lavoro>
-
-## Cosa fa
-<una o due frasi: cosa il sistema fa di diverso dopo questo lavoro>
-
-## Moduli toccati
-`path/modulo1`, `path/modulo2`
-
-## Decisioni
-- **<decisione>**: <cosa è stato deciso e perché>, incluse le alternative scartate e il
-  motivo per cui sono state scartate
+```bash
+ls docs/knowledge/ 2>/dev/null
 ```
 
-Le decisioni vengono dalla `Fase: challenge` e dalla `Fase: notes`: sono le scelte non ovvie
-che un futuro Claude rifarebbe da capo senza trovarle scritte.
+- **Esiste già** → aggiornala (vedi sotto).
+- **Non esiste, ed è la prima volta che si tocca questo tema** → creala con il nome del lavoro,
+  cioè lo stesso slug della cartella degli artefatti.
+- **Non esiste, ma un'altra pagina copre lo stesso tema con un altro nome** → proponi al dev di
+  fondere le due in una pagina di argomento, con un nome che descrive il tema e non il lavoro.
+  **Un argomento nasce al secondo lavoro che lo tocca**, non al primo: non inventare tassonomie
+  in anticipo.
 
-**Questa pagina non è il quarto artefatto del cantiere.** `docs/features/<slug>/` racconta
-*com'è andata* — overview, piano, note, deviazioni — e si legge per capire come è nata una
-feature. `docs/decisions/<slug>.md` è *ciò che resta*: si legge per non rifare un
-ragionamento già fatto. Tenere separate le due cose è l'unico modo perché qualcuno sappia
-dove cercare.
+**Struttura della pagina** — lo stato attuale in cima, la storia sotto:
+
+```markdown
+# <Argomento>
+
+## Come funziona oggi
+<cosa vale adesso: il comportamento corrente e i vincoli che lo governano>
+
+## Perché così
+- **<scelta>** (oc:<ID>): <motivazione>
+
+## Come ci siamo arrivati
+- **<scelta precedente>** (oc:<ID>, superata): <perché è stata abbandonata>
+```
+
+Ogni voce porta il ticket da cui proviene: è il legame con il cantiere, che resta la fonte
+completa di com'è andata.
+
+**Aggiornare una pagina esistente è una riscrittura, non un'aggiunta.** Apri la pagina,
+stabilisci cosa è ancora valido, riscrivi `## Come funziona oggi` e sposta in
+`## Come ci siamo arrivati` ciò che il tuo lavoro ha superato, **con il motivo**. Una decisione
+caduta non si cancella: chi domani proporrà di nuovo quella strada deve poter leggere perché
+era stata abbandonata.
+
+**Mostra sempre al dev il prima e il dopo** di una pagina riscritta, non solo la versione
+nuova: sovrascrivere una pagina densa è l'operazione che in questa fase può fare più danni, e
+il dev è l'unico che può accorgersene.
 
 ### update-context: indice nel CLAUDE.md
 
-Nel `CLAUDE.md` del repo target va **una riga sola** per lavoro, sotto `## Lavori`:
+Nel `CLAUDE.md` del repo target va **una riga sola** per argomento, sotto `## Conoscenza`:
 
 ```markdown
-## Lavori
+## Conoscenza
 
-| Lavoro | Ticket | Cosa fa | Dettaglio |
-|---|---|---|---|
-| <Titolo> | oc:<ID> | <un gancio di una frase> | [docs/decisions/<slug>.md](docs/decisions/<slug>.md) |
+| Argomento | Cosa copre | Pagina |
+|---|---|---|
+| <Argomento> | <un gancio di una frase> | [docs/knowledge/<argomento>.md](docs/knowledge/<argomento>.md) |
 ```
 
+Se il lavoro ha aggiornato una pagina già presente nell'indice, **la riga non cambia**: cambia
+la pagina. L'indice elenca argomenti, non lavori, quindi cresce molto più lentamente di quanto
+crescesse la vecchia tabella delle feature.
+
 **Il rimando è un link Markdown o un percorso in prosa, mai `@percorso/file.md`**: in un
-`CLAUDE.md` quella sintassi non è un link ma un import, e il file viene caricato all'avvio
-di ogni sessione — annullando il motivo stesso di averlo separato.
+`CLAUDE.md` quella sintassi non è un link ma un import, e il file viene caricato all'avvio di
+ogni sessione — annullando il motivo stesso di averlo separato.
 
-**Non esiste più una seconda sezione.** Le vecchie `## Feature disponibili` e
+**Non esiste una seconda sezione.** Le vecchie `## Feature disponibili` e
 `## Decisioni architetturali` avevano la stessa granularità — una voce per lavoro — quindi
-erano due indici dello stesso insieme, scritti in due momenti diversi: si ripetevano per
-costruzione e divergevano alla prima modifica di una sola delle due. Ora l'indice è uno.
+erano due indici dello stesso insieme e si ripetevano per costruzione. L'indice è uno.
 
-**Cosa non entra nell'indice.** Il criterio è: *è nato da un lavoro?* Se sì ha una pagina e
-una riga. Se no — struttura delle cartelle, convenzioni di naming, come si valida prima del
-commit — non è la decisione di una feature, è il repo: resta nel corpo del `CLAUDE.md` come
+**Cosa non entra nell'indice.** Il criterio è: *è nato da un lavoro?* Se sì sta in una pagina
+di conoscenza. Se no — struttura delle cartelle, convenzioni di naming, come si valida prima
+del commit — non è la decisione di una feature, è il repo: resta nel corpo del `CLAUDE.md` come
 sezione normale.
 
 ### update-context: repo non ancora in questa forma
@@ -1146,13 +1168,13 @@ vuole invocando `wm-context-doctor`.
 
 In quel caso:
 
-1. scrivi comunque `docs/decisions/<slug>.md` — è un file nuovo, non tocca nulla di esistente;
+1. scrivi comunque `docs/knowledge/<argomento>.md` — è un file nuovo, non tocca nulla di esistente;
 2. aggiungi la riga nella sezione che il repo già usa (`## Feature disponibili`), con il link
    alla pagina al posto della descrizione lunga, e **non** scrivere un blocco in
    `## Decisioni architetturali`: il suo contenuto è ora nella pagina;
 3. segnalalo al dev **una volta sola**, senza insistere:
 
-   > `ℹ️ Questo repo usa ancora la forma vecchia del CLAUDE.md. Le decisioni di questo lavoro sono in docs/decisions/<slug>.md; per riorganizzare il resto puoi invocare wm-context-doctor.`
+   > `ℹ️ Questo repo usa ancora la forma vecchia del CLAUDE.md. Quanto emerso da questo lavoro è in docs/knowledge/<argomento>.md; per riorganizzare il resto puoi invocare wm-context-doctor.`
 
 **Controllo di forma prima di scrivere.**
 

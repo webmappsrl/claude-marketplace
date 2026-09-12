@@ -38,17 +38,17 @@ non produce alcun errore — resta lì e nessuno se ne accorge.
 ```bash
 REPO=$(dirname "<percorso del CLAUDE.md>")
 # pagine citate dall'indice, ma assenti dal disco
-grep -o '](docs/decisions/[^)]*\.md)' "<percorso del CLAUDE.md>" | sed 's/](//; s/)//' | sort -u \
+grep -o '](docs/knowledge/[^)]*\.md)' "<percorso del CLAUDE.md>" | sed 's/](//; s/)//' | sort -u \
   | while read f; do [ -f "$REPO/$f" ] || echo "CITATA MA ASSENTE: $f"; done
 # pagine sul disco, ma non citate dall'indice
-ls "$REPO"/docs/decisions/*.md 2>/dev/null | sed "s|$REPO/||" | sort -u \
+ls "$REPO"/docs/knowledge/*.md 2>/dev/null | sed "s|$REPO/||" | sort -u \
   | while read f; do grep -q "$f" "<percorso del CLAUDE.md>" || echo "ORFANA: $f"; done
-# pagine senza la cartella degli artefatti omonima
-ls "$REPO"/docs/decisions/*.md 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/\.md$//' \
-  | while read s; do [ -d "$REPO/docs/features/$s" ] || echo "SENZA CANTIERE: $s"; done
-# cartelle di artefatti senza la loro pagina — un lavoro fatto di cui non resta nulla
+# lavori di cui non resta nulla: nessuna pagina cita il loro ticket né il loro slug
 ls -d "$REPO"/docs/features/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null \
-  | while read s; do [ -f "$REPO/docs/decisions/$s.md" ] || echo "SENZA PAGINA: $s"; done
+  | while read s; do
+      ID=$(echo "$s" | grep -o '^[0-9]*')
+      grep -rqs "oc:$ID\|$s" "$REPO"/docs/knowledge/ 2>/dev/null || echo "SENZA CONOSCENZA: $s"
+    done
 ```
 
 Riporta l'esito **sempre**, anche quando è pulito, come prima riga della risposta:
@@ -61,15 +61,16 @@ oppure l'elenco dei problemi trovati. Un indice incoerente va segnalato prima de
 proposto come intervento fra gli altri: significa che una migrazione precedente si è fermata a
 metà, e finché resta così ogni altra proposta lavora su una base sbagliata.
 
-I due controlli incrociati non sono simmetrici, e vanno riportati con peso diverso:
+`SENZA CONOSCENZA` **è un difetto vero**: esiste il cantiere di un lavoro e nessuna pagina di
+conoscenza lo cita, quindi di quel lavoro non resta nulla di leggibile. Va riportato fra i
+problemi e proposto come intervento — non necessariamente una pagina nuova: spesso il posto
+giusto è una pagina di argomento che esiste già e va aggiornata.
 
-- `SENZA CANTIERE` **non è un errore**: una pagina può riguardare un lavoro fatto prima che
-  esistessero gli artefatti, o svolto senza passare da `wm-plan`. Segnalalo come nota.
-- `SENZA PAGINA` **è un difetto vero**: esiste il cantiere di un lavoro e non resta nulla di
-  ciò che è stato deciso. Va riportato fra i problemi e proposto come primo intervento —
-  scrivere la pagina mancante e la sua riga d'indice.
+Le pagine sono per **argomento** e i cantieri per **lavoro**, quindi il rapporto non è uno a
+uno: una pagina può citare più ticket, ed è la norma. Non segnalare come difetto una pagina che
+non ha una cartella omonima.
 
-Se il repo non ha `docs/decisions/` né un indice, non c'è nulla da verificare: scrivi
+Se il repo non ha `docs/knowledge/` né un indice, non c'è nulla da verificare: scrivi
 `Indice: non presente (repo nella forma vecchia)` e prosegui col piano.
 
 ## Cosa cerchi
