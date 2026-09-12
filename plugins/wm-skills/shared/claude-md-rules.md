@@ -281,6 +281,114 @@ I rimandi sono **link Markdown o percorsi citati in prosa**. Mai la forma
 file viene caricato automaticamente all'avvio — annullando il motivo stesso di averlo
 separato.
 
+## Un cantiere è un diario, non una fotografia del risultato
+
+`docs/features/<slug>/` si scrive **mentre** il lavoro è in corso: contiene intenzioni,
+ipotesi e nomi decisi a tavolino che l'implementazione ha poi cambiato. Una classe annunciata
+nell'`overview.md` può non essere mai nata; una procedura descritta nel `notes.md` può essere
+stata superata il giorno dopo.
+
+Quindi **un fatto preso da un cantiere non entra nella conoscenza senza essere verificato nel
+codice**. È la fonte più ricca che esiste — nessun altro documento spiega perché una scelta è
+stata presa — ma parla per costruzione del passato.
+
+**Attenzione a quale dei due è più vecchio: spesso è il file principale.** Il cantiere si
+aggiorna mentre il lavoro cambia direzione, il `CLAUDE.md` si aggiorna a fine lavoro, quando la
+decisione presa in review è già di giorni prima — e a volte non si aggiorna affatto. Un caso
+reale: una classe annunciata nel piano e poi eliminata in review era registrata come eliminata
+nel `notes.md` del cantiere, mentre il `CLAUDE.md` continuava a descriverla come esistente. Il
+sospetto non va quindi puntato sulla fonte più informale, ma su **entrambe**: l'arbitro è il
+codice, e chi dei due gli dà ragione lo si scopre solo guardando.
+
+**Il cantiere non si riscrive: si annota.** Quando si scopre che un cantiere afferma qualcosa
+di falso o superato, correggerlo cancellerebbe la registrazione di com'è andata davvero. Si
+appende invece in fondo al file un blocco di errata, datato, che non tocca nulla di ciò che
+c'era:
+
+```markdown
+> **Errata (2026-09-12)** — questo documento afferma «<citazione>».
+> Verificato: <file>:<righe> — <cosa dice il codice oggi>.
+> Lo stato attuale è in [docs/knowledge/<pagina>.md](../../knowledge/<pagina>.md).
+```
+
+Serve a una cosa sola: impedire che lo stesso errore venga ripescato da chi legge quel cantiere
+fra sei mesi, o dall'agente che ci pesca dentro alla prossima migrazione. Un errore corretto
+solo a valle torna, perché la fonte da cui è arrivato è ancora lì e nessuno sa che è sbagliata.
+
+## Spostare un fatto lo promuove: va verificato mentre lo si sposta
+
+Un riordino non è neutro. Una frase falsa in fondo a un archivio di quattrocento righe non la
+legge nessuno; la stessa frase in un file di cento righe, o in una pagina indicizzata, la legge
+ogni sessione. **Chi migra un contenuto se ne assume la verità**: non lo sta ricopiando, lo sta
+ripubblicando con più visibilità di prima.
+
+Quindi ogni affermazione controllabile che attraversa la migrazione **si verifica mentre passa**,
+contro il codice o contro il sistema che gira. Non serve rileggere tutto: basta che nessun fatto
+verificabile arrivi nella nuova struttura senza che qualcuno l'abbia guardato. Un fatto che non
+regge non si trasporta: si corregge, e la versione caduta va sotto «come ci siamo arrivati» col
+ticket che l'ha superata — oppure sparisce, se non ha mai avuto un motivo.
+
+Il caso che genera questa regola: un `CLAUDE.md` diceva «Laravel 10» mentre `composer.json`
+dichiarava `^12.0`, e la frase ha attraversato indenne un riordino completo perché era scritta
+nel file di partenza.
+
+## Una frase falsa da sola non è una contraddizione, ed è la più difficile da vedere
+
+Cercare le contraddizioni significa cercare **coppie**: due voci che si contendono la stessa
+verità, e allora si va nel codice a stabilire chi ha ragione. Ma una voce falsa **senza gemella**
+non contraddice nessuno: sta lì, coerente con tutto il resto, e nessun controllo di coerenza la
+tocca. È il punto cieco di qualunque lettura che confronti il file solo con sé stesso.
+
+Per questo **i fatti di identità del repo vanno controllati alla fonte, sempre, anche quando
+nessuno li contesta**: la versione del framework e del linguaggio (contro il file delle
+dipendenze e contro il runtime), quali cartelle sono davvero submodule (contro `.gitmodules`),
+quali servizi esistono, quali comandi rispondono. Sono le righe che aprono il file, quelle che
+ogni sessione legge per prime e che nessuno rilegge mai — e invecchiano in silenzio, perché un
+aggiornamento di versione non tocca la documentazione.
+
+## Un fatto si verifica dove vive, non dove è scritto
+
+Il codice dice cosa il programma *farebbe*. Se le cose stiano davvero così lo dice solo il
+sistema che gira. Quando una pagina afferma una quantità o un comportamento osservabile — «il
+72% delle Quote non ha owner», «il bundle supera i 2 MB», «quella rotta risponde 403» — non è
+**verificabile leggendo il codice**, ed è anche la cosa più facile da sbagliare: nessuno la
+rilegge, perché sembra un dettaglio.
+
+Se il repo ha un ambiente locale che si può interrogare, **la verifica si fa lì**, prima di
+scrivere la frase. Cosa sia quell'ambiente dipende dallo stack, e la domanda da farsi è sempre
+la stessa — *dove vive il fatto che sto affermando?*
+
+- **Backend** (Laravel, container Docker, DB di sviluppo): una `SELECT` per ogni quantità sui
+  dati, `artisan route:list` per le rotte dichiarate, la suite per i comportamenti.
+- **Frontend** (Angular, Ionic, librerie): la build e il suo output per dimensioni e chunk, il
+  `package.json` e il lockfile per le versioni realmente installate, i test e il dev server per
+  il comportamento, la console del browser per gli errori a runtime.
+- **Ovunque**: se una cosa si può eseguire invece che dedurre, si esegue.
+
+**Lo stack non si indovina: lo si chiede a `wm-env-detect`.** È l'agente che rileva stack,
+Docker, submodule e strumenti del repo e restituisce **solo i valori risolti**, senza portare
+nel context l'output dei comandi di rilevamento. Dedurre l'ambiente dai nomi dei file è il modo
+più rapido per cercare un container che non esiste o dare per assente una suite che c'è.
+
+Il costo è un comando; l'alternativa è un'affermazione che nessuno saprà mai se è vera. Se
+l'ambiente non è avviabile, non si inventa: si scrive la frase senza la cifra, oppure si dice
+che non è stata verificata.
+
+**Solo letture, e mai contro la produzione.** `SELECT` e comandi di sola lettura: nessuna
+scrittura, nessuna migration, nessun comando che tocchi i dati. Se l'unico ambiente
+raggiungibile è la produzione, non si verifica: si scrive la frase senza la cifra, o non la si
+scrive affatto.
+
+**Ogni cifra porta la data del rilevamento** — «(produzione, 2026-09-02)» — perché un dato
+misurato invecchia mentre il codice resta, che sia il conteggio di una tabella o il peso di un
+bundle. Con la data, chi legge fra sei mesi sa quanto
+fidarsi e può rifare la query; senza, un numero vecchio si traveste da fatto stabile. Uno
+scarto di poche unità su un dato datato non è un errore: è il tempo che passa.
+
+Vale anche al contrario, per chi controlla: una cifra scritta in una pagina si ricontrolla
+dove il dato vive, non si giudica a naso. Una frase impeccabile può essere falsa, e leggerla
+non è verificarla.
+
 ## I criteri ufficiali, riportati qui
 
 Estratti da <https://code.claude.com/docs/en/memory> e
