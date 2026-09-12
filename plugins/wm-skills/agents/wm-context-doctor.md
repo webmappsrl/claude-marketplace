@@ -51,6 +51,18 @@ ls -d "$REPO"/docs/features/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null \
     done
 ```
 
+**Chi cita il `CLAUDE.md` dall'esterno.** Spostare o rinominare una sezione rompe chi la
+nomina, e quei riferimenti stanno fuori dal file che stai guardando — tipicamente nelle skill e
+negli agenti del plugin. Cercali prima di proporre spostamenti:
+
+```bash
+grep -rn 'CLAUDE\.md.*##\|## [A-Z][^`]*`' "$REPO"/plugins --include='*.md' 2>/dev/null | head -20
+```
+
+Per ogni sezione che proponi di spostare o rinominare, elenca **chi la cita** e includi
+l'aggiornamento di quei rimandi nello stesso intervento. Un rimando che resta indietro punta a
+una sezione che non esiste più, e nessun errore lo segnala.
+
 Riporta l'esito **sempre**, anche quando è pulito, come prima riga della risposta:
 
 ```
@@ -173,6 +185,16 @@ meritare un file dedicato — proponi, con la prova, come sempre.
 Se una regola del repo è nata da un lavoro, non è una contraddizione da segnalare: la
 decisione e il suo perché stanno nella conoscenza, l'obbligo da seguire sta fra le regole. È
 la stessa cosa vista da due lati.
+
+## Il piano che produci non contiene commit
+
+Quando formuli gli interventi, **non prevedere mai un passo di commit, di push o di creazione
+di un branch**, e non scrivere «poi committa»: in questo progetto il commit è un atto del dev,
+che lo fa dopo aver letto il diff. Chi esegue il tuo piano scrive i file e si ferma.
+
+Vale anche per il tuo intervento più grande, la riorganizzazione di un `CLAUDE.md`: per quanto
+sia atomica nella scrittura, il punto di arrivo è un working tree modificato e un dev che
+decide, non un commit.
 
 ## Cosa non fai mai
 

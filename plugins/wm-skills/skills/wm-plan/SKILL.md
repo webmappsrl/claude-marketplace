@@ -1250,7 +1250,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 - [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione") (riferimento ticket presente se applicabile)
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
-- [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
+- [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
 - [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Diagramma di flusso wm-plan`
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)

@@ -3,6 +3,24 @@
 Letto da: `wm-plan`, `wm-review-ticket`, `wm-tag` e dagli agenti in `plugins/wm-skills/agents/`.
 Non duplicare questo contenuto in una skill: citarlo.
 
+## Nessun commit, mai, senza l'approvazione del dev
+
+**Vale sempre e ovunque in questo progetto: nessuna operazione git** — `git commit`, `git add`,
+`git push`, `git checkout`, la creazione di un branch — viene eseguita durante un lavoro. Si
+scrivono i file e basta.
+
+Non è una regola di una fase di `wm-plan`: vale per ogni skill, ogni agente e ogni operazione
+avviata da uno di essi, compresa la riorganizzazione di un `CLAUDE.md` proposta da
+`wm-context-doctor`. Se stai eseguendo qualcosa in un repo Webmapp, questa regola ti riguarda,
+qualunque strada tu abbia preso per arrivarci.
+
+Il commit è un atto del dev, che lo fa dopo aver **letto il diff**. Un lavoro committato prima
+di quella lettura gli toglie il momento in cui può dire di no — e restituirglielo poi costa un
+`reset`, con la fiducia già spesa.
+
+Se un'istruzione che stai seguendo prevede un commit, quella istruzione è sbagliata: scrivi i
+file, dichiara che il lavoro è pronto e fermati.
+
 ## Tipi di delega
 
 Due tipi, con proprietà opposte. Non vanno unificati: passare contesto a un agente

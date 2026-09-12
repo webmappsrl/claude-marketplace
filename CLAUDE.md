@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Regola che precede tutte le altre
+
+**Nessuna operazione git durante un lavoro**: né `git commit`, né `git add`, né `git push`, né
+la creazione di un branch. Si scrivono i file e ci si ferma, dichiarando che il lavoro è
+pronto.
+
+Vale per qualsiasi strada si sia presa per arrivare qui: una fase di `wm-plan`, un piano
+prodotto da `wm-context-doctor`, una richiesta diretta. Il commit è un atto del dev, che lo fa
+dopo aver **letto il diff** — committare prima gli toglie il momento in cui può dire di no.
+
+Se un'istruzione che stai seguendo prevede un commit, quell'istruzione è sbagliata.
+
 ## Cos'è questo repo
 
 Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
