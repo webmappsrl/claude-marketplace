@@ -38,6 +38,13 @@ I quattro rilievi delle regole condivise, più:
 - **sezioni fuori scala** — una sezione cresciuta al punto da meritare un file proprio
 - **materiale operativo** — procedure passo-passo che servono solo a chi sta eseguendo
   quella procedura
+- **doppio indice** — un `CLAUDE.md` che ha ancora sia `## Feature disponibili` sia
+  `## Decisioni architetturali` tiene due elenchi della stessa cosa, con una voce per lavoro
+  ciascuno: si ripetono per costruzione e divergono alla prima modifica di una sola delle due.
+  La forma di destinazione è quella descritta nelle regole condivise — un indice solo
+  (`## Lavori`), una riga per lavoro, il dettaglio in `docs/decisions/<slug>.md`, dove `<slug>`
+  è il nome della cartella degli artefatti di quel lavoro. Proponi la riorganizzazione, non
+  eseguirla: è il caso in cui il dev deve leggere prima cosa cambia.
 
 Misura la dimensione delle sezioni, non fidarti dell'impressione:
 

@@ -1070,31 +1070,89 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 
 ## Fase: update-context
 
-Aggiorna il `CLAUDE.md` nella root del progetto target con le informazioni prodotte dal workflow. Se il file non esiste, crealo.
+Registra nel repo target ciò che di questo lavoro serve a chi lo toccherà domani.
 
-**Sezione `## Feature disponibili`** — aggiorna o crea con una riga per ogni feature completata:
+**L'identificativo del lavoro è il nome della cartella degli artefatti** creata in
+`Fase: overview`, cioè `docs/features/<slug>/`. Leggilo, non ricalcolarlo: la regola
+`<ID>-<titolo-in-kebab-case>` serve a *creare* quella cartella, non a ri-derivarne il nome
+ogni volta. Se il titolo del ticket nel frattempo è cambiato, ri-derivare produrrebbe un
+nome diverso da quello reale, e il legame si romperebbe in silenzio.
+
+```bash
+ls -d docs/features/*/ | grep "<ID>"      # con ticket
+```
+
+### update-context: pagina del lavoro
+
+Scrivi `docs/decisions/<slug>.md` — stesso `<slug>` della cartella degli artefatti:
 
 ```markdown
-## Feature disponibili
+> Ticket: oc:<ID>   ← ometti se non c'è ticket
 
-| Feature | Ticket | Moduli toccati | Note |
+# <Titolo del lavoro>
+
+## Cosa fa
+<una o due frasi: cosa il sistema fa di diverso dopo questo lavoro>
+
+## Moduli toccati
+`path/modulo1`, `path/modulo2`
+
+## Decisioni
+- **<decisione>**: <cosa è stato deciso e perché>, incluse le alternative scartate e il
+  motivo per cui sono state scartate
+```
+
+Le decisioni vengono dalla `Fase: challenge` e dalla `Fase: notes`: sono le scelte non ovvie
+che un futuro Claude rifarebbe da capo senza trovarle scritte.
+
+**Questa pagina non è il quarto artefatto del cantiere.** `docs/features/<slug>/` racconta
+*com'è andata* — overview, piano, note, deviazioni — e si legge per capire come è nata una
+feature. `docs/decisions/<slug>.md` è *ciò che resta*: si legge per non rifare un
+ragionamento già fatto. Tenere separate le due cose è l'unico modo perché qualcuno sappia
+dove cercare.
+
+### update-context: indice nel CLAUDE.md
+
+Nel `CLAUDE.md` del repo target va **una riga sola** per lavoro, sotto `## Lavori`:
+
+```markdown
+## Lavori
+
+| Lavoro | Ticket | Cosa fa | Dettaglio |
 |---|---|---|---|
-| <Titolo feature> | oc:<ID> | `path/modulo1`, `path/modulo2` | <una riga: cosa fa> |
+| <Titolo> | oc:<ID> | <un gancio di una frase> | [docs/decisions/<slug>.md](docs/decisions/<slug>.md) |
 ```
 
-Se la sezione esiste già, aggiungi la nuova riga senza toccare quelle precedenti.
+**Il rimando è un link Markdown o un percorso in prosa, mai `@percorso/file.md`**: in un
+`CLAUDE.md` quella sintassi non è un link ma un import, e il file viene caricato all'avvio
+di ogni sessione — annullando il motivo stesso di averlo separato.
 
-**Sezione `## Decisioni architetturali`** — aggiungi le scelte non ovvie emerse dalla Fase: challenge e dalla Fase: notes che un futuro Claude dovrebbe conoscere per non ripercorrere gli stessi ragionamenti:
+**Non esiste più una seconda sezione.** Le vecchie `## Feature disponibili` e
+`## Decisioni architetturali` avevano la stessa granularità — una voce per lavoro — quindi
+erano due indici dello stesso insieme, scritti in due momenti diversi: si ripetevano per
+costruzione e divergevano alla prima modifica di una sola delle due. Ora l'indice è uno.
 
-```markdown
-## Decisioni architetturali
+**Cosa non entra nell'indice.** Il criterio è: *è nato da un lavoro?* Se sì ha una pagina e
+una riga. Se no — struttura delle cartelle, convenzioni di naming, come si valida prima del
+commit — non è la decisione di una feature, è il repo: resta nel corpo del `CLAUDE.md` come
+sezione normale.
 
-### <Titolo feature> (oc:<ID>)
-- <decisione 1: cosa e perché>
-- <decisione 2: cosa e perché>
-```
+### update-context: repo non ancora in questa forma
 
-Se la sezione esiste già, aggiungi il nuovo blocco in cima (le decisioni recenti sono le più rilevanti).
+Se il `CLAUDE.md` del repo target ha ancora `## Feature disponibili` e/o
+`## Decisioni architetturali` e non ha `## Lavori`, **non migrare di tua iniziativa**: la
+riorganizzazione di un `CLAUDE.md` esistente è un'operazione a sé, che il dev avvia quando
+vuole invocando `wm-context-doctor`.
+
+In quel caso:
+
+1. scrivi comunque `docs/decisions/<slug>.md` — è un file nuovo, non tocca nulla di esistente;
+2. aggiungi la riga nella sezione che il repo già usa (`## Feature disponibili`), con il link
+   alla pagina al posto della descrizione lunga, e **non** scrivere un blocco in
+   `## Decisioni architetturali`: il suo contenuto è ora nella pagina;
+3. segnalalo al dev **una volta sola**, senza insistere:
+
+   > `ℹ️ Questo repo usa ancora la forma vecchia del CLAUDE.md. Le decisioni di questo lavoro sono in docs/decisions/<slug>.md; per riorganizzare il resto puoi invocare wm-context-doctor.`
 
 **Controllo di forma prima di scrivere.**
 
@@ -1116,8 +1174,9 @@ Se l'agente risponde `NESSUN RILIEVO`, procedi. Se risponde `CONTROLLO FALLITO: 
 o non risponde affatto (timeout, errore di spawn), scrivi comunque: il controllo è un
 ausilio, non un gate.
 
-La forma in cui si scrive resta quella attuale (una riga in "Feature disponibili", un blocco
-in "Decisioni architetturali"): la struttura a indice è materia di **oc:8528**.
+Il `wm-context-guard` applica le stesse regole che valgono qui: se segnala che una voce
+esistente dice già ciò che stai per scrivere, o che lo contraddice, quella è informazione da
+portare al dev prima di scrivere, non da risolvere in autonomia.
 
 Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
