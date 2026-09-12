@@ -865,6 +865,24 @@ Se il dev conferma, chiama `update_story` con `estimated_hours` pari al nuovo to
 
 Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
 
+### execution: divergenze
+
+Quando l'implementazione devia da un task di `plan.md`, **annotalo subito, non a fine lavoro**: una divergenza si descrive bene mentre la si vive, male ricostruendola dopo, quando resta solo il ricordo di averla avuta.
+
+Il contenuto della divergenza va scritto **una sola volta**, in `docs/features/<feature-slug>/notes.md`, sotto una sezione `## Divergenze dal piano, task per task` con un sottotitolo `### <task>` per ciascuna.
+
+In `plan.md`, all'inizio del task divergente, va una riga sola che rimanda alla nota:
+
+```markdown
+> ⚠️ L'implementazione ha deviato da questo task: [notes.md](notes.md#task-4-registrazione-condizionale)
+```
+
+Motivo: tiene separate due domande — "cosa avevamo deciso" (il piano) e "cosa è successo" (le note) — senza che il piano possa ingannare chi lo apre a metà, senza sapere che quel pezzo è superato. Le alternative sono tutte peggiori: riscrivere il piano cancella la storia del cambiamento, lasciarlo muto trae in inganno, duplicare il testo nei due file crea due verità che divergono al primo aggiornamento.
+
+**Nota tecnica:** l'ancora segue lo slug GitHub del titolo (minuscolo, punteggiatura rimossa, spazi convertiti in trattini).
+
+**Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione — in quel caso conviene riscriverlo invece di continuare ad annotarlo.
+
 ### execution: review-gate (obbligatorio, non skippabile)
 
 <HARD-GATE>
@@ -987,6 +1005,19 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
 - **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
+- **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, non qui. In questa fase **verifica che i rimandi funzionino**: ogni riga `> ⚠️ L'implementazione ha deviato` in `plan.md` deve puntare a un titolo che esiste davvero in `notes.md`. Un rimando rotto non produce nessun errore in Markdown — resta lì e nessuno se ne accorge — quindi il controllo va fatto a macchina:
+
+  ```bash
+  cd docs/features/<feature-slug>
+  # estrae le ancore citate nel piano e le confronta con i titoli presenti nelle note
+  grep -o 'notes\.md#[a-z0-9-]*' plan.md | sed 's/.*#//' | sort -u > /tmp/wm-ancore-citate
+  grep '^### ' notes.md | sed 's/^### //' \
+    | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 -]//g; s/ /-/g' | sort -u > /tmp/wm-ancore-esistenti
+  comm -23 /tmp/wm-ancore-citate /tmp/wm-ancore-esistenti
+  ```
+
+  Se il comando stampa qualcosa, quei rimandi sono rotti: correggi il titolo nelle note o l'ancora nel piano prima di proseguire.
+
 - **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.
 
 **Struttura consigliata:**
