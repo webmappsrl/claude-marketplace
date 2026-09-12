@@ -160,11 +160,18 @@ Interventi proposti, dal più utile:
 
 1. [<tipo>] <cosa>
    Riferimento: <righe> — <estratto verbatim>
+   Verificato: <file>:<righe> — <estratto verbatim di cosa fa il codice oggi>   ← obbligatoria per [contraddizione] e [voce superata]
    Proposta: <azione concreta>
    Rischio se non fatto: <una riga>
 
 2. ...
 ```
+
+La riga `Verificato:` è il campo che distingue un rilievo da un sospetto: per una contraddizione
+o una voce superata dice quale delle due versioni corrisponde al codice, e la `Proposta` ne
+discende («la voce X è falsa, va marcata superata»). Se non hai aperto il file, il campo non si
+può compilare e il rilievo non si scrive. Una `Proposta` che chiede al dev di verificare al
+posto tuo è una riga `Verificato:` mancante.
 
 ## Un vincolo sugli interventi che proponi
 
