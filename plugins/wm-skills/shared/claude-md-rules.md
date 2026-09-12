@@ -16,6 +16,33 @@ il rimando nel `CLAUDE.md`. Il repo usa già questo pattern in
 
 Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sposta.**
 
+## Ogni fatto ha una residenza
+
+Un fatto — un comando, un percorso, un vincolo, un valore — vive in **una sezione sola**.
+Altrove, al massimo un rimando di mezza riga. Se `localhost:8099` compare sia nella regola che
+lo impone sia nella sezione sull'ambiente, o se «valida prima di dichiarare il lavoro pronto»
+sta in due punti con due formulazioni, quello è un doppione anche se le parole non coincidono.
+
+Il doppione letterale è il caso facile. Quello che sfugge è **lo stesso fatto detto in due
+modi**: si riconosce chiedendosi, per ogni affermazione, «dove altro nel file questo è già
+detto?» — non «dove altro compare questa frase?». Ogni riorganizzazione ne fa rientrare
+qualcuno, perché chi sposta una sezione porta con sé i fatti che le servivano senza togliere
+quelli rimasti dove stavano.
+
+## Nessuna istruzione può contraddire le regole in cima
+
+Le prime sezioni del file sono le regole che valgono più di tutto. Qualsiasi istruzione più
+in basso che **implichi un'azione lì vietata** è una contraddizione, e va segnalata come tale
+anche quando non nomina l'azione direttamente: «esegui X prima di ogni commit» in un file che
+vieta all'agente di committare chiede un passo che non può avvenire, e una regola che si
+impara a ignorare insegna che le regole si possono ignorare.
+
+Stessa attenzione al **perimetro**: una regola scritta più larga di quanto il codice
+giustifichi («ogni modifica al repo richiede…» quando il vincolo riguarda solo una parte) o
+viene seguita alla lettera producendo lavoro inutile, o viene ignorata. E al **lessico**: se
+il repo ha smesso di «rigenerare» qualcosa e ora la «aggiorna», la parola vecchia in una regola
+nuova è un segnale che la regola è stata copiata, non riletta.
+
 ## I quattro rilievi
 
 | Rilievo | Cos'è | Cosa proporre |
