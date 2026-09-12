@@ -5,18 +5,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Regola che precede tutte le altre
 
 **Non eseguire `git commit`, `git add`, `git push` né creare branch come parte di un lavoro.**
-Scrivi i file, fermati, dichiara che il lavoro è pronto.
+Scrivi i file, fermati, dichiara che il lavoro è pronto. Se un'istruzione che stai seguendo
+prevede un commit, quell'istruzione è sbagliata.
 
-Vale qualunque strada tu abbia preso: una fase di `wm-plan`, un piano di `wm-context-doctor`,
-una richiesta di implementare qualcosa. Se un'istruzione che stai seguendo prevede un commit,
-quell'istruzione è sbagliata.
+**Unica eccezione:** il dev chiede il commit come atto a sé, dopo aver visto cosa è cambiato —
+«committa» detto guardando il risultato, non «fai X e committa».
 
-**Unica eccezione: il dev chiede il commit come atto a sé**, dopo aver visto cosa è cambiato.
-Allora esegui. La differenza è fra «fai X e committa» — dove il commit è un passo di un lavoro
-in corso — e «committa», detto guardando il risultato.
+Il commit è il momento in cui il dev può dire di no: committare dentro il lavoro glielo toglie.
 
-Il motivo: il commit è il momento in cui il dev può dire di no. Committare dentro il lavoro
-glielo toglie.
+## Seconda regola: mai scritture sulla produzione di Orchestrator
+
+**Non provare mai una scrittura contro `https://orchestrator.maphub.it`.** Alcune hanno effetti
+verso l'esterno che nessuno può annullare: scrivere `customer_request` su una story fa scattare
+`addResponse()`, che **notifica il cliente**; i link PDF firmati dei preventivi restano validi
+fino a 90 giorni e non si revocano.
+
+Si prova **sull'istanza locale, `http://localhost:8099`**, avviata con Docker dal repo
+`webmappsrl/orchestrator`. La configurazione del server MCP sta in `.mcp.json.example`, da
+copiare in `.mcp.json` (ignorato da git) adattando il percorso del file di credenziali.
+
+Esiste anche un'istanza di sviluppo, ma le manca un certificato HTTPS valido: usala solo come
+verifica facoltativa, e **non rendere l'accettazione dei certificati non validi il
+comportamento predefinito di alcuno strumento** — va chiesta ogni volta, per non farla diventare
+normale anche verso la produzione.
 
 ## Cos'è questo repo
 
@@ -52,6 +63,20 @@ impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore d
 **Ha un campo `version` (semver), aggiornato ad ogni release.** Il flusso è cadenzato: ad ogni
 release si fa il bump di `version` in questo file e si tagga il commit corrispondente su
 `claude-marketplace` con un tag `v<version>` (es. `v1.1.0`).
+
+## Ambiente
+
+- **Go 1.27.1** per il server MCP (`plugins/wm-skills/mcp/go.mod`).
+- **Il binario versionato è compilato solo per `darwin/arm64`** (`build.sh`): su Linux o Mac
+  Intel va ricompilato cambiando `GOOS`/`GOARCH`, altrimenti il server MCP non parte.
+- Il server MCP non ascolta su alcuna porta: comunica su stdio, e il file delle credenziali si
+  passa con `--auth-file`.
+
+## File da non modificare a mano
+
+- `plugins/wm-skills/bin/orchestrator-mcp` — binario generato: si rigenera con `build.sh`.
+- Struttura, CSS e stile di `docs/guide/wm-plan-diagramma/index.html` — il template è congelato
+  (oc:8283). Si aggiorna il contenuto: nodi e paragrafi quando cambia il workflow.
 
 ## Comandi
 
@@ -137,14 +162,14 @@ Alcune skill condividono un contratto su artefatti o comportamenti. Quando modif
 - **Struttura**: sezioni Markdown (`##`) per separare fasi o categorie; elenchi puntati per step atomici
 - **Frontmatter**: solo `name` e `description` sono obbligatori; evitare campi extra non necessari
 
-## Validare prima del commit
+## Validare
 
 ```bash
 claude plugin validate .
 ```
 
-Verifica la correttezza di `marketplace.json`, `plugin.json` e tutti i `SKILL.md`. Da eseguire
-sempre prima di pushare, specialmente dopo aver modificato i file di config.
+Verifica `marketplace.json`, `plugin.json` e tutti i `SKILL.md`. Da eseguire sempre **prima di
+dichiarare un lavoro pronto**, specialmente dopo aver toccato i file di config.
 
 ## Workflow di test in locale (senza pushare)
 
@@ -166,15 +191,12 @@ Per tornare alla versione remota:
 /plugin marketplace add webmappsrl/claude-marketplace
 ```
 
-## Skill wm-skills disponibili
+## Skill wm-skills
 
-| Skill | Quando si attiva |
-|---|---|
-| `wm-plan` | Implementare, aggiungere o refactorare feature non banali (multi-file, architetturali). Non per bug fix semplici o domande di lettura. |
-| `wm-review-ticket` | Eseguire la code review di un ticket Orchestrator — sia quando un collega assegna un ticket da rivedere, sia al termine di una feature wm-plan prima del merge. |
-| `wm-tag` | Analizzare trascrizioni/brief cliente per creare tag Orchestrator con ticket figli strutturati e stimati. |
+Tre skill: `wm-plan`, `wm-review-ticket`, `wm-tag`. **Quando si attiva ciascuna lo dice il campo
+`description` del suo `SKILL.md`**, che è la fonte autoritativa: non ripeterlo qui, o le due
+versioni divergeranno. Ogni skill può comporre skill di `superpowers`, installato a parte.
 
-Ogni skill può dipendere o comporre skill di `superpowers` (già installato come plugin separato).
 
 ## Integrazione con Orchestrator (sistema ticket Webmapp)
 
