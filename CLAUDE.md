@@ -56,10 +56,8 @@ La versione installata mostrata nell'header di sessione di `wm-plan` (`Header di
 scritto direttamente in quella skill**, non letto a runtime da `plugin.json`, dalla cache dei
 plugin o da git. Motivo: la cache dei plugin (`~/.claude/plugins/cache/...`) non è un repository
 git e il path del repo installato varia a seconda di come l'utente ha aggiunto il marketplace —
-provare a risolverlo a runtime si è rivelato fragile. Lo stesso pattern è già usato per l'URL
-dell'Artifact del diagramma (`### header: diagramma`): un valore statico aggiornato manualmente
-ad ogni modifica rilevante, che resta intrinsecamente allineato ad ogni `/plugin marketplace
-update` perché viaggia con il resto del contenuto della skill.
+provare a risolverlo a runtime si è rivelato fragile. Il valore viaggia con il resto del contenuto
+della skill, quindi resta intrinsecamente allineato ad ogni `/plugin marketplace update`.
 
 **Checklist di release (obbligatoria, in quest'ordine):**
 1. Bump `version` in `plugins/wm-skills/.claude-plugin/plugin.json` (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
@@ -182,19 +180,29 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Diagramma di flusso wm-plan
 
-**URL Artifact:** versionato direttamente in `plugins/wm-skills/skills/wm-plan/SKILL.md` → `## Header di sessione` → `### header: diagramma` (non più qui in `CLAUDE.md`). Motivo: l'URL cambia solo quando si modifica la skill, condizione che coincide sempre con un aggiornamento di `SKILL.md` — spostarlo lì elimina il fetch remoto necessario per leggerlo e lo mantiene intrinsecamente allineato ad ogni `/plugin marketplace update`, senza rischio di staleness.
+Il diagramma del workflow di `wm-plan` è una pagina pubblicata su GitHub Pages:
+<https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/>
 
-Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esecuzione).
+Il sorgente è in `docs/guide/wm-plan-diagramma/index.html` e viene pubblicato dal workflow
+`.github/workflows/pages.yml`, che pubblica **solo `docs/guide/`**: tutto il resto di `docs/`
+è interno e non deve finire online.
 
-**Sorgente HTML versionato nel repo:** il file sorgente dell'Artifact vive in `docs/wm-plan-diagram/index.html`, **non** nello scratchpad di sessione. Motivo: lo scratchpad è effimero e sparisce a fine sessione — una sessione futura che deve rigenerare l'Artifact non avrebbe modo di ritrovare il sorgente esatto già pubblicato, con rischio di ricostruirlo da zero e violare il template congelato (vedi sotto). Tenerlo nel repo lo rende sempre reperibile e diffabile come qualsiasi altro file versionato.
+**Dopo una modifica al workflow di `wm-plan`, aggiorna il sorgente del diagramma.** Non serve
+altro: la pagina si ripubblica da sola al push su `main`. Non esiste più alcun redeploy
+manuale.
 
-**Regola di rigenerazione (obbligatoria per Claude Code):** dopo qualsiasi modifica ai file di questo repo effettuata in una sessione, prima di concludere il lavoro, modifica `docs/wm-plan-diagram/index.html` (se il contenuto deve cambiare) e rigenera l'Artifact passando quello stesso `file_path` alla chiamata di pubblicazione, con lo stesso URL già pubblicato in precedenza (redeploy sullo stesso URL, mai un nuovo Artifact). Questo vale per qualsiasi modifica al repo, non solo per modifiche a `wm-plan`. Se lo strumento di pubblicazione richiede di leggere prima la versione remota attuale (conflitto di sessione) e il fetch fallisce con errore di autenticazione, è probabile che serva switchare all'account Claude del team Webmapp prima di riprovare — non usare mai un redeploy forzato senza che l'utente lo richieda esplicitamente.
+**Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano**
+(`.github/scripts/verifica-diagramma.sh`, eseguito dal workflow `coerenza.yml`). Falla se
+aggiungi o rinomini una fase senza aggiornare la pagina. Il confronto è sui **nomi**: se una
+fase cambia comportamento mantenendo il titolo, il controllo passa e il diagramma resta
+vecchio — quello resta responsabilità di chi modifica la skill.
 
-**Gestione errori (fail-soft):** la pubblicazione avviene per tentativo diretto, senza check preventivo dell'account attivo. Se il redeploy fallisce, avvisa l'utente con `⚠️ Impossibile aggiornare l'Artifact del diagramma — potrebbe servire switchare all'account Claude del team Webmapp.` e prosegui comunque con il resto della sessione, senza bloccare.
+**Il template grafico è congelato** (oc:8283): due colonne di pari altezza, legenda a piena
+larghezza sotto, palette e tipografia date. Si aggiorna il **contenuto** — nodi e paragrafi,
+quando una fase viene aggiunta, rinominata o rimossa — mai struttura, CSS o stile.
 
-**Template grafico congelato (obbligatorio per Claude Code):** il layout definito in oc:8283 — due colonne di pari altezza (diagramma Mermaid a sinistra, dettaglio fasi a destra con scroll interno), legenda a piena larghezza sotto, palette e tipografia definite — è la versione approvata e **non va ridisegnato** ad ogni rigenerazione. Ogni redeploy successivo deve limitarsi ad aggiornare il **contenuto** (nodi del diagramma, paragrafi di dettaglio, se una fase viene aggiunta/rinominata/rimossa in `wm-plan/SKILL.md`) mantenendo invariati struttura HTML, CSS e stile visivo. Se una modifica al repo non tocca il workflow di `wm-plan`, non è necessario alcun cambiamento al contenuto del diagramma stesso, ma il redeploy va comunque eseguito (vedi regola di rigenerazione sopra) per mantenere l'Artifact "vivo" sullo stesso URL.
-
-Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** in `SKILL.md` (non più qui) con il link reale.
+Il runtime Mermaid è caricato dalla pagina stessa: su GitHub Pages non lo fornisce nessuno, e
+senza quello script il diagramma non viene disegnato.
 
 ## Decisioni architetturali
 

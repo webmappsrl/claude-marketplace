@@ -1,0 +1,46 @@
+name: Pubblica le guide su GitHub Pages
+
+# Pubblica SOLO docs/guide/. Tutto il resto di docs/ è interno — i cantieri in
+# docs/features/ e la conoscenza tecnica — e non deve finire online: su un repo
+# cliente significherebbe pubblicare le sue note di sviluppo. Per questo la
+# sorgente è dichiarata qui e non nelle impostazioni del repository, dove sarebbe
+# una tendina che qualcuno cambia senza lasciare traccia.
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/guide/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verifica che si pubblichi solo docs/guide
+        run: |
+          test -d docs/guide || { echo "docs/guide/ non esiste: niente da pubblicare"; exit 1; }
+          echo "Contenuto che verrà pubblicato:"
+          find docs/guide -type f | sort
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/guide
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

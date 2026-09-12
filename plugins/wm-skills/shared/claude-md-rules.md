@@ -44,6 +44,12 @@ Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sp
   Nell'indice del `CLAUDE.md` compare la **conoscenza**, con i rimandi a howto e guide dove
   servono. Il cantiere non va nell'indice.
 
+- **«Utente finale» si legge rispetto a cosa produce quel repo.** Non significa sempre «il
+  cliente»: significa chi usa la cosa che il repo produce. In un progetto Laravel per un
+  cliente è il cliente; in un repo di strumenti interni — un plugin, una libreria, un CLI —
+  sono i dev che lo installano e lo usano. La documentazione d'uso di uno strumento interno è
+  una guida a tutti gli effetti, anche se nomina concetti tecnici: il suo lettore è tecnico.
+
 - **`howto` e `guide` non sono la stessa cosa, anche se sono entrambi istruzioni.** Li separa
   il destinatario, non la forma. Un howto può contenere percorsi, comandi, nomi di file e
   branch; una guida cliente **non deve contenerne nessuno** — stessa regola che `wm-plan` già

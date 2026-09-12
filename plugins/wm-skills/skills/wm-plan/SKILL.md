@@ -64,12 +64,13 @@ LOCAL_DATE=$(git -C "$REPO_PATH" log -1 --format=%ad --date=format:%Y-%m-%d -- p
 
 ### header: diagramma
 
-L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad ogni redeploy (vedi regola di rigenerazione in `CLAUDE.md` → `## Regole del repo` → `### Rigenerare il diagramma di flusso`). Nessun fetch remoto necessario: essendo scritto in `SKILL.md`, è sempre disponibile insieme al resto del contenuto della skill già caricato, e viaggia allineato ad ogni `/plugin marketplace update`.
+L'URL è quello della pagina pubblicata su GitHub Pages dal repo `claude-marketplace`. È
+stabile e non cambia mai: la pagina si aggiorna con il push che modifica il sorgente, quindi
+non c'è nessun redeploy da fare né nessun URL da riscrivere qui.
 
-**URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
+**URL:** https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/
 
-- **Se il valore sopra è un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
-- **Se il valore sopra è assente o è un placeholder** (Artifact non ancora pubblicato la prima volta): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
+Mostra `📊 Diagramma di flusso: <URL>`.
 
 ### header: context
 
@@ -1251,7 +1252,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
-- [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Regole del repo` → `### Rigenerare il diagramma di flusso`
+- [ ] Sorgente del diagramma di flusso `wm-plan` aggiornato, se questa sessione ha modificato il workflow della skill nel repo `claude-marketplace` — la pagina si ripubblica da sé al push, nessun redeploy manuale. Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano: se hai aggiunto o rinominato una fase e non hai toccato la pagina, fallisce
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
