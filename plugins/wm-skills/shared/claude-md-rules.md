@@ -56,6 +56,35 @@ viene seguita alla lettera producendo lavoro inutile, o viene ignorata. E al **l
 il repo ha smesso di «rigenerare» qualcosa e ora la «aggiorna», la parola vecchia in una regola
 nuova è un segnale che la regola è stata copiata, non riletta.
 
+## Un vincolo che protegge da un effetto esterno vive nel file principale
+
+Una regola path-scoped in `.claude/rules/` si carica solo quando si toccano i file che
+dichiara. Va bene per i vincoli che riguardano *quei* file. Non va bene per un vincolo che
+protegge da un effetto verso l'esterno — pubblicare qualcosa online, scrivere su un sistema
+che notifica un cliente, esporre dati — perché il momento in cui serve è quasi sempre un
+altro: chi aggiunge un file sotto `docs/` non sta toccando il diagramma, e la rule che dice
+«si pubblica solo `docs/guide/`» non si carica.
+
+Quindi: **il divieto sta nel `CLAUDE.md`**, in forma di divieto e non di descrizione
+(«pubblica solo X, il resto non va online», non «pubblicazione di X»). La rule path-scoped può
+ripeterlo con il dettaglio operativo, ma non sostituirlo. Quando sposti materiale dal
+`CLAUDE.md` a una rule, controlla se dentro c'era un vincolo di questo tipo: è la cosa che si
+perde più facilmente, perché sembra un dettaglio della procedura e invece è l'unica riga che
+conta.
+
+## Una procedura spostata in howto eredita le regole in cima
+
+Le regole in cima al `CLAUDE.md` valgono per tutto il repo, anche per i file che il
+`CLAUDE.md` rimanda. Una checklist spostata in `docs/howto/` che elenca «commit» e «tag» come
+passi, in un repo la cui prima regola vieta all'agente di committare, è una procedura che
+contraddice il file che la cita — e chi la esegue non ha davanti quella prima regola, perché
+ha aperto l'howto e non il `CLAUDE.md`.
+
+Quindi: quando una procedura contiene passi che l'agente non può eseguire, **quei passi vanno
+marcati esplicitamente come del dev**, nella procedura stessa, non solo nel `CLAUDE.md` che la
+rimanda. Il controllo di coerenza con le regole in cima si applica anche ai file in `howto/`,
+non solo al `CLAUDE.md`: spostare una procedura non la esonera.
+
 ## I quattro rilievi
 
 | Rilievo | Cos'è | Cosa proporre |
