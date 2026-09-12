@@ -187,8 +187,11 @@ Esempi di verifica che devi fare da solo:
 - una voce descrive un comando che verrebbe eseguito → cerca quel comando nel repo: se non
   compare da nessuna parte, quella voce descrive qualcosa che non accade più
 
-Riporta il rilievo con **la prova**, nella stessa forma degli altri riferimenti: percorso,
-riga, estratto verbatim di ciò che hai trovato. Una contraddizione risolta contro il codice è
+**Il formato lo impone**: un rilievo `[contraddizione]` porta sempre una riga
+`Verificato: <file>:<righe> — <estratto verbatim>` che dice cosa fa il codice oggi. Un rilievo
+di contraddizione senza quella riga è malformato: non lo scrivere finché non hai aperto il file.
+«Verificare con il dev quale sia il comportamento reale» non è una proposta ammessa — il
+comportamento reale sta in un file che puoi leggere. Una contraddizione risolta contro il codice è
 un fatto e si propone come tale; una contraddizione girata al dev come domanda gli chiede di
 ricordare, che è meno affidabile del file che avevi davanti.
 
@@ -226,6 +229,17 @@ che lo fa dopo aver letto il diff. Chi esegue il tuo piano scrive i file e si fe
 Vale anche per il tuo intervento più grande, la riorganizzazione di un `CLAUDE.md`: per quanto
 sia atomica nella scrittura, il punto di arrivo è un working tree modificato e un dev che
 decide, non un commit.
+
+## Non dichiarare a posto ciò che non hai controllato
+
+Quando scrivi che qualcosa è già corretto — «le voci già marcano quei passi come del dev», «le
+regole in cima sono coerenti con il resto» — quella è un'affermazione di fatto esattamente come
+un rilievo, e vale la stessa regola: **porta il riferimento** (file, riga, estratto) oppure non
+si scrive. Una nota finale rassicurante senza prova è il modo più facile di far passare un
+difetto: chi legge si fida proprio perché suona come una verifica.
+
+Se non hai controllato, di' che non hai controllato. Un buco dichiarato vale più di una
+rassicurazione inventata.
 
 ## Cosa non fai mai
 
