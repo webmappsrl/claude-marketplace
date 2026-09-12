@@ -36,6 +36,34 @@ un rendering sbagliato nell'editor, quindi va rispettato per convenzione e non p
 
 ## Come ci siamo arrivati
 
+- **Chiamate HTTP costruite a mano dentro le skill** (oc:7961) — il primo approccio: ogni skill
+  sapeva quali endpoint chiamare e con quali campi. Caduto: la superficie dell'API si ripeteva
+  in tre `SKILL.md` e invecchiava in silenzio ad ogni cambio del backend. Sostituito dal server
+  MCP con i tool tipizzati.
+
+- **Il server MCP è un binario Go compilato, non un ambiente da installare**: viaggia dentro il
+  plugin, quindi nessuno deve installare nulla — un eseguibile di poche decine di MB contro
+  l'ambiente di esecuzione che un runtime interpretato si porterebbe dietro.
+- **Comunica su stdio, senza mettersi in ascolto su una porta**: esclude per costruzione ogni
+  conflitto con i container Docker del team.
+- **Produzione e istanza locale sono due server MCP distinti, con nomi diversi** (`orchestrator`
+  e `orchestrator-dev`): il plugin distribuito dichiara solo `orchestrator`, fisso sulla
+  produzione; `orchestrator-dev` esiste solo nel `.mcp.json` di questo repo, per il collaudo.
+  Nomi diversi rendono l'ambiente visibile già nella richiesta di autorizzazione, senza doverlo
+  stampare a parte. Il file delle credenziali è stato reso configurabile (`--auth-file`, non più
+  fissato dentro il client) dopo un difetto emerso nel collaudo dal vivo: i due server leggevano
+  lo stesso file e non potevano essere usati in parallelo con identità diverse.
+- **Gli elenchi dei valori ammessi finiscono nello schema del tool, non solo in un controllo
+  interno**: verificato che l'SDK MCP accetta uno schema costruito a runtime, un valore fuori
+  elenco diventa inesprimibile per costruzione — rifiutato prima ancora che la chiamata parta,
+  invece di dipendere da una convalida che si può dimenticare di eseguire.
+- **Nessuna conferma rafforzata per le scritture non annullabili** (eliminare un preventivo,
+  creare un link PDF pubblico, scrivere `customer_request`): un meccanismo a codice con scadenza
+  richiederebbe uno stato lato server, e nessun parametro derivabile dai dati può fermare
+  l'agente che quei dati li ha appena letti — darebbe una falsa sicurezza. Al suo posto: il
+  titolo della risorsa colpita viene portato nei parametri a scopo informativo dentro la
+  richiesta di autorizzazione, e la regola — questi tool non vanno mai fra quelli approvati in
+  automatico — resta una responsabilità umana, non tecnica.
 - **Gli elenchi dei valori ammessi (`type`, `status`) si leggono dagli enum PHP, non dalla
   specifica OpenAPI**: verificato in esecuzione che la specifica generata da Scramble non li
   espone — quei due campi risultano senza tipo e senza elenco. Il server legge direttamente
