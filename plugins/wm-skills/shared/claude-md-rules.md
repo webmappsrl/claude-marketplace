@@ -42,6 +42,25 @@ detto?» — non «dove altro compare questa frase?». Ogni riorganizzazione ne 
 qualcuno, perché chi sposta una sezione porta con sé i fatti che le servivano senza togliere
 quelli rimasti dove stavano.
 
+### Conoscenza e innesco non sono la stessa cosa
+
+Una pagina di conoscenza si apre **quando serve**: prima di riprogettare qualcosa, per sapere
+cosa è già stato provato. Un **innesco** è diverso: è una verifica che deve scattare ogni volta
+che si fa una certa cosa, e chi non sa che esiste non la cerca.
+
+Spostare un innesco in `docs/knowledge/` e lasciare nel `CLAUDE.md` solo la riga d'indice lo
+archivia fra le cose da leggere di rado: il dettaglio è al posto giusto, ma l'obbligo di
+guardarlo è sparito. **Il dettaglio sta nella pagina, l'obbligo resta fra le regole**, in una
+riga che dice quando scatta:
+
+> Quando modifichi X, controlla se ha un coupling con altri e aggiornali nello stesso lavoro:
+> il dettaglio è in `docs/knowledge/…`.
+
+Come si riconosce un innesco: la domanda è «cosa succede se nessuno lo guarda?». Se la risposta
+è «qualcosa si rompe più tardi, e nessun controllo automatico se ne accorge», allora è un
+innesco e serve la riga fra le regole — a maggior ragione dove non esiste una rete in CI che
+raccolga l'errore.
+
 ### La residenza vale anche fra il CLAUDE.md e i file che rimanda
 
 Spostare una procedura in `docs/howto/` non basta se nel `CLAUDE.md` ne resta un pezzo: «la
