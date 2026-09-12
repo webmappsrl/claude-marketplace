@@ -420,6 +420,35 @@ quali servizi esistono, quali comandi rispondono. Sono le righe che aprono il fi
 ogni sessione legge per prime e che nessuno rilegge mai — e invecchiano in silenzio, perché un
 aggiornamento di versione non tocca la documentazione.
 
+## Quando un repo monta un package condiviso, la conoscenza si divide in due
+
+Un consumer di `wm-package` — o di una libreria frontend come `wm-core` o `map-core` — non ha
+una conoscenza sola: ne ha due, con residenze diverse.
+
+- **Nel package** vive il **dominio**: come funziona il meccanismo, quali tabelle usa, quali
+  stati esistono, quali vincoli valgono per chiunque lo monti. Cambia una volta e vale per
+  tutti i consumer.
+- **Nel repo che lo monta** vive la **customizzazione**: la sorgente dei dati di quel cliente,
+  le sue regole di business, cosa è stato abilitato o disabilitato, i suoi valori di
+  configurazione. Cambia per un cliente solo.
+
+Un caso reale: il catasto sentieri. Il dominio sta in
+`wm-package/docs/resources/TrailRegistry.md`; il repo cliente documenta solo il proprio import
+dalla sorgente regionale e apre la voce con **«Fonte di verità: `<percorso nel package>` per il
+dominio»**.
+
+**La voce nel consumer non ripete il dominio: lo nomina e rimanda.** Ripeterlo crea due copie
+che divergono al primo aggiornamento del package, e il consumer è quello che si accorge per
+ultimo di essere rimasto indietro — perché il package avanza per conto suo.
+
+Il segnale che la divisione è saltata: una voce nel consumer che spiega *come funziona* il
+meccanismo invece di *come lo usiamo qui*. Quella spiegazione appartiene al package, anche se è
+nata lavorando sul cliente.
+
+**Se il fatto riguarda il package e non il consumer, non si documenta nel consumer**: si porta
+nel package. Vale anche al contrario — un vincolo che esiste solo per un cliente non sale nel
+package, dove varrebbe per tutti senza motivo.
+
 ## Un fatto si verifica dove vive, non dove è scritto
 
 Il codice dice cosa il programma *farebbe*. Se le cose stiano davvero così lo dice solo il

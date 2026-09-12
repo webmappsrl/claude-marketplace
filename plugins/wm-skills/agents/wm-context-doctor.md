@@ -52,8 +52,30 @@ ls -d "$REPO"/docs/features/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null \
     done
 # ciò che il file nomina esiste ancora? percorsi citati fra backtick
 grep -o '`[a-zA-Z0-9_]*/[A-Za-z0-9_/.-]*\.[a-z]\{2,4\}`' "<percorso del CLAUDE.md>" | tr -d '`' \
-  | sort -u | while read f; do [ -e "$REPO/$f" ] || echo "CITATO MA ASSENTE: $f"; done
+  | sort -u | while read f; do
+      if [ -e "$REPO/$f" ]; then echo "DA APRIRE: $f"; else echo "CITATO MA ASSENTE: $f"; fi
+    done
 ```
+
+**Ogni riga `DA APRIRE` è un file che devi leggere adesso, prima di scrivere il piano.** Non
+dopo, non «se sembra sospetto»: adesso. Apri il file, cerca nel `CLAUDE.md` cosa afferma su di
+lui, e confronta. È un elenco corto — su un file reale una decina di percorsi — ed è l'unica
+parte del testo che puoi controllare a costo quasi nullo, perché il file stesso ti ha detto dove
+guardare.
+
+Il caso reale che rende questo passo obbligatorio: un `CLAUDE.md` diceva che il gate Nova
+ritorna `!hasRole('Guest')` mentre il codice faceva `hasAnyRole(['Guest','Sus'])`, e che un
+client programmatico poteva usare tre rotte mentre il middleware ne consentiva una. Entrambi i
+file erano citati fra backtick, a due righe di distanza dall'affermazione falsa, e due passaggi
+precedenti non li avevano aperti.
+
+**Le affermazioni pericolose si riconoscono**: perimetri di accesso, ruoli, gate di
+autorizzazione, valori di configurazione, variabili d'ambiente. Una riga che descrive
+un'autorizzazione **più larga** di quella vera è peggio di una riga mancante, perché ci si
+progetta sopra.
+
+Ogni divergenza è un rilievo con la sua riga `Verificato:`, come una contraddizione — solo che
+qui le due voci in conflitto sono il `CLAUDE.md` e il codice.
 
 **`CITATO MA ASSENTE` è un rilievo pieno**, non una nota: va nella riga `Indice:` coi nomi e
 diventa un intervento numerato. Il file manda chi legge a cercare qualcosa che non c'è — e non è
