@@ -31,11 +31,49 @@ Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sp
   del submodule, non in quello del repo principale — stesso principio già valido per gli
   `overview.md` in `wm-plan`.
 
-- **Due assi, non uno.** `docs/features/<slug>/` è il **cantiere**: per lavoro, immutabile,
-  racconta cosa fu fatto e quando. `docs/knowledge/<argomento>.md` è la **conoscenza**: per
-  argomento, mutabile, dice cosa vale oggi. Il primo si legge per capire com'è nata una cosa,
-  il secondo per non rifare un ragionamento già fatto. Nell'indice del `CLAUDE.md` compare la
-  conoscenza, non il cantiere.
+- **Quattro destinazioni, quattro domande diverse.** Prima di scrivere qualsiasi cosa,
+  stabilisci a quale domanda risponde:
+
+  | Dove | Domanda | Per chi | Cambia quando |
+  |---|---|---|---|
+  | `docs/features/<slug>/` | com'è andato quel lavoro | chi indaga il passato | mai: è il cantiere, immutabile |
+  | `docs/knowledge/<argomento>.md` | perché funziona così, cosa è già stato provato | chi deve cambiarlo | cambia la decisione |
+  | `docs/howto/<procedura>.md` | come si fa | chi lavora sul repo, o Claude che esegue | cambia il codice |
+  | `docs/guide/<argomento>/` | cosa fa il prodotto e come si usa | **l'utente finale** | cambia ciò che l'utente vede |
+
+  Nell'indice del `CLAUDE.md` compare la **conoscenza**, con i rimandi a howto e guide dove
+  servono. Il cantiere non va nell'indice.
+
+- **`howto` e `guide` non sono la stessa cosa, anche se sono entrambi istruzioni.** Li separa
+  il destinatario, non la forma. Un howto può contenere percorsi, comandi, nomi di file e
+  branch; una guida cliente **non deve contenerne nessuno** — stessa regola che `wm-plan` già
+  applica alla risposta al cliente. Tenerli insieme porta prima o poi a una guida con dentro un
+  percorso di file, o a un testo scritto per il pubblico sbagliato. C'è anche un rischio meno
+  visibile: Claude legge un howto come istruzione operativa, mentre una guida descrive un
+  prodotto e non dice cosa fare.
+
+- **Le guide cliente portano i propri asset.** Screenshot e immagini vanno in
+  `docs/guide/<argomento>/` accanto al testo, mai in una cartella immagini comune: spostare o
+  cancellare una guida non deve lasciare file orfani.
+
+- **Le guide sono pubblicate, il resto no.** `docs/guide/` è l'unica parte della
+  documentazione destinata a diventare un sito. Tutto ciò che le sta accanto — il cantiere in
+  `docs/features/`, i perché in `docs/knowledge/`, le procedure in `docs/howto/` — è interno e
+  **non deve finire online**: su un repo cliente significherebbe pubblicare le note di sviluppo
+  di un progetto altrui.
+
+  Conseguenza pratica: la pubblicazione va fatta con un workflow che dichiari esplicitamente
+  di pubblicare `docs/guide/` e nient'altro. GitHub Pages configurato da interfaccia accetta
+  come sorgente solo la root o l'intera `docs/`, quindi quella strada pubblicherebbe anche il
+  resto. Un workflow versionato nel repo è verificabile e lascia traccia quando cambia; una
+  tendina nelle impostazioni no.
+
+  Scrivendo una guida, dai per scontato che sia **leggibile da chiunque**: nessun percorso
+  interno, nessun nome di branch, nessun dato di un altro cliente.
+
+- **Una procedura non ha la struttura di una pagina di conoscenza.** Non ha uno «stato
+  attuale» e delle «versioni cadute»: ha dei passi. Se ti trovi a forzare una procedura nella
+  struttura della conoscenza, è nel posto sbagliato.
 
 - **Le pagine di conoscenza sono per argomento, non per ticket.** Nessuno cerca per data:
   chi tocca l'header di una skill non si chiede «cosa fu deciso nel ticket X», si chiede «come

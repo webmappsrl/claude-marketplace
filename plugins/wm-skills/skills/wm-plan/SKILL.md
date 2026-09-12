@@ -1130,6 +1130,30 @@ era stata abbandonata.
 nuova: sovrascrivere una pagina densa è l'operazione che in questa fase può fare più danni, e
 il dev è l'unico che può accorgersene.
 
+### update-context: procedure e guide
+
+Non tutto ciò che resta è conoscenza. Prima di scrivere, stabilisci a quale domanda risponde
+il testo — il criterio completo è in `${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md`:
+
+- **perché funziona così** → `docs/knowledge/<argomento>.md`
+- **come si fa** (procedura per chi lavora sul repo) → `docs/howto/<procedura>.md`
+- **cosa fa il prodotto e come si usa** (per l'utente finale) → `docs/guide/<argomento>/`
+
+**Le guide cliente.** Se in `Fase: estimation` è stato dichiarato un deliverable extra di
+documentazione utente, è qui che va scritto: `docs/guide/<argomento>/`, con gli screenshot
+nella stessa cartella del testo. Una guida non nomina file, classi, branch o dettagli
+implementativi — vale la stessa regola della risposta al cliente in
+`update-context: orchestrator`.
+
+Se il deliverable era stato stimato e non viene prodotto, dillo al dev invece di ometterlo in
+silenzio: era una voce della stima che hai approvato insieme.
+
+**Una guida è destinata a essere pubblicata**, mentre tutto ciò che le sta accanto in `docs/`
+è interno. Scrivila dando per scontato che la legga chiunque: nessun percorso interno, nessun
+nome di branch, nessun riferimento ad altri clienti. Se il repo non ha ancora una
+pubblicazione configurata, non improvvisarla: scrivi la guida e segnalalo al dev, perché la
+scelta di cosa esporre non è tua.
+
 ### update-context: indice nel CLAUDE.md
 
 Nel `CLAUDE.md` del repo target va **una riga sola** per argomento, sotto `## Conoscenza`:
