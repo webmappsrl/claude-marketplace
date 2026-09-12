@@ -4,15 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Regola che precede tutte le altre
 
-**Nessuna operazione git durante un lavoro**: né `git commit`, né `git add`, né `git push`, né
-la creazione di un branch. Si scrivono i file e ci si ferma, dichiarando che il lavoro è
-pronto.
+**Non eseguire `git commit`, `git add`, `git push` né creare branch come parte di un lavoro.**
+Scrivi i file, fermati, dichiara che il lavoro è pronto.
 
-Vale per qualsiasi strada si sia presa per arrivare qui: una fase di `wm-plan`, un piano
-prodotto da `wm-context-doctor`, una richiesta diretta. Il commit è un atto del dev, che lo fa
-dopo aver **letto il diff** — committare prima gli toglie il momento in cui può dire di no.
+Vale qualunque strada tu abbia preso: una fase di `wm-plan`, un piano di `wm-context-doctor`,
+una richiesta di implementare qualcosa. Se un'istruzione che stai seguendo prevede un commit,
+quell'istruzione è sbagliata.
 
-Se un'istruzione che stai seguendo prevede un commit, quell'istruzione è sbagliata.
+**Unica eccezione: il dev chiede il commit come atto a sé**, dopo aver visto cosa è cambiato.
+Allora esegui. La differenza è fra «fai X e committa» — dove il commit è un passo di un lavoro
+in corso — e «committa», detto guardando il risultato.
+
+Il motivo: il commit è il momento in cui il dev può dire di no. Committare dentro il lavoro
+glielo toglie.
 
 ## Cos'è questo repo
 
@@ -48,6 +52,33 @@ impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore d
 **Ha un campo `version` (semver), aggiornato ad ogni release.** Il flusso è cadenzato: ad ogni
 release si fa il bump di `version` in questo file e si tagga il commit corrispondente su
 `claude-marketplace` con un tag `v<version>` (es. `v1.1.0`).
+
+## Comandi
+
+| Cosa | Comando |
+|---|---|
+| Validare marketplace, plugin e skill | `claude plugin validate .` |
+| Test del server MCP | `cd plugins/wm-skills/mcp && go test ./...` |
+| Ricompilare il binario MCP (versionato nel repo) | `plugins/wm-skills/mcp/build.sh` |
+| Verificare che diagramma e skill siano allineati | `./.github/scripts/verifica-diagramma.sh` |
+
+`claude plugin validate .` va eseguito **sempre** prima di un commit: è l'unico controllo che
+copre frontmatter e manifesti. I test Go vanno lanciati quando si tocca `mcp/`, e il binario
+ricompilato ad ogni release, perché viaggia nel plugin.
+
+In CI girano il controllo del diagramma (`.github/workflows/coerenza.yml`) e la pubblicazione
+delle guide su Pages (`pages.yml`, solo `docs/guide/`).
+
+**Istanza locale di Orchestrator**: `http://localhost:8099`, avviata con Docker dal repo
+`webmappsrl/orchestrator`. È l'unico ambiente su cui provare le scritture. La configurazione
+sta in `.mcp.json.example`, da copiare in `.mcp.json` (ignorato da git) adattando il percorso
+del file di credenziali.
+
+## Lingua
+
+Documentazione, commenti, messaggi di commit e descrizioni delle PR sono **in italiano**. I
+termini tecnici restano in inglese: commit, branch, merge, gate, build, deploy, review. Nomi
+di file, slug e identificatori seguono la stessa regola dei termini tecnici.
 
 ## Versioning del plugin wm-skills
 
@@ -89,11 +120,10 @@ della skill, quindi resta intrinsecamente allineato ad ogni `/plugin marketplace
 
 Alcune skill condividono un contratto su artefatti o comportamenti. Quando modifichi una skill, verifica se esiste un coupling documentato qui e aggiorna tutte le skill coinvolte in sincronia.
 
-| Skill A | Skill B | Contratto condiviso |
+| Skill | Con | Contratto condiviso |
 |---|---|---|
 | `wm-plan` | `wm-review-ticket` | `wm-plan` è fonte autoritativa del contratto artefatti `docs/features/<slug>/`. `wm-review-ticket` lo referenzia, non lo duplica. Modificare la struttura artefatti richiede solo aggiornare `wm-plan`. |
-| `wm-tag` | `wm-plan` | `wm-tag` invoca `wm-plan` in tag-mode passando titolo, tipo, repo e TAG_ID. `wm-plan` è responsabile di reverse-interaction, overview, challenge, estimation e scrittura della description del ticket. `wm-tag` gestisce tag, lista ticket e loop. |
-| `wm-plan` | `wm-tag` | `caso-c` in Fase: ticket switcha su `wm-tag` cedendo il controllo del flusso. |
+| `wm-tag` ↔ `wm-plan` | tag-mode | `wm-tag` invoca `wm-plan` passando titolo, tipo, repo e TAG_ID; `wm-plan` si occupa di reverse-interaction, overview, challenge, estimation e description del ticket, `wm-tag` di tag, lista ticket e loop. Nel verso opposto, `caso-c` in `Fase: ticket` cede il controllo a `wm-tag`. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path/istruzioni, nessun riassunto della conversazione precedente). Se il pattern di isolamento cambia in una sotto-fase, verificare se va aggiornato anche nell'altra. |
 
 ### Convenzioni di naming
