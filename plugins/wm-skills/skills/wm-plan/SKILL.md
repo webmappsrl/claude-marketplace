@@ -1180,8 +1180,15 @@ erano due indici dello stesso insieme e si ripetevano per costruzione. L'indice 
 
 **Cosa non entra nell'indice.** Il criterio è: *è nato da un lavoro?* Se sì sta in una pagina
 di conoscenza. Se no — struttura delle cartelle, convenzioni di naming, come si valida prima
-del commit — non è la decisione di una feature, è il repo: resta nel corpo del `CLAUDE.md` come
-sezione normale.
+del commit — non è la decisione di una feature, è il repo: sta in `## Regole del repo`, nel
+corpo del `CLAUDE.md`, fuori dall'indice.
+
+**Se il lavoro introduce una regola da seguire d'ora in poi**, le due cose vanno in due posti
+diversi e non è una duplicazione: il *perché* della scelta, con le alternative scartate, va
+nella pagina di conoscenza col suo ticket; l'*obbligo* — cosa fare ogni volta che si tocca il
+repo — va in `## Regole del repo`, in forma imperativa e senza il ragionamento. Proponi sempre
+al dev la riga da aggiungere: è la sezione che governa come si lavora nel suo repo, e la scrive
+lui.
 
 ### update-context: repo non ancora in questa forma
 

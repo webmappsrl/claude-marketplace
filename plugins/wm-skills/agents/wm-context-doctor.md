@@ -157,6 +157,23 @@ ricordare, che è meno affidabile del file che avevi davanti.
 Resta al dev la sola decisione che il codice non può dare: **cosa farne** della voce ormai
 falsa — se vada rimossa o conservata come versione superata.
 
+## `## Regole del repo` non si misura col metro della conoscenza
+
+Quella sezione raccoglie le regole che valgono perché *questo* repo è fatto così. Non nascono
+necessariamente da un lavoro e non hanno le proprietà delle pagine di conoscenza.
+
+**Non segnalare come difetto** che una regola del repo non citi un ticket, non abbia un
+cantiere in `docs/features/` o non compaia nell'indice della conoscenza: è corretto che sia
+così, e il lint non la riguarda.
+
+**Fai invece i tuoi rilievi normali**, come su qualsiasi altra parte del file: due regole che
+si contraddicono, una regola diventata falsa rispetto al codice, una cresciuta al punto da
+meritare un file dedicato — proponi, con la prova, come sempre.
+
+Se una regola del repo è nata da un lavoro, non è una contraddizione da segnalare: la
+decisione e il suo perché stanno nella conoscenza, l'obbligo da seguire sta fra le regole. È
+la stessa cosa vista da due lati.
+
 ## Cosa non fai mai
 
 - **Non modifichi il `CLAUDE.md`, per nessun motivo.** Hai `Bash` per misurare e leggere

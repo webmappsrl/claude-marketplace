@@ -105,10 +105,29 @@ Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sp
 - **Altrove si cita l'identificativo e basta.** `oc:8278` è già un riferimento risolvibile:
   ripetere di cosa parlava crea la seconda copia che poi diverge.
 
-- **Cosa resta nel corpo del `CLAUDE.md`.** Il criterio è: *è nato da un lavoro?* Se sì sta in
-  una pagina di conoscenza. Se no — struttura delle cartelle, convenzioni di naming, come si
-  valida prima del commit, come si testa in locale — non è la decisione di una feature, è il
-  repo: resta una sezione normale, fuori dall'indice.
+- **`## Regole del repo`: un asse diverso, non una zona protetta.** Nel corpo del `CLAUDE.md`
+  c'è una sezione per le regole che valgono perché *questo* repo è fatto così: struttura delle
+  cartelle, convenzioni di naming, come si valida prima del commit, come si testa in locale,
+  procedure che qui sono obbligatorie e altrove non esistono.
+
+  Gli agenti la trattano **come tutto il resto** per forma e coerenza: se due regole si
+  contraddicono lo dicono, se una è diventata falsa rispetto al codice lo dicono, se una è
+  cresciuta al punto da meritare un file dedicato lo propongono.
+
+  Quello che **non** devono fare è pretendere che abbia le proprietà delle pagine di
+  conoscenza. Una regola del repo non ha un ticket da citare, non ha un cantiere in
+  `docs/features/`, non ha una riga nell'indice della conoscenza. Misurarla con quel metro
+  significherebbe segnalare come difetto una cosa perfettamente a posto.
+
+- **Una regola del repo può nascere da un lavoro, e non è una contraddizione.** Quello che
+  conta è dove vive dopo. La *decisione* di avere quella regola — con il perché e le
+  alternative scartate — sta nella pagina di conoscenza, col suo ticket. La *regola* in sé,
+  quella da seguire ogni volta che si tocca il repo, sta fra le regole del repo. Sono la stessa
+  cosa vista da due lati: **perché è così** contro **cosa devi fare**.
+
+  Esempio: la rigenerazione del diagramma in `claude-marketplace` è stata introdotta da un
+  ticket, ma è una regola che vale solo in quel repo e va seguita sempre; il ragionamento che
+  l'ha prodotta sta nella conoscenza, l'obbligo sta fra le regole.
 
 ## Cosa non si scrive
 
