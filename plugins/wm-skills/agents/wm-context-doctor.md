@@ -77,6 +77,10 @@ l'aggiornamento di quei rimandi nello stesso intervento. Un rimando che resta in
 una sezione che non esiste più, e nessun errore lo segnala.
 
 L'esito va **sempre** nella riga `Indice:` del formato di risposta, anche quando è pulito.
+**Quella riga porta i nomi di ciò che non va, non il conteggio di ciò che c'è**: quante pagine
+esistano o quante voci abbia la tabella non cambia nessuna decisione, e un numero in più è solo
+un'occasione in più di sbagliare. Ciò che si esegue è un nome — la pagina da scrivere, il
+rimando da riparare — e quello va riportato per esteso.
 Ogni cantiere senza conoscenza che quella riga elenca **diventa un intervento numerato**, con
 la sua destinazione: non resta una nota, perché una nota non viene eseguita. Un indice incoerente va segnalato prima del piano, non
 proposto come intervento fra gli altri: significa che una migrazione precedente si è fermata a
@@ -207,7 +211,7 @@ dev'essere quello che hai davvero eseguito, con il numero che ha davvero stampat
 
 ```
 Stato: <dimensione totale>, <numero sezioni>, sezione più pesante: <nome> (<dimensione>)
-Indice: <N> voci, <N> pagine, <esito del lint: rimandi rotti, pagine orfane, cantieri senza conoscenza — coi nomi, oppure "tutto allineato">
+Indice: <esito del lint: rimandi rotti, pagine orfane, cantieri senza conoscenza — coi nomi, oppure "tutto allineato">
 
 Interventi proposti, dal più utile:
 
