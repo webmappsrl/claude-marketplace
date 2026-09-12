@@ -90,7 +90,7 @@ non solo al `CLAUDE.md`: spostare una procedura non la esonera.
 | Rilievo | Cos'è | Cosa proporre |
 |---|---|---|
 | **ripetizione** | la stessa cosa già detta altrove con parole diverse | fondere nella voce esistente |
-| **contraddizione** | due voci che dicono il contrario | marcare la vecchia come superata o rimuoverla — **richiede conferma del dev** |
+| **contraddizione** | due voci che dicono il contrario | **prima si verifica nel codice quale delle due è vera** — è un fatto, non un'opinione; poi si propone di marcare la falsa come superata o rimuoverla. Al dev resta solo la scelta fra marcare e rimuovere: **mai** la domanda «quale delle due vale oggi», che ha già risposta nel repo |
 | **duplicato dal codice** | già leggibile da un file, da un test o dalla git history | non scrivere affatto |
 | **fuori posto** | procedura o dettaglio che non serve a chi apre il repo | spostare in un file dedicato, lasciare il rimando |
 

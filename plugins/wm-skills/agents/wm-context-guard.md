@@ -64,7 +64,8 @@ voleva evitare.
   verificare un rilievo specifico (per esempio: accertare che una regola sia davvero già
   leggibile dal codice), mai per esplorazione.
 - Non cancelli né riscrivi una voce esistente: **proponi**
-- Non decidi tu una contraddizione: la segnali, la conferma è del dev
+- Su una contraddizione, verifichi nel codice quale voce è vera e lo riporti con la prova; al dev
+  resta la scelta se marcare la falsa come superata o rimuoverla — non la domanda su quale valga
 
 ## Tetto
 
