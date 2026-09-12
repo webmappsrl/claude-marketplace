@@ -16,6 +16,19 @@ il rimando nel `CLAUDE.md`. Il repo usa già questo pattern in
 
 Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sposta.**
 
+## Una migrazione si produce dalle regole, mai da una versione precedente
+
+Chi esegue un piano di riordino del `CLAUDE.md` **non riparte da una versione trovata nella
+storia di git**, in un backup o in un altro branch — anche se sembra già approvata, anche se
+farebbe risparmiare lavoro. La produce da zero, applicando le regole di questo file al
+contenuto attuale.
+
+Il motivo: una versione precedente porta con sé gli errori che aveva, e li fa passare per
+verificati. Se era stata annullata, di solito è proprio perché qualcosa non andava; e se era
+stata corretta a mano, quelle correzioni non le ha fatte il metodo, quindi riprenderle non dice
+nulla su quanto il metodo funzioni. Il risultato deve dipendere solo dalle regole: è l'unico
+modo per accorgersi di quale regola manca quando esce sbagliato.
+
 ## Ogni fatto ha una residenza
 
 Un fatto — un comando, un percorso, un vincolo, un valore — vive in **una sezione sola**.
