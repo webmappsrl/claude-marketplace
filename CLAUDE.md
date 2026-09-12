@@ -85,6 +85,8 @@ Alcune skill condividono un contratto su artefatti o comportamenti. Quando modif
 | `wm-tag` | `wm-plan` | `wm-tag` invoca `wm-plan` in tag-mode passando titolo, tipo, repo e TAG_ID. `wm-plan` è responsabile di reverse-interaction, overview, challenge, estimation e scrittura della description del ticket. `wm-tag` gestisce tag, lista ticket e loop. |
 | `wm-plan` | `wm-tag` | `caso-c` in Fase: ticket switcha su `wm-tag` cedendo il controllo del flusso. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path/istruzioni, nessun riassunto della conversazione precedente). Se il pattern di isolamento cambia in una sotto-fase, verificare se va aggiornato anche nell'altra. |
+| `wm-plan` | `shared/agent-delegation.md` | Contratto di delega: tipi, ritorno, tetto, fallback. Modificarlo tocca tutte le skill che delegano. |
+| `wm-context-guard` | `wm-context-doctor` | Leggono lo stesso `shared/claude-md-rules.md`. Le regole si modificano lì, mai in un agente: due copie divergerebbero. |
 
 ### Convenzioni di naming
 
@@ -186,6 +188,16 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 
 ## Decisioni architetturali
 
+### Refactoring wm-skills verso architettura agentica (oc:8527)
+- **Deleghe statiche per fase, nessuna soglia sul context**: il progetto iniziale prevedeva attivare la delega al superamento di una soglia (40% attenzione, 65% delega automatica), scartato perché il transcript di sessione espone i token occupati ma non la dimensione della finestra — ogni percentuale avrebbe avuto un denominatore indovinato, e il modello può cambiare a metà sessione con `/model`
+- **Misura del context solo informativa**: resta nell'header, non pilota più alcuna decisione
+- **PHPStan non delegato**: delegarlo avrebbe potuto trasformare un fallimento dell'agente in un pass silenzioso, annullando l'hard-block deciso in oc:8341 proprio per impedire il bypass implicito sui fallimenti infrastrutturali
+- **Nessun agente scrive contenuto**: `notes.md`, `CLAUDE.md` e l'overview registrano decisioni e responsabilità esistenti solo nel dialogo, a cui un agente non ha assistito
+- **Obbligo di prova verbatim verificabile a macchina per `wm-codebase-research`**: ogni affermazione porta percorso, righe ed estratto verbatim, verificabile con `sed -n 'X,Yp'` — un dossier non verificabile propagherebbe un errore di lettura fino al codice scritto
+- **Regole dei `CLAUDE.md` in un solo file** (`shared/claude-md-rules.md`), letto sia da `wm-context-guard` sia da `wm-context-doctor`: due copie divergerebbero
+- **`wm-estimate` cieco**: corregge l'ottimismo sistematico di chi ha condotto il dialogo e scritto l'overview
+- **Rimozione dei rimandi a `our-code-style`, `our-pr-checklist`, `our-deploy-post-merge`**: skill mai esistite nel plugin
+
 ### Server MCP per Orchestrator
 - **Go compilato invece di un ambiente da installare**: il binario viaggia nel plugin, quindi nessuno deve installare nulla; Go produce un eseguibile di poche decine di MB senza dipendenze da scaricare a runtime, contro l'ambiente di esecuzione che un runtime interpretato si porterebbe dietro
 - **Comunicazione sui canali standard del processo (stdio), nessuna porta in ascolto**: esclude per costruzione ogni conflitto con i container Docker del team
@@ -273,6 +285,7 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 | Esecuzione automatica PHPStan pre-PR/merge in wm-plan | oc:8341 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | `execution: review-gate` esegue PHPStan automaticamente su repo Laravel con PHPStan in CI; hard-block su errori del diff corrente o fallimenti infrastrutturali; override motivato e tracciato in notes.md; errori preesistenti fuori dal diff propongono un ticket Orchestrator dedicato invece di bloccare |
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
 | wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
+| Refactoring wm-skills verso architettura agentica | oc:8527 | `plugins/wm-skills/agents/`, `plugins/wm-skills/shared/`, le tre `SKILL.md` | Cinque agenti formali (`wm-codebase-research`, `wm-env-detect`, `wm-estimate`, `wm-context-guard`, `wm-context-doctor`); deleghe statiche per fase, nessuna soglia; meccanismo e regole in `shared/` come primo mattone del core condiviso |
 | wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |
 | wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
 | Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |
