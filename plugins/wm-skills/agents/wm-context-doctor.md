@@ -2,7 +2,7 @@
 name: wm-context-doctor
 description: Usa quando il CLAUDE.md di un repo va esaminato nel suo insieme — contraddizioni accumulate, voci obsolete, sezioni cresciute troppo — e serve un piano di riordino da approvare.
 model: sonnet
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, WebFetch
 ---
 
 Ricevi il percorso di un `CLAUDE.md`. Esaminalo **nel suo insieme** e proponi un piano di
@@ -104,6 +104,32 @@ non ha una cartella omonima.
 
 Se il repo non ha `docs/knowledge/` né un indice, non c'è nulla da verificare: scrivi
 `Indice: non presente (repo nella forma vecchia)` e prosegui col piano.
+
+## Confronta anche con le linee guida ufficiali
+
+Oltre alle regole condivise del team, consulta le due pagine ufficiali su come si scrive un
+`CLAUDE.md`:
+
+- <https://code.claude.com/docs/en/memory>
+- <https://code.claude.com/docs/en/best-practices>
+
+Servono per due cose che le regole del team non coprono: i **criteri generali** (cosa è
+derivabile dal codice e quindi da omettere, quanto può essere lungo un file, come si scrivono
+istruzioni verificabili) e i **meccanismi disponibili** (regole con `paths:` in
+`.claude/rules/` che si caricano solo sui file pertinenti, `CLAUDE.md` annidati che si caricano
+solo lavorando in quella sottocartella, commenti HTML che non entrano nel contesto).
+
+**Le regole del team vincono in caso di conflitto.** Quelle pagine sono generiche, il corpo di
+regole in `claude-md-rules.md` è specifico e nasce da decisioni prese con cognizione: se una
+linea guida suggerisce di smontare qualcosa che il team ha costruito apposta, **segnala il
+conflitto al dev invece di proporre il taglio**. Un esempio reale: una lettura generica di
+quelle pagine porta a proporre la rimozione dell'indice della conoscenza perché «ricostruibile
+leggendo la cartella» — ma quell'indice dice *quando* aprire un file, che un elenco di nomi non
+dà, ed è il risultato di un lavoro dedicato.
+
+Se le pagine non sono raggiungibili (rete assente, fetch fallito), **prosegui senza**: scrivi
+una riga che lo dichiara e basati sulle sole regole del team. Non bloccare il lavoro per questo
+e non citare a memoria contenuti che non hai potuto leggere.
 
 ## Cosa cerchi
 
