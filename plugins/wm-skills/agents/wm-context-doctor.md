@@ -63,13 +63,9 @@ Per ogni sezione che proponi di spostare o rinominare, elenca **chi la cita** e 
 l'aggiornamento di quei rimandi nello stesso intervento. Un rimando che resta indietro punta a
 una sezione che non esiste più, e nessun errore lo segnala.
 
-Riporta l'esito **sempre**, anche quando è pulito, come prima riga della risposta:
-
-```
-Indice: <N> voci, <N> pagine, nessun rimando rotto
-```
-
-oppure l'elenco dei problemi trovati. Un indice incoerente va segnalato prima del piano, non
+L'esito va **sempre** nella riga `Indice:` del formato di risposta, anche quando è pulito.
+Ogni cantiere senza conoscenza che quella riga elenca **diventa un intervento numerato**, con
+la sua destinazione: non resta una nota, perché una nota non viene eseguita. Un indice incoerente va segnalato prima del piano, non
 proposto come intervento fra gli altri: significa che una migrazione precedente si è fermata a
 metà, e finché resta così ogni altra proposta lavora su una base sbagliata.
 
@@ -171,6 +167,7 @@ awk '/^## /{name=$0; next} {len[name]+=length($0)} END {for (n in len) print len
 
 ```
 Stato: <dimensione totale>, <numero sezioni>, sezione più pesante: <nome> (<dimensione>)
+Indice: <N> voci, <N> pagine, <esito del lint: rimandi rotti, pagine orfane, cantieri senza conoscenza — coi nomi, oppure "tutto allineato">
 
 Interventi proposti, dal più utile:
 
