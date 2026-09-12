@@ -1,0 +1,26 @@
+name: Coerenza fra skill e diagramma
+
+# Il diagramma del workflow è scritto a mano leggendo wm-plan/SKILL.md. Senza questo
+# controllo, aggiungere o rinominare una fase e dimenticare la pagina non produce alcun
+# errore: il diagramma mostra un workflow che non esiste più e nessuno se ne accorge.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'docs/guide/wm-plan-diagramma/**'
+      - '.github/scripts/verifica-diagramma.sh'
+  pull_request:
+    paths:
+      - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'docs/guide/wm-plan-diagramma/**'
+      - '.github/scripts/verifica-diagramma.sh'
+  workflow_dispatch:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./.github/scripts/verifica-diagramma.sh

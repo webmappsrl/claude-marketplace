@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Regola che precede tutte le altre
+
+**Nessuna operazione git durante un lavoro**: né `git commit`, né `git add`, né `git push`, né
+la creazione di un branch. Si scrivono i file e ci si ferma, dichiarando che il lavoro è
+pronto.
+
+Vale per qualsiasi strada si sia presa per arrivare qui: una fase di `wm-plan`, un piano
+prodotto da `wm-context-doctor`, una richiesta diretta. Il commit è un atto del dev, che lo fa
+dopo aver **letto il diff** — committare prima gli toglie il momento in cui può dire di no.
+
+Se un'istruzione che stai seguendo prevede un commit, quell'istruzione è sbagliata.
+
 ## Cos'è questo repo
 
 Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
@@ -44,10 +56,8 @@ La versione installata mostrata nell'header di sessione di `wm-plan` (`Header di
 scritto direttamente in quella skill**, non letto a runtime da `plugin.json`, dalla cache dei
 plugin o da git. Motivo: la cache dei plugin (`~/.claude/plugins/cache/...`) non è un repository
 git e il path del repo installato varia a seconda di come l'utente ha aggiunto il marketplace —
-provare a risolverlo a runtime si è rivelato fragile. Lo stesso pattern è già usato per l'URL
-dell'Artifact del diagramma (`### header: diagramma`): un valore statico aggiornato manualmente
-ad ogni modifica rilevante, che resta intrinsecamente allineato ad ogni `/plugin marketplace
-update` perché viaggia con il resto del contenuto della skill.
+provare a risolverlo a runtime si è rivelato fragile. Il valore viaggia con il resto del contenuto
+della skill, quindi resta intrinsecamente allineato ad ogni `/plugin marketplace update`.
 
 **Checklist di release (obbligatoria, in quest'ordine):**
 1. Bump `version` in `plugins/wm-skills/.claude-plugin/plugin.json` (semver: patch per fix, minor per nuove skill/feature retro-compatibili, major per breaking change nel contratto artefatti o nel nome delle skill).
@@ -85,8 +95,6 @@ Alcune skill condividono un contratto su artefatti o comportamenti. Quando modif
 | `wm-tag` | `wm-plan` | `wm-tag` invoca `wm-plan` in tag-mode passando titolo, tipo, repo e TAG_ID. `wm-plan` è responsabile di reverse-interaction, overview, challenge, estimation e scrittura della description del ticket. `wm-tag` gestisce tag, lista ticket e loop. |
 | `wm-plan` | `wm-tag` | `caso-c` in Fase: ticket switcha su `wm-tag` cedendo il controllo del flusso. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path/istruzioni, nessun riassunto della conversazione precedente). Se il pattern di isolamento cambia in una sotto-fase, verificare se va aggiornato anche nell'altra. |
-| `wm-plan` | `shared/agent-delegation.md` | Contratto di delega: tipi, ritorno, tetto, fallback. Modificarlo tocca tutte le skill che delegano. |
-| `wm-context-guard` | `wm-context-doctor` | Leggono lo stesso `shared/claude-md-rules.md`. Le regole si modificano lì, mai in un agente: due copie divergerebbero. |
 
 ### Convenzioni di naming
 
@@ -172,31 +180,31 @@ cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/m
 
 ## Diagramma di flusso wm-plan
 
-**URL Artifact:** versionato direttamente in `plugins/wm-skills/skills/wm-plan/SKILL.md` → `## Header di sessione` → `### header: diagramma` (non più qui in `CLAUDE.md`). Motivo: l'URL cambia solo quando si modifica la skill, condizione che coincide sempre con un aggiornamento di `SKILL.md` — spostarlo lì elimina il fetch remoto necessario per leggerlo e lo mantiene intrinsecamente allineato ad ogni `/plugin marketplace update`, senza rischio di staleness.
+Il diagramma del workflow di `wm-plan` è una pagina pubblicata su GitHub Pages:
+<https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/>
 
-Questo Artifact mostra un diagramma Mermaid del workflow `wm-plan` (fasi ed esecuzione).
+Il sorgente è in `docs/guide/wm-plan-diagramma/index.html` e viene pubblicato dal workflow
+`.github/workflows/pages.yml`, che pubblica **solo `docs/guide/`**: tutto il resto di `docs/`
+è interno e non deve finire online.
 
-**Sorgente HTML versionato nel repo:** il file sorgente dell'Artifact vive in `docs/wm-plan-diagram/index.html`, **non** nello scratchpad di sessione. Motivo: lo scratchpad è effimero e sparisce a fine sessione — una sessione futura che deve rigenerare l'Artifact non avrebbe modo di ritrovare il sorgente esatto già pubblicato, con rischio di ricostruirlo da zero e violare il template congelato (vedi sotto). Tenerlo nel repo lo rende sempre reperibile e diffabile come qualsiasi altro file versionato.
+**Dopo una modifica al workflow di `wm-plan`, aggiorna il sorgente del diagramma.** Non serve
+altro: la pagina si ripubblica da sola al push su `main`. Non esiste più alcun redeploy
+manuale.
 
-**Regola di rigenerazione (obbligatoria per Claude Code):** dopo qualsiasi modifica ai file di questo repo effettuata in una sessione, prima di concludere il lavoro, modifica `docs/wm-plan-diagram/index.html` (se il contenuto deve cambiare) e rigenera l'Artifact passando quello stesso `file_path` alla chiamata di pubblicazione, con lo stesso URL già pubblicato in precedenza (redeploy sullo stesso URL, mai un nuovo Artifact). Questo vale per qualsiasi modifica al repo, non solo per modifiche a `wm-plan`. Se lo strumento di pubblicazione richiede di leggere prima la versione remota attuale (conflitto di sessione) e il fetch fallisce con errore di autenticazione, è probabile che serva switchare all'account Claude del team Webmapp prima di riprovare — non usare mai un redeploy forzato senza che l'utente lo richieda esplicitamente.
+**Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano**
+(`.github/scripts/verifica-diagramma.sh`, eseguito dal workflow `coerenza.yml`). Falla se
+aggiungi o rinomini una fase senza aggiornare la pagina. Il confronto è sui **nomi**: se una
+fase cambia comportamento mantenendo il titolo, il controllo passa e il diagramma resta
+vecchio — quello resta responsabilità di chi modifica la skill.
 
-**Gestione errori (fail-soft):** la pubblicazione avviene per tentativo diretto, senza check preventivo dell'account attivo. Se il redeploy fallisce, avvisa l'utente con `⚠️ Impossibile aggiornare l'Artifact del diagramma — potrebbe servire switchare all'account Claude del team Webmapp.` e prosegui comunque con il resto della sessione, senza bloccare.
+**Il template grafico è congelato** (oc:8283): due colonne di pari altezza, legenda a piena
+larghezza sotto, palette e tipografia date. Si aggiorna il **contenuto** — nodi e paragrafi,
+quando una fase viene aggiunta, rinominata o rimossa — mai struttura, CSS o stile.
 
-**Template grafico congelato (obbligatorio per Claude Code):** il layout definito in oc:8283 — due colonne di pari altezza (diagramma Mermaid a sinistra, dettaglio fasi a destra con scroll interno), legenda a piena larghezza sotto, palette e tipografia definite — è la versione approvata e **non va ridisegnato** ad ogni rigenerazione. Ogni redeploy successivo deve limitarsi ad aggiornare il **contenuto** (nodi del diagramma, paragrafi di dettaglio, se una fase viene aggiunta/rinominata/rimossa in `wm-plan/SKILL.md`) mantenendo invariati struttura HTML, CSS e stile visivo. Se una modifica al repo non tocca il workflow di `wm-plan`, non è necessario alcun cambiamento al contenuto del diagramma stesso, ma il redeploy va comunque eseguito (vedi regola di rigenerazione sopra) per mantenere l'Artifact "vivo" sullo stesso URL.
-
-Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che non dovrebbe verificarsi con un redeploy corretto), aggiorna il campo **URL Artifact** in `SKILL.md` (non più qui) con il link reale.
+Il runtime Mermaid è caricato dalla pagina stessa: su GitHub Pages non lo fornisce nessuno, e
+senza quello script il diagramma non viene disegnato.
 
 ## Decisioni architetturali
-
-### Refactoring wm-skills verso architettura agentica (oc:8527)
-- **Deleghe statiche per fase, nessuna soglia sul context**: il progetto iniziale prevedeva attivare la delega al superamento di una soglia (40% attenzione, 65% delega automatica), scartato perché il transcript di sessione espone i token occupati ma non la dimensione della finestra — ogni percentuale avrebbe avuto un denominatore indovinato, e il modello può cambiare a metà sessione con `/model`
-- **Misura del context solo informativa**: resta nell'header, non pilota più alcuna decisione
-- **PHPStan non delegato**: delegarlo avrebbe potuto trasformare un fallimento dell'agente in un pass silenzioso, annullando l'hard-block deciso in oc:8341 proprio per impedire il bypass implicito sui fallimenti infrastrutturali
-- **Nessun agente scrive contenuto**: `notes.md`, `CLAUDE.md` e l'overview registrano decisioni e responsabilità esistenti solo nel dialogo, a cui un agente non ha assistito
-- **Obbligo di prova verbatim verificabile a macchina per `wm-codebase-research`**: ogni affermazione porta percorso, righe ed estratto verbatim, verificabile con `sed -n 'X,Yp'` — un dossier non verificabile propagherebbe un errore di lettura fino al codice scritto
-- **Regole dei `CLAUDE.md` in un solo file** (`shared/claude-md-rules.md`), letto sia da `wm-context-guard` sia da `wm-context-doctor`: due copie divergerebbero
-- **`wm-estimate` cieco**: corregge l'ottimismo sistematico di chi ha condotto il dialogo e scritto l'overview
-- **Rimozione dei rimandi a `our-code-style`, `our-pr-checklist`, `our-deploy-post-merge`**: skill mai esistite nel plugin
 
 ### Server MCP per Orchestrator
 - **Go compilato invece di un ambiente da installare**: il binario viaggia nel plugin, quindi nessuno deve installare nulla; Go produce un eseguibile di poche decine di MB senza dipendenze da scaricare a runtime, contro l'ambiente di esecuzione che un runtime interpretato si porterebbe dietro
@@ -285,7 +293,6 @@ Alla prima pubblicazione riuscita (o ad ogni redeploy con URL diverso, caso che 
 | Esecuzione automatica PHPStan pre-PR/merge in wm-plan | oc:8341 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | `execution: review-gate` esegue PHPStan automaticamente su repo Laravel con PHPStan in CI; hard-block su errori del diff corrente o fallimenti infrastrutturali; override motivato e tracciato in notes.md; errori preesistenti fuori dal diff propongono un ticket Orchestrator dedicato invece di bloccare |
 | Ask user to set ticket status to progress in wm-plan | oc:7973 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Chiede all'utente di mettere il ticket in progress al termine della Fase 0; unifica le credenziali Orchestrator in `orchestrator-auth.json` |
 | wm-review-ticket skill | oc:8068 | `plugins/wm-skills/skills/wm-review-ticket/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill per code review strutturata di ticket Orchestrator; contratto artefatti via WebFetch su wm-plan; stash automatico pre-checkout; review opzionale in wm-plan Fase 6d |
-| Refactoring wm-skills verso architettura agentica | oc:8527 | `plugins/wm-skills/agents/`, `plugins/wm-skills/shared/`, le tre `SKILL.md` | Cinque agenti formali (`wm-codebase-research`, `wm-env-detect`, `wm-estimate`, `wm-context-guard`, `wm-context-doctor`); deleghe statiche per fase, nessuna soglia; meccanismo e regole in `shared/` come primo mattone del core condiviso |
 | wm-plan slug e environment-setup | oc:8102 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Migrazione fasi a slug inglesi; nuova Fase: environment-setup con project-detection, domain-mapping, ux-ui-detection, docker-check |
 | wm-tag skill e fase estimation in wm-plan | oc:8157 | `plugins/wm-skills/skills/wm-tag/SKILL.md`, `plugins/wm-skills/skills/wm-plan/SKILL.md` | Nuova skill `wm-tag` per trascrizione → tag + ticket; `caso-c` in Fase: ticket; `Fase: estimation` per Feature; tag-mode in wm-plan |
 | Rivedere criteri di stima ore in wm-plan | oc:8278 | `plugins/wm-skills/skills/wm-plan/SKILL.md` | Classificazione per-componente (scrittura pura/decisioni aperte) con buffer per-componente invece di forfettario; pianificazione misurata via timestamp; marcatore versione `[stima v2 — per-componente]`; `execution: re-estimation` per revisioni mid-execution |

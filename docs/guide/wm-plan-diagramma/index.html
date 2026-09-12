@@ -1,3 +1,9 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Diagramma di flusso della skill wm-plan: le fasi del workflow Webmapp, dalla creazione del ticket alla checklist di completamento.">
 <title>wm-plan — Diagramma di flusso</title>
 <style>
   :root {
@@ -199,8 +205,21 @@
 
   pre.mermaid {
     display: flex;
-    justify-content: center;
+    /* Il diagramma è più largo del riquadro che lo contiene: centrarlo ne farebbe
+       finire metà fuori dal bordo sinistro, irraggiungibile anche scorrendo.
+       Parte da sinistra e lo scorrimento orizzontale di .diagram-scroll fa il resto. */
+    justify-content: flex-start;
     min-width: 560px;
+  }
+
+  /* L'SVG generato è largo circa 1600px: se lo si lascia adattare al contenitore viene
+     scalato per entrare in larghezza e poi centrato verticalmente nell'altezza dichiarata,
+     lasciando centinaia di pixel di vuoto sopra il disegno. Tenendo la larghezza naturale
+     il diagramma resta leggibile e lo scorrimento orizzontale di .diagram-scroll fa il
+     resto. */
+  pre.mermaid svg {
+    max-width: none;
+    height: auto;
   }
 
   section.legend {
@@ -360,6 +379,8 @@
   a { color: var(--steel); }
 </style>
 
+</head>
+<body>
 <div class="page">
   <div class="eyebrow">wm-skills · claude-marketplace</div>
   <h1>wm-plan — diagramma di flusso</h1>
@@ -502,7 +523,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: update-context<span class="tag phase">fase</span></h3>
-        <p>Aggiorna il <code>CLAUDE.md</code> del progetto target con una riga nella tabella "Feature disponibili" e un nuovo blocco in cima a "Decisioni architetturali" — le decisioni recenti sono le più rilevanti per chi lavorerà sul repo in futuro, quindi vanno in cima, non in coda. Il testo lo scrive il context principale, perché registra decisioni prese nel dialogo; prima che venga scritto, l'agente <code>wm-context-guard</code> lo confronta con quanto è già nel file e segnala quattro tipi di rilievo: ripetizione, contraddizione, duplicato da ciò che il codice dice già, e materiale che starebbe meglio in un file dedicato. Giudica come si scrive, mai il merito di una decisione — quello lo può valutare solo chi ha assistito al lavoro — e propone senza mai modificare nulla da sé. <code>wm-context-doctor</code> fa lo stesso lavoro su tutto il file, ma è il dev a invocarlo quando vuole una revisione d'insieme.</p>
+        <p>Scrive la pagina del lavoro in <code>docs/decisions/&lt;slug&gt;.md</code> — cosa fa, moduli toccati, decisioni non ovvie con le alternative scartate — e nel <code>CLAUDE.md</code> del progetto target aggiunge una riga sola nell'indice <code>## Lavori</code>, con il link a quella pagina. L'indice è uno: le vecchie "Feature disponibili" e "Decisioni architetturali" avevano la stessa granularità, quindi erano due elenchi dello stesso insieme destinati a divergere. Il cantiere (<code>docs/features/&lt;slug&gt;/</code>) racconta com'è andata, la pagina di decisione è ciò che resta. Il testo lo scrive il context principale, perché registra decisioni prese nel dialogo; prima che venga scritto, l'agente <code>wm-context-guard</code> lo confronta con quanto è già nel file e segnala quattro tipi di rilievo: ripetizione, contraddizione, duplicato da ciò che il codice dice già, e materiale che starebbe meglio in un file dedicato. Giudica come si scrive, mai il merito di una decisione — quello lo può valutare solo chi ha assistito al lavoro — e propone senza mai modificare nulla da sé. <code>wm-context-doctor</code> fa lo stesso lavoro su tutto il file, ma è il dev a invocarlo quando vuole una revisione d'insieme.</p>
       </div>
       <div class="detail-item">
         <h3>Checklist di completamento<span class="tag phase">fase</span></h3>
@@ -558,3 +579,122 @@ flowchart TD
     <span><a href="https://github.com/webmappsrl/claude-marketplace">webmappsrl/claude-marketplace</a></span>
   </footer>
 </div>
+
+<script type="module">
+// Il diagramma è scritto come <pre class="mermaid">. Su GitHub Pages il runtime non lo
+// fornisce nessuno — a differenza dell'Artifact Claude da cui questa pagina proviene —
+// quindi va importato qui.
+//
+// Va importato come MODULO: dalla versione 11 Mermaid distribuisce solo build ESM, che non
+// definiscono alcun `mermaid` globale. Caricarlo con un <script src> classico non dà errore
+// e non disegna nulla: la pagina resta con il riquadro vuoto e sembra un problema di CSS.
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs';
+
+const scuro = window.matchMedia('(prefers-color-scheme: dark)');
+const sorgenti = new Map();
+document.querySelectorAll('pre.mermaid').forEach((el, i) => sorgenti.set(i, el.textContent));
+
+function configura() {
+  const buio = scuro.matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'base',
+    flowchart: { useMaxWidth: false },
+    themeVariables: {
+      background: buio ? '#1b2126' : '#ffffff',
+      mainBkg: buio ? '#262b34' : '#f4efe4',
+      primaryColor: buio ? '#262b34' : '#f4efe4',
+      primaryTextColor: buio ? '#e7ebee' : '#1b2430',
+      primaryBorderColor: buio ? '#9aa4b8' : '#7a6c52',
+      lineColor: buio ? '#a8adb8' : '#8a7f6d',
+      nodeBorder: buio ? '#9aa4b8' : '#7a6c52',
+      edgeLabelBackground: buio ? '#1b2126' : '#ffffff',
+      titleColor: buio ? '#e7ebee' : '#1b2430',
+      darkMode: buio,
+      fontSize: '16px',
+      fontFamily: getComputedStyle(document.body).fontFamily || 'sans-serif'
+    },
+    themeCSS: '.node rect, .node circle, .node polygon, .node path { stroke-width: 2px; }'
+  });
+}
+
+async function disegna() {
+  configura();
+  await mermaid.run({ querySelector: 'pre.mermaid' });
+}
+
+
+
+await disegna();
+
+// I colori dei nodi sono decisi al momento del render, non dal CSS: se l'utente cambia il
+// tema di sistema il diagramma va ridisegnato dalla sorgente originale.
+scuro.addEventListener('change', async () => {
+  document.querySelectorAll('pre.mermaid').forEach((el, i) => {
+    el.textContent = sorgenti.get(i);
+    el.removeAttribute('data-processed');
+    el.style.display = '';
+  });
+  await disegna();
+});
+</script>
+<script>
+// Il diagramma è scritto come <pre class="mermaid">. Su GitHub Pages il runtime non è
+// fornito dalla piattaforma — a differenza dell'Artifact Claude da cui questa pagina
+// proviene — quindi va caricato qui: senza, la pagina mostrerebbe il testo grezzo del
+// flowchart e sembrerebbe un problema di CSS.
+(function () {
+  if (typeof mermaid === 'undefined') return;
+
+  var scuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+  function stile() {
+    var buio = !!(scuro && scuro.matches);
+    return {
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      flowchart: { useMaxWidth: false },
+      themeVariables: {
+        background: buio ? '#1b2126' : '#ffffff',
+        mainBkg: buio ? '#262b34' : '#f4efe4',
+        primaryColor: buio ? '#262b34' : '#f4efe4',
+        primaryTextColor: buio ? '#e7ebee' : '#1b2430',
+        primaryBorderColor: buio ? '#9aa4b8' : '#7a6c52',
+        lineColor: buio ? '#a8adb8' : '#8a7f6d',
+        nodeBorder: buio ? '#9aa4b8' : '#7a6c52',
+        edgeLabelBackground: buio ? '#1b2126' : '#ffffff',
+        titleColor: buio ? '#e7ebee' : '#1b2430',
+        darkMode: buio,
+        fontSize: '16px',
+        fontFamily: getComputedStyle(document.body).fontFamily || 'sans-serif'
+      },
+      themeCSS: '.node rect, .node circle, .node polygon, .node path { stroke-width: 2px; }'
+    };
+  }
+
+  function disegna() {
+    mermaid.initialize(stile());
+    mermaid.run({ querySelector: 'pre.mermaid' });
+  }
+
+  disegna();
+  // Ridisegna se l'utente cambia il tema di sistema: i colori dei nodi sono decisi
+  // al momento del render, non dal CSS della pagina.
+  if (scuro && scuro.addEventListener) {
+    scuro.addEventListener('change', function () {
+      document.querySelectorAll('pre.mermaid').forEach(function (el) {
+        if (el.dataset.originale) { el.textContent = el.dataset.originale; }
+        el.removeAttribute('data-processed');
+      });
+      disegna();
+    });
+  }
+  document.querySelectorAll('pre.mermaid').forEach(function (el) {
+    el.dataset.originale = el.textContent;
+  });
+})();
+</script>
+</body>
+</html>

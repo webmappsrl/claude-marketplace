@@ -23,7 +23,7 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 **Versione installata:** v1.3.0
 
-Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
+Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Regole del repo` → `### Checklist di release`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
 Mostra `Versione installata: v1.3.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
@@ -64,12 +64,13 @@ LOCAL_DATE=$(git -C "$REPO_PATH" log -1 --format=%ad --date=format:%Y-%m-%d -- p
 
 ### header: diagramma
 
-L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad ogni redeploy (vedi regola di rigenerazione in `CLAUDE.md` → `## Diagramma di flusso wm-plan`). Nessun fetch remoto necessario: essendo scritto in `SKILL.md`, è sempre disponibile insieme al resto del contenuto della skill già caricato, e viaggia allineato ad ogni `/plugin marketplace update`.
+L'URL è quello della pagina pubblicata su GitHub Pages dal repo `claude-marketplace`. È
+stabile e non cambia mai: la pagina si aggiorna con il push che modifica il sorgente, quindi
+non c'è nessun redeploy da fare né nessun URL da riscrivere qui.
 
-**URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
+**URL:** https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/
 
-- **Se il valore sopra è un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
-- **Se il valore sopra è assente o è un placeholder** (Artifact non ancora pubblicato la prima volta): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
+Mostra `📊 Diagramma di flusso: <URL>`.
 
 ### header: context
 
@@ -1070,31 +1071,142 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 
 ## Fase: update-context
 
-Aggiorna il `CLAUDE.md` nella root del progetto target con le informazioni prodotte dal workflow. Se il file non esiste, crealo.
+Registra nel repo target ciò che di questo lavoro serve a chi lo toccherà domani.
 
-**Sezione `## Feature disponibili`** — aggiorna o crea con una riga per ogni feature completata:
+**L'identificativo del lavoro è il nome della cartella degli artefatti** creata in
+`Fase: overview`, cioè `docs/features/<slug>/`. Leggilo, non ricalcolarlo: la regola
+`<ID>-<titolo-in-kebab-case>` serve a *creare* quella cartella, non a ri-derivarne il nome
+ogni volta. Se il titolo del ticket nel frattempo è cambiato, ri-derivare produrrebbe un
+nome diverso da quello reale, e il legame si romperebbe in silenzio.
 
-```markdown
-## Feature disponibili
-
-| Feature | Ticket | Moduli toccati | Note |
-|---|---|---|---|
-| <Titolo feature> | oc:<ID> | `path/modulo1`, `path/modulo2` | <una riga: cosa fa> |
+```bash
+ls -d docs/features/*/ | grep "<ID>"      # con ticket
 ```
 
-Se la sezione esiste già, aggiungi la nuova riga senza toccare quelle precedenti.
+### update-context: pagina di conoscenza
 
-**Sezione `## Decisioni architetturali`** — aggiungi le scelte non ovvie emerse dalla Fase: challenge e dalla Fase: notes che un futuro Claude dovrebbe conoscere per non ripercorrere gli stessi ragionamenti:
+Il sapere che deve sopravvivere a questo lavoro va in `docs/knowledge/<argomento>.md`,
+**organizzato per argomento e non per ticket**: chi domani tocca quel pezzo di sistema non si
+chiede «cosa fu deciso nel ticket X», si chiede «come funziona e cosa è già stato provato».
 
-```markdown
-## Decisioni architetturali
+**Quale pagina.** Cerca fra le pagine esistenti una che copra il tema toccato:
 
-### <Titolo feature> (oc:<ID>)
-- <decisione 1: cosa e perché>
-- <decisione 2: cosa e perché>
+```bash
+ls docs/knowledge/ 2>/dev/null
 ```
 
-Se la sezione esiste già, aggiungi il nuovo blocco in cima (le decisioni recenti sono le più rilevanti).
+- **Esiste già** → aggiornala (vedi sotto).
+- **Non esiste, ed è la prima volta che si tocca questo tema** → creala con il nome del lavoro,
+  cioè lo stesso slug della cartella degli artefatti.
+- **Non esiste, ma un'altra pagina copre lo stesso tema con un altro nome** → proponi al dev di
+  fondere le due in una pagina di argomento, con un nome che descrive il tema e non il lavoro.
+  **Un argomento nasce al secondo lavoro che lo tocca**, non al primo: non inventare tassonomie
+  in anticipo.
+
+**Struttura della pagina** — lo stato attuale in cima, la storia sotto:
+
+```markdown
+# <Argomento>
+
+## Come funziona oggi
+<cosa vale adesso: il comportamento corrente e i vincoli che lo governano>
+
+## Perché così
+- **<scelta>** (oc:<ID>): <motivazione>
+
+## Come ci siamo arrivati
+- **<scelta precedente>** (oc:<ID>, superata): <perché è stata abbandonata>
+```
+
+Ogni voce porta il ticket da cui proviene: è il legame con il cantiere, che resta la fonte
+completa di com'è andata.
+
+**Aggiornare una pagina esistente è una riscrittura, non un'aggiunta.** Apri la pagina,
+stabilisci cosa è ancora valido, riscrivi `## Come funziona oggi` e sposta in
+`## Come ci siamo arrivati` ciò che il tuo lavoro ha superato, **con il motivo**. Una decisione
+caduta non si cancella: chi domani proporrà di nuovo quella strada deve poter leggere perché
+era stata abbandonata.
+
+**Mostra sempre al dev il prima e il dopo** di una pagina riscritta, non solo la versione
+nuova: sovrascrivere una pagina densa è l'operazione che in questa fase può fare più danni, e
+il dev è l'unico che può accorgersene.
+
+### update-context: procedure e guide
+
+Non tutto ciò che resta è conoscenza. Prima di scrivere, stabilisci a quale domanda risponde
+il testo — il criterio completo è in `${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md`:
+
+- **perché funziona così** → `docs/knowledge/<argomento>.md`
+- **come si fa** (procedura per chi lavora sul repo) → `docs/howto/<procedura>.md`
+- **cosa fa il prodotto e come si usa** (per l'utente finale) → `docs/guide/<argomento>/`
+
+**Le guide cliente.** Se in `Fase: estimation` è stato dichiarato un deliverable extra di
+documentazione utente, è qui che va scritto: `docs/guide/<argomento>/`, con gli screenshot
+nella stessa cartella del testo. Una guida non nomina file, classi, branch o dettagli
+implementativi — vale la stessa regola della risposta al cliente in
+`update-context: orchestrator`.
+
+Se il deliverable era stato stimato e non viene prodotto, dillo al dev invece di ometterlo in
+silenzio: era una voce della stima che hai approvato insieme.
+
+**Una guida è destinata a essere pubblicata**, mentre tutto ciò che le sta accanto in `docs/`
+è interno. Scrivila dando per scontato che la legga chiunque: nessun percorso interno, nessun
+nome di branch, nessun riferimento ad altri clienti. Se il repo non ha ancora una
+pubblicazione configurata, non improvvisarla: scrivi la guida e segnalalo al dev, perché la
+scelta di cosa esporre non è tua.
+
+### update-context: indice nel CLAUDE.md
+
+Nel `CLAUDE.md` del repo target va **una riga sola** per argomento, sotto `## Conoscenza`:
+
+```markdown
+## Conoscenza
+
+| Argomento | Cosa copre | Pagina |
+|---|---|---|
+| <Argomento> | <un gancio di una frase> | [docs/knowledge/<argomento>.md](docs/knowledge/<argomento>.md) |
+```
+
+Se il lavoro ha aggiornato una pagina già presente nell'indice, **la riga non cambia**: cambia
+la pagina. L'indice elenca argomenti, non lavori, quindi cresce molto più lentamente di quanto
+crescesse la vecchia tabella delle feature.
+
+**Il rimando è un link Markdown o un percorso in prosa, mai `@percorso/file.md`**: in un
+`CLAUDE.md` quella sintassi non è un link ma un import, e il file viene caricato all'avvio di
+ogni sessione — annullando il motivo stesso di averlo separato.
+
+**Non esiste una seconda sezione.** Le vecchie `## Feature disponibili` e
+`## Decisioni architetturali` avevano la stessa granularità — una voce per lavoro — quindi
+erano due indici dello stesso insieme e si ripetevano per costruzione. L'indice è uno.
+
+**Cosa non entra nell'indice.** Il criterio è: *è nato da un lavoro?* Se sì sta in una pagina
+di conoscenza. Se no — struttura delle cartelle, convenzioni di naming, come si valida prima
+del commit — non è la decisione di una feature, è il repo: sta in `## Regole del repo`, nel
+corpo del `CLAUDE.md`, fuori dall'indice.
+
+**Se il lavoro introduce una regola da seguire d'ora in poi**, le due cose vanno in due posti
+diversi e non è una duplicazione: il *perché* della scelta, con le alternative scartate, va
+nella pagina di conoscenza col suo ticket; l'*obbligo* — cosa fare ogni volta che si tocca il
+repo — va in `## Regole del repo`, in forma imperativa e senza il ragionamento. Proponi sempre
+al dev la riga da aggiungere: è la sezione che governa come si lavora nel suo repo, e la scrive
+lui.
+
+### update-context: repo non ancora in questa forma
+
+Se il `CLAUDE.md` del repo target ha ancora `## Feature disponibili` e/o
+`## Decisioni architetturali` e non ha `## Conoscenza`, **non migrare di tua iniziativa**: la
+riorganizzazione di un `CLAUDE.md` esistente è un'operazione a sé, che il dev avvia quando
+vuole invocando `wm-context-doctor`.
+
+In quel caso:
+
+1. scrivi comunque `docs/knowledge/<argomento>.md` — è un file nuovo, non tocca nulla di esistente;
+2. aggiungi la riga nella sezione che il repo già usa (`## Feature disponibili`), con il link
+   alla pagina al posto della descrizione lunga, e **non** scrivere un blocco in
+   `## Decisioni architetturali`: il suo contenuto è ora nella pagina;
+3. segnalalo al dev **una volta sola**, senza insistere:
+
+   > `ℹ️ Questo repo usa ancora la forma vecchia del CLAUDE.md. Quanto emerso da questo lavoro è in docs/knowledge/<argomento>.md; per riorganizzare il resto puoi invocare wm-context-doctor.`
 
 **Controllo di forma prima di scrivere.**
 
@@ -1116,8 +1228,9 @@ Se l'agente risponde `NESSUN RILIEVO`, procedi. Se risponde `CONTROLLO FALLITO: 
 o non risponde affatto (timeout, errore di spawn), scrivi comunque: il controllo è un
 ausilio, non un gate.
 
-La forma in cui si scrive resta quella attuale (una riga in "Feature disponibili", un blocco
-in "Decisioni architetturali"): la struttura a indice è materia di **oc:8528**.
+Il `wm-context-guard` applica le stesse regole che valgono qui: se segnala che una voce
+esistente dice già ciò che stai per scrivere, o che lo contraddice, quella è informazione da
+portare al dev prima di scrivere, non da risolvere in autonomia.
 
 Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
@@ -1138,8 +1251,8 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 - [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione") (riferimento ticket presente se applicabile)
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
-- [ ] `CLAUDE.md` del progetto target aggiornato — sezione "Feature disponibili" e "Decisioni architetturali"
-- [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Diagramma di flusso wm-plan`
+- [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
+- [ ] Sorgente del diagramma di flusso `wm-plan` aggiornato, se questa sessione ha modificato il workflow della skill nel repo `claude-marketplace` — la pagina si ripubblica da sé al push, nessun redeploy manuale. Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano: se hai aggiunto o rinominato una fase e non hai toccato la pagina, fallisce
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
