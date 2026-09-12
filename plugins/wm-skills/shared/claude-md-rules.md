@@ -281,6 +281,39 @@ I rimandi sono **link Markdown o percorsi citati in prosa**. Mai la forma
 file viene caricato automaticamente all'avvio — annullando il motivo stesso di averlo
 separato.
 
+## I criteri ufficiali, riportati qui
+
+Estratti da <https://code.claude.com/docs/en/memory> e
+<https://code.claude.com/docs/en/best-practices>. Stanno qui, e non dietro una chiamata di
+rete, perché il confronto deve poter avvenire sempre: un controllo che dipende dalla
+connessione è un controllo che salta proprio quando serve.
+
+- **Sotto le 200 righe** per file. Oltre, il file consuma più contesto e **l'aderenza cala**:
+  non è una questione estetica, è che le istruzioni vengono seguite meno.
+- **Un `CLAUDE.md` è contesto, non configurazione applicata.** Nessuna riga è garantita:
+  ciò che deve valere sempre, a prescindere dal giudizio, si scrive come hook, non come frase.
+- **Istruzioni concrete abbastanza da verificarle**: «indentazione a 2 spazi», non «formatta
+  bene»; «esegui `npm test` prima del commit», non «testa le modifiche».
+- **Due istruzioni in conflitto fanno scegliere a caso.** È la ragione tecnica per cui le
+  contraddizioni sono il primo dei quattro rilievi.
+- **Gli import `@percorso` non alleggeriscono**: il file importato si carica comunque
+  all'avvio. L'unico meccanismo che alleggerisce davvero è la regola con `paths:` in
+  `.claude/rules/`, che si carica solo quando si toccano i file corrispondenti. I `CLAUDE.md`
+  annidati in sottocartelle si caricano solo lavorando lì dentro.
+- **Una procedura a più passi, o valida per una sola parte del repo, non sta nel file
+  principale**: diventa una skill o una regola con `paths:`.
+- **I commenti HTML a blocco** (`<!-- ... -->`) vengono rimossi prima che il file entri nel
+  contesto: costano zero e servono a chi mantiene il file.
+- **Si taglia ciò che è derivabile dal codice** — alberi di cartelle, elenchi di dipendenze,
+  panoramiche di architettura — e **si tiene ciò che non lo è**: le trappole, il perché di una
+  scelta, le convenzioni che si discostano dal comportamento predefinito degli strumenti.
+
+**Le regole del team vincono in caso di conflitto**, ma il conflitto va dichiarato al dev, non
+risolto in silenzio. Un caso reale ricorrente: il criterio «l'architettura è derivabile dal
+codice» porta a proporre il taglio di una sezione che il team ha scritto apposta per dire
+*quale* parte guardare. Quel taglio non si propone: si segnala che i due criteri divergono e
+si lascia decidere.
+
 ## Limite di competenza
 
 Queste regole riguardano **come** si scrive, mai **cosa**. Il merito di una decisione lo
