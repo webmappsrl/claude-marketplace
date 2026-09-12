@@ -50,7 +50,20 @@ ls -d "$REPO"/docs/features/*/ 2>/dev/null | xargs -n1 basename 2>/dev/null \
       grep -rqs "oc:$ID\|$s" "$REPO"/docs/knowledge/ "<percorso del CLAUDE.md>" 2>/dev/null \
         || echo "SENZA CONOSCENZA: $s"
     done
+# ciò che il file nomina esiste ancora? percorsi citati fra backtick
+grep -o '`[a-zA-Z0-9_]*/[A-Za-z0-9_/.-]*\.[a-z]\{2,4\}`' "<percorso del CLAUDE.md>" | tr -d '`' \
+  | sort -u | while read f; do [ -e "$REPO/$f" ] || echo "CITATO MA ASSENTE: $f"; done
 ```
+
+**`CITATO MA ASSENTE` è un rilievo pieno**, non una nota: va nella riga `Indice:` coi nomi e
+diventa un intervento numerato. Il file manda chi legge a cercare qualcosa che non c'è — e non è
+mai un caso isolato: se una classe è stata rinominata o rimossa, **tutto ciò che il file dice
+attorno a lei è vecchio della stessa età**, quindi quel nome è anche l'indizio di quale parte del
+testo va riletta per prima.
+
+Questo controllo non dipende dal trovare una contraddizione: una voce falsa **da sola** non
+contraddice nessuno, e nessun controllo di coerenza la tocca. È il motivo per cui sta qui, fra i
+comandi del primo passo, e non fra le cose da valutare leggendo.
 
 **La domanda che questo controllo pone è «di questo lavoro resta qualcosa di leggibile?», non
 «esiste una pagina».** Cerca quindi ovunque la conoscenza viva oggi, incluso il `CLAUDE.md`
@@ -266,6 +279,21 @@ sostituire la voce nell'indice sono un intervento solo, non due**. Fra i due pas
 finestra in cui il repo è incoerente — pagine che nessuno cita e un indice che punta ancora al
 vecchio contenuto — e se l'esecuzione si interrompe lì resta così, senza che nessun errore lo
 segnali. Formula l'intervento in modo che chi lo esegue non possa fermarsi a metà.
+
+## Non tutto ciò che è falso è una contraddizione
+
+La contraddizione è una **coppia**: due voci che si contendono la stessa verità, e allora vai nel
+codice a stabilire chi ha ragione. Una voce falsa **da sola** non contraddice nessuno, e nessun
+controllo di coerenza la tocca. Concludere «non sono coppie in conflitto, quindi non c'è nulla da
+verificare» è il modo in cui un file pieno di affermazioni morte passa per sano.
+
+Il controllo meccanico che intercetta questi casi — l'esistenza di ciò che il file nomina — è fra
+i comandi del **primo passo**, e va eseguito lì. Oltre ai percorsi, quando una voce nomina una
+classe, un metodo o un comando come esistenti, un `grep` basta a stabilire se esiste ancora: se
+non esiste, è un rilievo con la sua riga `Verificato:`.
+
+Quello che invece **non** devi fare è giudicare il merito: perché una scelta è stata presa, cosa
+è stato scartato e se fosse giusto non è verificabile, e non ti compete.
 
 ## Le contraddizioni si verificano nel codice, non si girano al dev
 

@@ -89,6 +89,31 @@ Il segnale che questo caso si sta presentando: la stessa cosa compare in due sez
 verbi opposti** — «non modificare» da una parte, «aggiorna» dall'altra. Non è una
 contraddizione da risolvere scegliendo, è un fatto spezzato da ricomporre.
 
+### Un fatto che sta nelle regole in cima non si ripete altrove
+
+Le regole che precedono tutte le altre esistono perché vanno lette **prima** di qualunque cosa.
+Ripeterne il contenuto per esteso in una sezione tematica crea due residenze dello stesso fatto,
+e le due copie divergono alla prima riscrittura — con l'aggravante che una delle due parla di un
+effetto irreversibile.
+
+Dalla sezione tematica si **rimanda**, in una riga: «è la regola in cima, non una sfumatura».
+Chi arriva lì sa che esiste e dove leggerla per intero; chi arriva dall'alto l'ha già letta.
+
+### Un ID di ticket citato dev'essere verificato, non ricordato
+
+Un riferimento sbagliato è **peggio di nessun riferimento**: chi lo segue apre un ticket che
+parla d'altro e conclude che la nota è vecchia, quando invece è buona. E il costo di sbagliarlo
+è basso proprio perché la verifica è banale — il cantiere sta sul disco:
+
+```bash
+ls -d "$REPO"/docs/features/<ID>-*/ 2>/dev/null     # lo slug dice di cosa parla il ticket
+```
+
+Se lo slug non c'entra con la riga che stai marcando, l'ID è sbagliato: cercalo con un `grep`
+sul contenuto invece di dedurlo dal contesto. **Un ticket produce spesso trappole in domini
+diversi** — le due cose scoperte mentre se ne faceva una terza — quindi non dedurre l'argomento
+di un ticket da dove compare più spesso: guarda lo slug del suo cantiere.
+
 ## Nessuna istruzione può contraddire le regole in cima
 
 Le prime sezioni del file sono le regole che valgono più di tutto. Qualsiasi istruzione più
@@ -254,7 +279,56 @@ non solo al `CLAUDE.md`: spostare una procedura non la esonera.
   Senza questo criterio la sezione delle regole diventa il nuovo posto in cui il file ricresce
   — lo stesso problema di prima, spostato di una sezione. Il segnale è misurabile: se
   `## Regole del repo` è la sezione più pesante del `CLAUDE.md`, quasi certamente contiene
-  procedure che dovrebbero stare altrove.
+  procedure che dovrebbero stare in un howto, oppure trappole che vogliono una sezione propria.
+
+- **Le trappole non sono regole del repo, e hanno sezioni proprie.** Una regola vale sempre
+  («la documentazione è in italiano»); una **trappola** scatta solo quando tocchi una certa cosa
+  («sui campi Media usa `->singleMediaRules()`, `->rules()` blocca ogni salvataggio»). Sono la
+  parte più preziosa di un `CLAUDE.md`, perché non si deducono leggendo il codice — e sono anche
+  la più numerosa, quindi mescolarle alle regole trasforma quella sezione in un contenitore
+  indifferenziato.
+
+  Vivono in **regole path-scoped**, un file per soggetto sotto `.claude/rules/`, con il
+  frontmatter `paths:` che dice quando si caricano:
+
+  ```markdown
+  ---
+  paths:
+    - "src/Nova/**"
+  ---
+
+  # Trappole: Nova
+
+  - <cosa fa sbagliare>: <la conseguenza> — <cosa fare invece> (oc:<ID>)
+  ```
+
+  Il `CLAUDE.md` si carica a **ogni** avvio di sessione: tenerci dentro decine di trappole
+  significa pagarle sempre, anche lavorando su tutt'altro. Una regola con `paths:` si carica
+  **solo quando si tocca un file corrispondente** — cioè nel momento in cui serve. È la
+  differenza fra cercare e ricevere: una trappola non si può cercare, perché chi sta per
+  caderci non sospetta che esista.
+
+  Nel `CLAUDE.md` resta **una sezione `## Trappole` di soli rimandi**, una riga per soggetto:
+  serve perché il soggetto sia noto anche quando si crea un file nuovo senza averne letto
+  nessuno.
+
+  **I soggetti e i `paths:` nascono dal repo**, non da una tassonomia decisa prima. Su un
+  backend Laravel saranno `src/Nova/**`, `src/Models/**`, `src/Jobs/**`, `tests/**`; su un
+  frontend Angular o Ionic saranno le cartelle dei componenti, dello stato, dei servizi HTTP,
+  della build (`*.config.ts`, `package.json`) — e i soggetti diventano «componenti», «store»,
+  «chiamate API», «build». Come per le pagine di conoscenza, **un soggetto nasce al secondo
+  lavoro che lo tocca**.
+
+  **Un `paths:` che non corrisponde a nulla è una regola che non si carica mai, e nessuno lo
+  segnala.** Verifica che ogni cartella citata esista davvero prima di scrivere il file.
+
+  Ogni trappola resta **una riga**: cosa fa sbagliare, la conseguenza, cosa fare invece, e
+  **l'ID del ticket a fine riga, mai come titolo di sezione**.
+
+  **Una trappola con un effetto verso l'esterno non sta in quelle sezioni: va in cima al file**,
+  fra le regole che precedono tutte le altre — una suite che cancella un database, un test che
+  scrive su un registro condiviso, una chiamata che notifica un cliente. Chi arriva al file dal
+  fondo non la leggerebbe in tempo, e quel tipo di errore non si annulla.
 
 - **Una regola del repo può nascere da un lavoro, e non è una contraddizione.** Quello che
   conta è dove vive dopo. La *decisione* di avere quella regola — con il perché e le

@@ -1191,6 +1191,56 @@ repo — va in `## Regole del repo`, in forma imperativa e senza il ragionamento
 al dev la riga da aggiungere: è la sezione che governa come si lavora nel suo repo, e la scrive
 lui.
 
+### update-context: le trappole non sono regole del repo
+
+Una parte di ciò che un lavoro lascia non è né conoscenza né politica: è una **trappola** — un
+comportamento che fa sbagliare chi non lo conosce, e che non si deduce leggendo il codice.
+`->rules()` su un campo Media blocca ogni salvataggio del form; un worker Horizon già avviato
+ignora la classe Job che hai appena modificato; `identifier` non è in `$fillable` e passarlo al
+costruttore lo scarta in silenzio.
+
+La differenza da una regola del repo è **quando scatta**. Una regola vale sempre («la
+documentazione è in italiano»); una trappola vale solo quando tocchi una certa cosa. Metterle
+insieme trasforma `## Regole del repo` in un contenitore indifferenziato che cresce a ogni
+ticket — il primo passo verso il file che si dovrà smontare.
+
+Le trappole vivono quindi in **regole path-scoped**, un file per soggetto sotto
+`.claude/rules/`, così si caricano solo quando si tocca il codice che le riguarda invece di
+pesare su ogni sessione:
+
+```markdown
+---
+paths:
+  - "src/Nova/**"
+---
+
+# Trappole: <soggetto>
+
+- <cosa fa sbagliare>: <la conseguenza, in una riga> — <cosa fare invece> (oc:<ID>)
+```
+
+Nel `CLAUDE.md` va **solo la riga di rimando** nella sezione `## Trappole`, perché il soggetto
+sia noto anche a chi crea un file nuovo senza averne letto nessuno. Il dettaglio del criterio,
+compresi i `paths:` tipici di un frontend, è nelle regole condivise che hai letto.
+
+I soggetti nascono dal repo, non da una tassonomia decisa prima, e **un soggetto nasce al
+secondo lavoro che lo tocca**. Verifica che ogni cartella citata nei `paths:` esista: un pattern
+che non corrisponde a nulla è una regola che non si carica mai, e nessuno lo segnala.
+
+Il formato è vincolante, ed è quello che tiene il file piccolo:
+
+- **una riga per trappola**, imperativa, con la conseguenza;
+- **l'ID del ticket a fine riga**, mai come titolo di sezione: serve a risalire alla storia,
+  non a organizzarla;
+- **la cronaca resta nel `notes.md`** del cantiere — i round di review, cosa è stato provato e
+  scartato, le decisioni di scope. Nel `CLAUDE.md` va solo ciò che, se sparisse, farebbe
+  sbagliare qualcuno.
+
+**Una trappola con un effetto verso l'esterno non va in queste sezioni, va in cima al file**,
+insieme alle altre regole che precedono tutto: un test che scrive davvero su un registro
+condiviso, una suite che cancella un database, una chiamata che notifica un cliente. Chi arriva
+al file dal fondo non le leggerebbe in tempo.
+
 ### update-context: repo non ancora in questa forma
 
 Se il `CLAUDE.md` del repo target ha ancora `## Feature disponibili` e/o
