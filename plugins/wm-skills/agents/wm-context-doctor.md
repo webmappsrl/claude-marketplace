@@ -131,6 +131,22 @@ Se le pagine non sono raggiungibili (rete assente, fetch fallito), **prosegui se
 una riga che lo dichiara e basati sulle sole regole del team. Non bloccare il lavoro per questo
 e non citare a memoria contenuti che non hai potuto leggere.
 
+## Secondo passo: verifica nel codice ogni coppia di voci in conflitto
+
+Fallo **prima di scrivere il piano**, non mentre lo scrivi. Per ogni coppia di affermazioni del
+`CLAUDE.md` che si contraddicono, identifica il file del repo che le renderebbe vera o falsa
+— quasi sempre è citato nelle voci stesse — e aprilo:
+
+```bash
+grep -n "<termine chiave della voce>" <file citato>
+```
+
+Il risultato entra nel piano come riga `Verificato: <file>:<righe> — <estratto>`. Se a questo
+punto non hai eseguito il comando, il rilievo di contraddizione non esiste ancora: quello che
+hai è un sospetto, e un sospetto non si propone al dev. Il tuo mandato di non esplorare il repo
+non c'entra: aprire il file che due voci citano per stabilire quale ha ragione è la verifica di
+un rilievo specifico, il caso in cui il perimetro te lo chiede.
+
 ## Cosa cerchi
 
 I quattro rilievi delle regole condivise, più:
