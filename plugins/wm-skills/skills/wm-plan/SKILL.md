@@ -71,6 +71,30 @@ L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad
 - **Se il valore sopra è un URL valido:** mostra `📊 Diagramma di flusso: <URL>`.
 - **Se il valore sopra è assente o è un placeholder** (Artifact non ancora pubblicato la prima volta): mostra `📊 Diagramma di flusso: non ancora pubblicato`.
 
+### header: context
+
+Mostra l'occupazione del context in **valore assoluto**, come informazione. Non attiva e non
+disattiva nulla.
+
+```bash
+TRANSCRIPT=$(ls -t ~/.claude/projects/"$(pwd | tr '/' '-')"/*.jsonl 2>/dev/null | head -1)
+grep -v '"isSidechain":true' "$TRANSCRIPT" 2>/dev/null | grep -o '"usage":{[^}]*}' | tail -1
+```
+
+Il transcript più recente della directory di progetto potrebbe appartenere a un'altra
+sessione (più istanze aperte sullo stesso repo): per questo la misura resta puramente
+indicativa, coerente col fatto che è solo informativa.
+
+Somma `input_tokens`, `cache_creation_input_tokens` e `cache_read_input_tokens`, e mostra:
+
+`🧮 Context occupato: ~<N>k token`
+
+- **Mai una percentuale:** la dimensione della finestra non è leggibile dal transcript e
+  andrebbe indovinata (200k o 1M, e il modello può cambiare a metà sessione).
+- **Mai un numero inventato:** se il transcript non è raggiungibile o il formato è inatteso,
+  mostra `⚠️ Misura del context non disponibile.` e prosegui.
+- Il filtro `isSidechain` esclude le righe dei subagenti che condividono il transcript.
+
 ---
 
 # Webmapp Feature Workflow
@@ -190,6 +214,37 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 **Credenziali.** Il server legge `~/.config/webmapp/orchestrator-auth.json`. Se un tool segnala credenziali assenti o scadute, guida il dev a rifare l'accesso; il server non lo fa da sé e non chiede mai la password.
 
 **Se i tool non sono disponibili** (server non avviato o in errore), segnalalo al dev, poi leggi `${CLAUDE_PLUGIN_ROOT}/shared/orchestrator-fallback.md` e segui quelle istruzioni per questa sessione. Non ricostruire le chiamate a memoria: quel file è l'unica forma ammessa di ripiego.
+
+---
+
+## Delega ad agenti
+
+Il meccanismo — tipi di delega, contratto di ritorno, tetto all'output, fallback, misura del
+context — è descritto in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`. Leggerlo alla prima
+delega della sessione, non riscriverne il contenuto qui.
+
+Fasi che delegano, e a chi:
+
+| Fase | Agente | Tipo |
+|---|---|---|
+| `environment-setup` | `wm-env-detect` | informata |
+| `reverse-interaction` | `wm-codebase-research` | informata |
+| `challenge` | subagente già previsto | **cieca** |
+| `estimation` | `wm-estimate` | **cieca** |
+| `review-gate` | subagente già previsto | **cieca** |
+| `update-context` | `wm-context-guard` | informata |
+
+Le deleghe sono **statiche**: si applicano sempre in quelle fasi. Nessuna soglia, nessuna
+attivazione basata sulla misura del context.
+
+Restano nel context principale, per scelta motivata in
+`${CLAUDE_PLUGIN_ROOT}/shared/agentic-feasibility.md`: `init-context`, `overview`, `write-plan`,
+`notes`, `review-gate: phpstan-check`, `environment-setup: docker-check` e ogni dialogo con
+il dev.
+
+`wm-context-doctor` non fa parte di questo workflow: il dev lo invoca esplicitamente quando
+vuole una revisione d'insieme del `CLAUDE.md` di un repo (contraddizioni accumulate, voci
+obsolete, sezioni cresciute troppo). Propone un piano da approvare, senza modificare nulla.
 
 ---
 
@@ -366,27 +421,18 @@ Questa fase rileva il tipo di progetto e normalizza l'ambiente prima di qualsias
 
 ### environment-setup: project-detection
 
-Esegui i seguenti check e imposta i flag interni:
+Invoca l'agente `wm-env-detect` sul repo corrente. Restituisce i valori già risolti nel
+formato dichiarato nel suo prompt: `stack_type`, `has_docker`, `has_submodules`, `stack_ui`,
+`has_phpstan_ci`, `DOCKER_PROJECT_DIR_NAME`, elenco submodule.
 
-```bash
-# 1. Rileva Laravel/wmpackage con Docker
-grep -s "DOCKER_PROJECT_DIR_NAME" .env
+Tieni questi valori attivi per tutto il workflow: `DOCKER_PROJECT_DIR_NAME` in particolare
+viene riusato a fine workflow in `review-gate: phpstan-check`.
 
-# 2. Rileva stack frontend
-cat package.json 2>/dev/null | jq -r '(.dependencies // {}) + (.devDependencies // {}) | keys[]' | grep -E "^(@angular/core|vue|@vue/core|react)$"
+Se l'agente restituisce `RILEVAMENTO FALLITO`, mostra
+`⚠️ Environment setup non disponibile — proseguo con il workflow.` e prosegui: questa fase
+è fail-soft e non blocca mai.
 
-# 3. Rileva submodule
-git submodule status 2>/dev/null
-
-# 4. Rileva cartelle frontend Laravel
-ls resources/views/ resources/js/components/ 2>/dev/null | head -3
-
-# 5. Rileva PHPStan configurato (file di config + step CI)
-ls phpstan.neon phpstan.neon.dist 2>/dev/null
-grep -ilr "phpstan" .github/workflows/ 2>/dev/null
-```
-
-**Flag interni da impostare:**
+**Flag interni prodotti dall'agente:**
 
 | Flag | Valore | Condizione |
 |------|--------|-----------|
@@ -408,7 +454,7 @@ grep -ilr "phpstan" .github/workflows/ 2>/dev/null
 
 Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
 
-1. **Submodule presenti** — esegui `git submodule status` e leggi `.gitmodules`. Nota quali repo sono inclusi (es. `wm-package` per backend, `wm-core` / `map-core` per frontend).
+1. **Submodule presenti** — usa il valore `submodule:` già restituito da `wm-env-detect` in `environment-setup: project-detection`, senza rilanciare `git submodule status`. Leggi `.gitmodules` solo se serve il dettaglio dello scopo di ogni submodule (es. `wm-package` per backend, `wm-core` / `map-core` per frontend), non per rideterminare quali sono presenti.
 2. **Dominio della feature** — sulla base del ticket e del codice, classifica la feature:
    - **Custom** — logica specifica di questo progetto, il codice va nel repo principale
    - **Package/submodule** — logica generica riusabile, il codice va nel submodule appropriato
@@ -552,13 +598,36 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 - L'unica eccezione per scendere sotto 5 è una giustificazione esplicita scritta nel tuo messaggio (es. "Il ticket e le note di sviluppo coprono già questi aspetti — le 5 domande sarebbero ridondanti perché…").
 - Ogni domanda deve essere costruita sulla risposta precedente, non preparata in anticipo.
 - Procedi alla Fase: overview solo dopo aver fatto almeno 5 domande e ricevuto tutte le risposte.
-- **Non chiedere ciò che puoi leggere nel codice o nel database.** Per ogni potenziale domanda segui questo protocollo obbligatorio in tre passi — non puoi saltarli:
-  1. **Cerca nel codice** — modelli, migration, config, CLAUDE.md. Hai trovato la risposta? Usala, non fare la domanda.
-  2. **Cerca nel db locale** — che contiene un dump veritiero dei dati di produzione. Interrogalo con `php artisan tinker`, query SQL diretta, o equivalente per lo stack del progetto. Hai trovato la risposta? Usala, non fare la domanda.
-  3. **Solo se entrambe le ricerche sono fallite** — formula la domanda arricchita dal contesto trovato nei passi 1 e 2: cita esplicitamente cosa hai già capito e cosa rimane aperto. Non fare domande che ignorano ciò che hai già trovato.
+- **Non chiedere ciò che puoi leggere nel codice o nel database.** La ricerca si delega
+  all'agente `wm-codebase-research`, che legge nel proprio context e restituisce solo
+  conclusioni con prova verbatim.
+
+  **Una chiamata sola, a inizio fase**, con tutte le domande prevedibili dal ticket. Un
+  agente per ogni domanda renderebbe il dialogo a scatti, ed è il difetto peggiore in una
+  fase che vive di continuità. Se durante il dialogo emerge un buco imprevisto, una chiamata
+  puntuale in più è ammessa come eccezione, non come regola.
+
+  **Verifica obbligatoria di ogni prova ricevuta**, prima di usarne il contenuto:
+
+  ```bash
+  sed -n '<riga-inizio>,<riga-fine>p' <file>
+  ```
+
+  Confronta l'output con l'`Estratto` del dossier. Se anche una sola prova non combacia, il
+  dossier è inattendibile: rifai la ricerca nel context principale e segnalalo al dev.
+
+  Se l'agente risponde `Risposta: non determinabile dal repo`, quella domanda va fatta al
+  dev: è l'esito che rende utile la delega, non un fallimento.
+
+  Se l'agente restituisce `RICERCA FALLITA`, esegui tu la ricerca nel context principale.
+
+  Se una prova combacia ma la conclusione non convince il dev o sembra fraintendere la
+  domanda, rimanda le obiezioni allo stesso `wm-codebase-research` invece di rifare la
+  ricerca nel principale — vedi `## Revisione con l'agente` in
+  `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
 - **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
-  Prima di ogni domanda scrivi esplicitamente: *"Ho cercato nel codice [cosa hai cercato e dove] e nel db [query eseguita] — non ho trovato risposta sufficiente, quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
+  Prima di ogni domanda scrivi esplicitamente: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
 
 **Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
 - Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
@@ -674,91 +743,42 @@ In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a writ
 
 ### estimation: analisi
 
-Il ticket viene eseguito da un agente Claude Code in una sessione continua, non da uno sviluppatore umano con context-switch, riunioni e digitazione manuale — la stima deve modellare il costo reale di **questo** modo di lavorare, non un dev-hours generico calibrato su un ritmo umano. Un moltiplicatore unico applicato al solo tempo di scrittura codice (es. "tempo macchina × 2") si è dimostrato inaffidabile: nasconde dentro un solo numero rischi di natura diversa che vanno stimati separatamente.
+La stima è prodotta dall'agente **cieco** `wm-estimate`, che riceve i percorsi di
+`overview.md` e `plan.md` e **nient'altro** — nessun riassunto della conversazione, stesso
+principio di `challenge: subagent`. Chi ha condotto il dialogo e scritto l'overview stima
+ottimista in modo sistematico: il valore dell'agente sta nel non aver vissuto quella
+conversazione.
 
-Scomponi sempre la stima in tre voci indipendenti:
+Restano nel context principale:
 
-**A. Tempo di esecuzione (macchina), per componente**
+- **la quota misurata** della pianificazione, che l'agente non può conoscere:
 
-Per ogni componente del piano, stima il tempo che impiegheresti tu stesso a scrivere codice e test seguendo il piano approvato. Nessun buffer percentuale qui: è il tuo tempo di scrittura, sei nella posizione migliore per stimarlo con precisione diretta.
+  ```bash
+  NOW=$(date -u +"%Y-%m-%dT%H:%M:%S%z")
+  ```
 
-**B. Buffer di novità del dominio (valore assoluto, una sola volta sull'intera feature — mai una percentuale per-componente)**
+  Differenza con `planning_start_at` registrato in `Fase: ticket`. Se non è stato registrato,
+  vale il fallback già previsto: dichiararlo al dev e presentare solo la quota stimata.
 
-Chiediti: esiste già nel codebase un pattern equivalente a quello che sto per scrivere (stessa forma di relazione, stesso tipo di Nova Resource, stesso genere di scoping)?
+- **la conferma del dev**, invariata.
 
-- **Pattern noto, già visto altrove nel codebase** → +20-30 min
-- **Prima entità/pattern del suo genere, nessun precedente locale da cui copiare** → +1-2h
+Presenta al dev la tabella dell'agente con in testa la riga della pianificazione misurata, e
+chiudi sempre con la scomposizione, mai un numero unico fuso:
 
-Questo buffer copre un rischio specifico e diverso da "requisiti poco chiari": bug di comportamento che **solo il test manuale sull'interfaccia reale può far emergere**, non la fase di challenge (che riduce il rischio sui requisiti noti, non sui difetti di implementazione verificabili solo usando l'interfaccia). Più la feature è priva di precedenti nel codebase, più è probabile che esistano e vengano scoperti in QA — non prima.
-
-**Dove collocarsi dentro la forbetta: due indicatori misurabili, non a sentimento.**
-
-Le due forbette sopra sono ampie. Per scegliere se stare al minimo o al massimo, usa questi due numeri — entrambi disponibili a piano scritto, entrambi oggettivi:
-
-1. **Quanti file elenca la sezione "Moduli toccati"** dell'overview. Indicativamente: 1-3 file → estremo basso della forbetta; 4-10 → centro; oltre 10 → estremo alto.
-2. **Quanti file leggono il simbolo che stai modificando**, quando la modifica tocca qualcosa di condiviso (un case di enum, un metodo di trait, una costante, una firma di interfaccia). Si ottiene con un comando:
-
-   ```bash
-   grep -rl "<NomeSimbolo>" app/ database/ routes/ resources/ | wc -l
-   ```
-
-   Se i **lettori** sono molti più dei file toccati, colloca il buffer **verso l'estremo alto** anche quando la feature sembra minima in scrittura.
-
-Il secondo indicatore copre un modo di sbagliare che il solo asse "pattern noto/ignoto" non vede: **il punto di lettura dimenticato**. Una feature può essere di pattern notissimo e di peso minimo in scrittura (aggiungere un case a un enum: una riga) e avere comunque decine di punti da verificare, perché le liste di stati/tipi/ruoli sono tipicamente hardcodate in posti non centralizzati. Il rischio non è un bug di comportamento nuovo, è una lista che nessuno ha aggiornato — e non lo si scopre in QA su una schermata, ma settimane dopo su un conteggio sbagliato.
-
-**Non trasformare questi indicatori in una matrice né in un secondo buffer sommato**: restano criteri per posizionarsi dentro l'unica forbetta scelta al punto precedente. Il buffer di novità dominio resta **uno**, in valore assoluto, sull'intera feature.
-
-**C. Deliverable extra dichiarati a priori**
-
-Se in Fase: reverse-interaction o Fase: challenge è già chiaro che la feature richiederà, oltre al codice, anche documentazione utente, screenshot, guide o altri artefatti non di codice, aggiungi una riga dedicata con stima propria. Non va assunta "gratis" dentro il tempo di esecuzione, né scoperta a metà implementazione quando il dev la richiede.
-
-**Calcola il tempo di pianificazione misurato:**
-
-```bash
-NOW=$(date -u +"%Y-%m-%dT%H:%M:%S%z")
-```
-
-Confronta `NOW` con `planning_start_at` (registrato in Fase: ticket) e calcola la differenza in ore — questo è un dato misurato, non stimato.
-
-**Se `planning_start_at` non è stato registrato** (es. la Fase: ticket è stata eseguita senza eseguire il comando `date -u` previsto), non calcolare una quota "misurata" fittizia e non presentarla come se il dato fosse disponibile. Segnala esplicitamente all'utente:
-
-> "⚠️ Non ho registrato il timestamp di inizio pianificazione in Fase: ticket — la quota 'Misurato' non è disponibile per questa stima. Propongo solo la quota 'Stimato', senza il confronto Misurato + Stimato = Totale."
-
-Poi procedi con la tabella sottostante omettendo la riga "Pianificazione" e il calcolo `<M>h`.
-
-Produci la stima con questa struttura:
-
-> **Stima proposta**
->
-> | Componente | Ore | Note |
-> |---|---|---|
-> | Pianificazione (ticket → reverse-interaction → overview → challenge → estimation) | \<M\>h (misurata) | Timestamp reali: \<planning_start_at\> → \<NOW\> |
-> | \<componente 1\> (tempo di esecuzione) | \<X\>h | \<motivazione tecnica\> |
-> | \<componente 2\> (tempo di esecuzione) | \<Y\>h | \<motivazione tecnica\> |
-> | Buffer integrazione trasversale (solo se più di un componente) | \<Z\>h | 5% sul totale dei tempi di esecuzione (A) |
-> | Buffer novità di dominio | \<B\>h | Pattern noto (+20-30min) / Prima nel suo genere (+1-2h) — \<motivazione: cosa esiste già nel codebase o cosa manca\> |
-> | Deliverable extra (solo se previsti) | \<D\>h | es. documentazione utente con screenshot, guida, asset |
->
 > **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h**
->
-> Confidenza: alta / media / bassa
-> *(alta = pattern noto nel codebase e requisiti chiari; media = pattern noto ma alcune incertezze tecniche residue; bassa = prima entità del suo genere senza precedenti locali, o dipendenze esterne)*
 
-Regole per la stima:
-- Il buffer di novità dominio (B) è un valore assoluto sull'intera feature, mai una percentuale applicata ai singoli componenti: è un rischio di natura diversa da "requisiti aperti" (quelli li ha già chiusi la Fase: reverse-interaction/challenge) e non si somma bene come percentuale dello stesso numero
-- I deliverable extra (C) vanno dichiarati esplicitamente in questa fase se già prevedibili dal contesto raccolto, non aggiunti a stima già scritta quando il dev li richiede a sorpresa
-- Il buffer di integrazione trasversale si applica solo al totale dei tempi di esecuzione (A), non al buffer di novità dominio
-- Confidenza bassa di default per qualsiasi feature "prima nel suo genere" nel codebase, anche con overview e challenge solidi — quelle fasi riducono il rischio sui requisiti noti, non sui bug di comportamento verificabili solo in QA manuale
-- Non stimare meno di 0.5h per qualsiasi feature che tocchi più di un file
-- Il coefficiente di velocità per-dev NON va applicato in questo ciclo — resta out of scope
+Se l'agente restituisce `STIMA NON POSSIBILE`, produci tu la stima nel context principale
+seguendo gli stessi criteri (tempo di esecuzione per componente, buffer di novità di dominio
+in valore assoluto, 5% di integrazione trasversale) e dichiara al dev che la stima non è
+indipendente.
 
 ### estimation: conferma
 
 Chiedi al dev, riportando sempre la scomposizione (mai un numero unico fuso):
 
-> "Accetti questa stima — **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h** — o vuoi modificarla?"
+> "Accetti questa stima — **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h** — la sostituisci con un tuo valore, o la fai rifare a `wm-estimate` con le tue obiezioni?"
 
-Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev. Se il dev modifica solo la quota stimata (implementazione) lasciando invariata quella misurata (pianificazione), aggiorna solo `<S>` e ricalcola `<N>`.
+Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev. Se il dev modifica solo la quota stimata (implementazione) lasciando invariata quella misurata (pianificazione), aggiorna solo `<S>` e ricalcola `<N>`. Se il dev ritiene il ragionamento sbagliato (es. buffer eccessivo, componente sottostimato), rimanda le sue obiezioni a `wm-estimate` invece di correggere il numero a mano — vedi `## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
 ### estimation: scrittura su Orchestrator
 
@@ -789,8 +809,6 @@ Questo briefing è lo spec che writing-plans usa per generare il piano — senza
 - **Header obbligatorio:** il piano inizia con `> Ticket: oc:<ID>`
 - **Commit convention:** tutti i commit usano `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
 - **⚠️ No commit o branch automatici:** i commit nel piano sono istruzioni testuali per l'utente, non azioni da eseguire autonomamente. Claude non esegue `git commit`, `git push` o crea branch senza conferma esplicita dell'utente per ogni singolo commit.
-
-Durante la scrittura del piano applica la skill `wm-skills:our-code-style` per allineare le scelte implementative alle convenzioni Webmapp.
 
 Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
 
@@ -923,16 +941,24 @@ Se sono coinvolti più repo (principale + submodule), passa al subagente l'elenc
 
 Eseguito **solo se `has_phpstan_ci: true`**, subito dopo `review-gate: subagent` e prima di `review-gate: dialog`.
 
+**Questa fase non è delegabile.** È un hard-block: un agente che fallisce e restituisce
+"nessun errore" trasformerebbe il blocco in un pass silenzioso. Vedi
+`${CLAUDE_PLUGIN_ROOT}/shared/agentic-feasibility.md`.
+
 **Esecuzione:**
 
 ```bash
+rm -f /tmp/wm-phpstan.json
 if [ "$has_docker" = "true" ]; then
-  timeout 300 docker compose -f local.compose.yml exec -T "$DOCKER_PROJECT_DIR_NAME" vendor/bin/phpstan analyse --error-format=json
+  timeout 300 docker compose -f local.compose.yml exec -T "$DOCKER_PROJECT_DIR_NAME" vendor/bin/phpstan analyse --error-format=json > /tmp/wm-phpstan.json
 else
-  timeout 300 vendor/bin/phpstan analyse --error-format=json
+  timeout 300 vendor/bin/phpstan analyse --error-format=json > /tmp/wm-phpstan.json
 fi
 PHPSTAN_EXIT=$?
+jq -r '.files | to_entries[] | "\(.key): \(.value.messages | length) errori"' /tmp/wm-phpstan.json 2>/dev/null
 ```
+
+L'output completo resta sul filesystem (`/tmp/wm-phpstan.json`) e si consulta solo per gli errori che riguardano il diff.
 
 - **`PHPSTAN_EXIT` diverso da 0 e diverso da 1** (comando non trovato, crash, timeout — `timeout` restituisce `124` allo scadere) → **fallimento infrastrutturale**. Tratta questo caso come un blocco (vedi `review-gate: phpstan-override` sotto), con motivazione di default proposta: "PHPStan non è riuscito a completare l'analisi (exit code $PHPSTAN_EXIT) — verificare ambiente/timeout."
 - **`PHPSTAN_EXIT` == 1** (PHPStan ha girato e ha trovato errori) → prosegui al cross-check diff sotto.
@@ -1070,6 +1096,29 @@ Se la sezione esiste già, aggiungi la nuova riga senza toccare quelle precedent
 
 Se la sezione esiste già, aggiungi il nuovo blocco in cima (le decisioni recenti sono le più rilevanti).
 
+**Controllo di forma prima di scrivere.**
+
+Prepara il testo da aggiungere, poi invoca `wm-context-guard` passandogli il percorso del
+`CLAUDE.md` e il testo proposto. L'agente applica le regole di
+`${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md` e restituisce i rilievi: ripetizione,
+contraddizione, duplicato dal codice, fuori posto.
+
+Verifica ogni rilievo che cita una voce esistente con l'estratto e la riga forniti, poi
+correggi il testo di conseguenza. Una **contraddizione** non si risolve mai da soli: va
+portata al dev, perché rimuovere o marcare come superata una voce esistente tocca testo già
+approvato.
+
+Se il dev ritiene un rilievo sbagliato, puoi rimandare l'obiezione a `wm-context-guard`
+(vedi `## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`); se
+resta in disaccordo dopo due giri, decide il dev e si procede.
+
+Se l'agente risponde `NESSUN RILIEVO`, procedi. Se risponde `CONTROLLO FALLITO: <motivo>`
+o non risponde affatto (timeout, errore di spawn), scrivi comunque: il controllo è un
+ausilio, non un gate.
+
+La forma in cui si scrive resta quella attuale (una riga in "Feature disponibili", un blocco
+in "Decisioni architetturali"): la struttura a indice è materia di **oc:8528**.
+
 Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 ---
@@ -1077,9 +1126,6 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 ## Composizione con altre skill Webmapp
 
 - **`ui-ux-pro-max`** — invocata automaticamente in environment-setup: ux-ui-detection quando rilevati componenti UI/UX (Vue, Angular, HTML/CSS). Richiede `/plugin install ui-ux-pro-max@wm-marketplace` se non installata.
-- **`wm-skills:our-code-style`** — applica in Fase: write-plan e Fase: execution
-- **`wm-skills:our-pr-checklist`** — applica dopo la Fase: notes, prima di aprire la PR
-- **`wm-skills:our-deploy-post-merge`** — applica dopo il merge della PR
 
 ---
 

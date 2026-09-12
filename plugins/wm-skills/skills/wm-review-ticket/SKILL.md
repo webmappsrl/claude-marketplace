@@ -15,6 +15,20 @@ Cerca la sezione `## Contratto artefatti` nel file scaricato. Funziona anche se 
 
 ---
 
+## Delega ad agenti
+
+Il meccanismo è in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`. Dove questa skill deve
+rispondere a una domanda sul codice per valutare una modifica, usa `wm-codebase-research`
+invece di leggere i file nel context principale, e verifica ogni prova ricevuta con
+`sed -n '<inizio>,<fine>p' <file>` prima di usarne il contenuto.
+
+Non delegare il **giudizio** sulla review: la delega copre la raccolta delle informazioni,
+non la valutazione.
+
+Se il dev contesta una conclusione di `wm-codebase-research`, vedi `## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
+
+---
+
 ## Orchestrator API
 
 Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`: vedi `wm-skills:wm-plan` → `## Orchestrator`. La regola dell'anteprima prima della scrittura vale identica qui.
@@ -98,6 +112,22 @@ Se tutti i tentativi falliscono:
 ---
 
 ## Fase 4 — Lettura contesto wm-plan
+
+Delega questa fase a `wm-codebase-research` (delega informata: passa il path del repo e un
+elenco esplicito di domande, non un generico "leggi i docs"): input piccolo, output piccolo,
+il lavoro di lettura di `overview.md`, `plan.md` e `notes.md` è il lavoro intermedio da
+spostare fuori dal context principale. L'agente risponde nel formato `Domanda / Risposta /
+Fonte / Estratto`, quindi le domande vanno poste una per una, per esempio:
+
+- Cosa prevede `overview.md` in "Cosa cambia" e "Requisiti" per la feature `<slug>`?
+- Cosa è dichiarato "Out of scope" in `overview.md`?
+- Quali task elenca `plan.md` e risultano tutti completati?
+- `notes.md` registra deviazioni dal piano? Quali, e con quale motivazione?
+
+Verifica ogni prova ricevuta con `sed -n '<inizio>,<fine>p' <file>` prima di usarne il
+contenuto — se non combacia, la ricerca si rifà nel context principale. Se l'agente risponde
+`RICERCA FALLITA: <motivo>` o `Risposta: non determinabile dal repo` su una domanda chiave,
+rifai quella parte di ricerca nel context principale.
 
 Cerca i docs della feature nel repo:
 

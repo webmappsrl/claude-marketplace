@@ -373,6 +373,7 @@
     <span class="chip">skill: wm-plan</span>
     <span class="chip">repo: webmappsrl/claude-marketplace</span>
     <span class="chip">rif: server MCP orchestrator</span>
+    <span class="chip">rif: shared/agent-delegation.md</span>
   </div>
 
   <div class="layout">
@@ -391,14 +392,17 @@ flowchart TD
     SPLITEXE -. tag opzionale .-> SPLITTAG(["POST /api/tags\nraggruppamento uso interno dev"])
     SPLITEXE --> ENV
 
+    ENV -. delega a .-> ENVAG(["wm-env-detect\nesegue i check, restituisce i flag risolti"])
     ENV --> INIT["Fase: init-context\nLegge il CLAUDE.md del progetto target"]
     ENV -. se UI rilevata .-> UXSKILL(["ui-ux-pro-max\nconsiglio UX/UI su richiesta"])
 
     INIT --> REV["Fase: reverse-interaction\nDialogo socratico, minimo 5 domande"]
+    REV -. delega la ricerca a .-> RESAG(["wm-codebase-research\ndossier con prova verbatim verificabile"])
     REV --> OV["Fase: overview\nScrive overview.md, approvazione utente"]
     OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
     CH --> TYPE{"Tipo ticket?"}
     TYPE -- Feature --> EST["Fase: estimation\nStima per-componente, approvata dal dev"]
+    EST -. delega a .-> ESTAG{{"wm-estimate\nAgente cieco — legge solo overview.md e plan.md"}}
     TYPE -- altri tipi --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
     EST --> WP
     WP -. delega a .-> WPLAN(["superpowers:writing-plans\ngenera plan.md da briefing"])
@@ -413,7 +417,11 @@ flowchart TD
 
     GATE --> NOTES["Fase: notes\nRegistra deviazioni e decisioni on-the-fly"]
     NOTES --> CTX["Fase: update-context\nAggiorna CLAUDE.md del progetto"]
+    CTX -. delega il controllo a .-> GUARDAG(["wm-context-guard\nrilievi di forma sul CLAUDE.md, mai sul merito"])
     CTX --> DONE["Checklist di completamento\nVerifica che tutti gli artefatti esistano"]
+
+    DOCTOR(["wm-context-doctor\ninvocato dal dev — revisione d'insieme del CLAUDE.md"])
+    CTX -. fuori dal workflow .-> DOCTOR
 
     classDef phase fill:#3b6e8f,stroke:#3b6e8f,color:#fff;
     classDef gate fill:#b85c28,stroke:#b85c28,color:#fff,stroke-width:3px;
@@ -422,6 +430,7 @@ flowchart TD
     classDef branch fill:#3f7d53,stroke:#3f7d53,color:#fff;
 
     class T,ENV,INIT,REV,OV,EST,WP,EXE,IMPL,NOTES,CTX,DONE,SPLITEXE phase;
+    class ENVAG,RESAG,GUARDAG,DOCTOR,ESTAG subagent;
     class BR,GATE gate;
     class CH,SPLIT subagent;
     class TAG,UXSKILL,WPLAN,IMPLSKILL,REVSKILL,SPLITTAG external;
@@ -449,7 +458,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: environment-setup<span class="tag phase">fase</span></h3>
-        <p>Normalizza l'ambiente prima di qualsiasi altra operazione: rileva lo stack tecnologico (Laravel, frontend Vue/Angular/React, fullstack), la presenza di submodule e Docker, e valuta se la feature ha componenti UI abbastanza rilevanti da richiedere il parere di <code>ui-ux-pro-max</code>. È una fase fail-soft — un Docker daemon spento o un check fallito non bloccano mai il resto del workflow, producono solo un avviso.</p>
+        <p>Normalizza l'ambiente prima di qualsiasi altra operazione: rileva lo stack tecnologico (Laravel, frontend Vue/Angular/React, fullstack), la presenza di submodule e Docker, e valuta se la feature ha componenti UI abbastanza rilevanti da richiedere il parere di <code>ui-ux-pro-max</code>. I check sono eseguiti dall'agente <code>wm-env-detect</code>, che restituisce i flag già risolti con un contratto nominale sulle variabili invece dell'output grezzo dei comandi. Fa eccezione <code>docker-check</code>, che resta nel context principale perché ha effetti sul sistema del dev. È una fase fail-soft — un Docker daemon spento o un check fallito non bloccano mai il resto del workflow, producono solo un avviso.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: init-context<span class="tag phase">fase</span></h3>
@@ -457,7 +466,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: reverse-interaction<span class="tag phase">fase</span></h3>
-        <p>Un dialogo socratico obbligatorio, una domanda alla volta: minimo cinque domande, ciascuna costruita sulla risposta precedente, mai preparate in anticipo. Prima di ogni domanda la fase impone di cercare la risposta nel codice e nel database locale — solo se entrambe le ricerche falliscono la domanda viene posta, arricchita da un consiglio di best practice esplicito. È la fase con più vincoli procedurali dell'intero workflow.</p>
+        <p>Un dialogo socratico obbligatorio, una domanda alla volta: minimo cinque domande, ciascuna costruita sulla risposta precedente, mai preparate in anticipo. Prima di ogni domanda la fase impone di cercare la risposta nel codice e nel database locale — solo se entrambe le ricerche falliscono la domanda viene posta, arricchita da un consiglio di best practice esplicito. La ricerca è affidata all'agente <code>wm-codebase-research</code>, con una chiamata sola a inizio fase: legge nel proprio context e restituisce un dossier corto in cui ogni affermazione porta percorso, righe ed estratto verbatim. Ogni prova viene verificata a macchina prima di essere usata; se una non combacia il dossier è inattendibile e la ricerca si rifà nel context principale. Il dialogo resta dove deve stare: un agente non può parlare con il dev.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: overview<span class="tag phase">fase</span></h3>
@@ -469,7 +478,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: estimation<span class="tag branch">solo Feature</span></h3>
-        <p>Eseguita solo se il ticket è di tipo <code>Feature</code> — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. La stima presuppone sempre l'esecuzione da parte di un agente, e si scompone in tre voci indipendenti: tempo di esecuzione per componente (nessun buffer percentuale), un buffer di novità di dominio in valore assoluto una sola volta sull'intera feature (+20-30 min se il pattern esiste già nel codebase, +1-2h se è il primo del suo genere), ed eventuali deliverable extra dichiarati a priori. Il tempo di pianificazione non è stimato ma misurato da timestamp reali, e mostrato separato: «Misurato + Stimato = Totale». La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
+        <p>Eseguita solo se il ticket è di tipo <code>Feature</code> — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. La stima presuppone sempre l'esecuzione da parte di un agente, e si scompone in tre voci indipendenti: tempo di esecuzione per componente (nessun buffer percentuale), un buffer di novità di dominio in valore assoluto una sola volta sull'intera feature (+20-30 min se il pattern esiste già nel codebase, +1-2h se è il primo del suo genere), ed eventuali deliverable extra dichiarati a priori. Il tempo di pianificazione non è stimato ma misurato da timestamp reali, e mostrato separato: «Misurato + Stimato = Totale». La stima è prodotta dall'agente cieco <code>wm-estimate</code>, che riceve solo i percorsi di <code>overview.md</code> e <code>plan.md</code>: chi ha condotto il dialogo e scritto l'overview stima ottimista in modo sistematico, e il valore dell'agente sta proprio nel non aver vissuto quella conversazione. Il tempo misurato di pianificazione e la conferma restano nel context principale. La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: write-plan<span class="tag phase">fase</span></h3>
@@ -493,7 +502,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: update-context<span class="tag phase">fase</span></h3>
-        <p>Aggiorna il <code>CLAUDE.md</code> del progetto target con una riga nella tabella "Feature disponibili" e un nuovo blocco in cima a "Decisioni architetturali" — le decisioni recenti sono le più rilevanti per chi lavorerà sul repo in futuro, quindi vanno in cima, non in coda.</p>
+        <p>Aggiorna il <code>CLAUDE.md</code> del progetto target con una riga nella tabella "Feature disponibili" e un nuovo blocco in cima a "Decisioni architetturali" — le decisioni recenti sono le più rilevanti per chi lavorerà sul repo in futuro, quindi vanno in cima, non in coda. Il testo lo scrive il context principale, perché registra decisioni prese nel dialogo; prima che venga scritto, l'agente <code>wm-context-guard</code> lo confronta con quanto è già nel file e segnala quattro tipi di rilievo: ripetizione, contraddizione, duplicato da ciò che il codice dice già, e materiale che starebbe meglio in un file dedicato. Giudica come si scrive, mai il merito di una decisione — quello lo può valutare solo chi ha assistito al lavoro — e propone senza mai modificare nulla da sé. <code>wm-context-doctor</code> fa lo stesso lavoro su tutto il file, ma è il dev a invocarlo quando vuole una revisione d'insieme.</p>
       </div>
       <div class="detail-item">
         <h3>Checklist di completamento<span class="tag phase">fase</span></h3>
@@ -530,8 +539,8 @@ flowchart TD
       <div class="legend-item">
         <span class="swatch subagent"></span>
         <div>
-          <h3>Subagente isolato</h3>
-          <p>Fase delegata a un subagente cieco che riceve solo un file da leggere (overview.md o il diff), senza riassunto della conversazione precedente — garantisce un giudizio non contaminato dal ragionamento già fatto nel contesto principale.</p>
+          <h3>Agente</h3>
+          <p>Fase delegata a un agente che lavora nel proprio contesto. Due tipi, con ragioni opposte: <strong>cieco</strong> (challenge, review-gate, <code>wm-estimate</code>) riceve solo un file da leggere, mai un riassunto della conversazione, per garantire un giudizio non contaminato; <strong>informato</strong> (<code>wm-codebase-research</code>, <code>wm-env-detect</code>, <code>wm-context-guard</code>) riceve il contesto utile al compito, e serve a tenere fuori dal contesto principale il materiale grezzo letto lungo la strada. I due tipi non vanno unificati. L'esito di un agente che produce un <em>giudizio</em> è discutibile: il dev può accettarlo, sostituirlo o farlo rifare mandando le obiezioni alla stessa sessione dell'agente — mai a challenge e review-gate, dove un giudizio che si piega alle obiezioni perderebbe la sua ragione d'essere.</p>
         </div>
       </div>
       <div class="legend-item">
@@ -545,7 +554,7 @@ flowchart TD
   </section>
 
   <footer>
-    <span>wm-plan v1.3.0 · operazioni su Orchestrator via server MCP</span>
+    <span>wm-plan v1.3.0 · operazioni su Orchestrator via server MCP · cinque agenti in <code>wm-skills/agents/</code></span>
     <span><a href="https://github.com/webmappsrl/claude-marketplace">webmappsrl/claude-marketplace</a></span>
   </footer>
 </div>
