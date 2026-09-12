@@ -23,7 +23,7 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 **Versione installata:** v1.3.0
 
-Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Versioning del plugin wm-skills`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
+Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `CLAUDE.md` → `## Regole del repo` → `### Checklist di release`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
 Mostra `Versione installata: v1.3.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
@@ -64,7 +64,7 @@ LOCAL_DATE=$(git -C "$REPO_PATH" log -1 --format=%ad --date=format:%Y-%m-%d -- p
 
 ### header: diagramma
 
-L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad ogni redeploy (vedi regola di rigenerazione in `CLAUDE.md` → `## Diagramma di flusso wm-plan`). Nessun fetch remoto necessario: essendo scritto in `SKILL.md`, è sempre disponibile insieme al resto del contenuto della skill già caricato, e viaggia allineato ad ogni `/plugin marketplace update`.
+L'URL dell'Artifact è un dato statico di questa skill, aggiornato qui stesso ad ogni redeploy (vedi regola di rigenerazione in `CLAUDE.md` → `## Regole del repo` → `### Rigenerare il diagramma di flusso`). Nessun fetch remoto necessario: essendo scritto in `SKILL.md`, è sempre disponibile insieme al resto del contenuto della skill già caricato, e viaggia allineato ad ogni `/plugin marketplace update`.
 
 **URL Artifact:** https://claude.ai/code/artifact/53f16a0c-0074-44a3-8846-281b0faf5b77
 
@@ -1193,7 +1193,7 @@ lui.
 ### update-context: repo non ancora in questa forma
 
 Se il `CLAUDE.md` del repo target ha ancora `## Feature disponibili` e/o
-`## Decisioni architetturali` e non ha `## Lavori`, **non migrare di tua iniziativa**: la
+`## Decisioni architetturali` e non ha `## Conoscenza`, **non migrare di tua iniziativa**: la
 riorganizzazione di un `CLAUDE.md` esistente è un'operazione a sé, che il dev avvia quando
 vuole invocando `wm-context-doctor`.
 
@@ -1251,7 +1251,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
-- [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Diagramma di flusso wm-plan`
+- [ ] Artifact del diagramma di flusso `wm-plan` rigenerato (redeploy stesso URL) se questa sessione ha modificato file del repo `claude-marketplace` — vedi `CLAUDE.md` → `## Regole del repo` → `### Rigenerare il diagramma di flusso`
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 

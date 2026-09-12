@@ -182,6 +182,11 @@ così, e il lint non la riguarda.
 si contraddicono, una regola diventata falsa rispetto al codice, una cresciuta al punto da
 meritare un file dedicato — proponi, con la prova, come sempre.
 
+In particolare **misura quella sezione come le altre**. Se è la più pesante del file, quasi
+certamente contiene procedure scritte per intero: fra le regole va l'obbligo in una o due
+righe imperative, i passi vanno in `docs/howto/` col rimando. Una sezione di regole che cresce
+è il posto in cui il `CLAUDE.md` ricomincia a gonfiarsi dopo essere stato riordinato.
+
 Se una regola del repo è nata da un lavoro, non è una contraddizione da segnalare: la
 decisione e il suo perché stanno nella conoscenza, l'obbligo da seguire sta fra le regole. È
 la stessa cosa vista da due lati.

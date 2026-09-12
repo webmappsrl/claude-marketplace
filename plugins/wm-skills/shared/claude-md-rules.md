@@ -119,6 +119,21 @@ Quando coerenza e brevità confliggono, l'informazione **non si sacrifica: si sp
   `docs/features/`, non ha una riga nell'indice della conoscenza. Misurarla con quel metro
   significherebbe segnalare come difetto una cosa perfettamente a posto.
 
+- **Anche fra le regole del repo vale la separazione fra obbligo e procedura.** Che una regola
+  non si misuri col metro della conoscenza non significa che possa contenere qualsiasi cosa:
+  nel `CLAUDE.md` resta **l'obbligo**, in una o due righe imperative, e i passi per eseguirlo
+  vanno in `docs/howto/` con il rimando.
+
+  Esempio: fra le regole sta «prima di ogni release esegui la checklist di rilascio», con il
+  link; i cinque passi del rilascio stanno nell'howto. Chi apre il repo deve sapere *che* la
+  checklist esiste ed è obbligatoria; *quali* siano i passi gli serve solo nel momento in cui
+  rilascia.
+
+  Senza questo criterio la sezione delle regole diventa il nuovo posto in cui il file ricresce
+  — lo stesso problema di prima, spostato di una sezione. Il segnale è misurabile: se
+  `## Regole del repo` è la sezione più pesante del `CLAUDE.md`, quasi certamente contiene
+  procedure che dovrebbero stare altrove.
+
 - **Una regola del repo può nascere da un lavoro, e non è una contraddizione.** Quello che
   conta è dove vive dopo. La *decisione* di avere quella regola — con il perché e le
   alternative scartate — sta nella pagina di conoscenza, col suo ticket. La *regola* in sé,
