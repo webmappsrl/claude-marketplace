@@ -42,6 +42,22 @@ detto?» — non «dove altro compare questa frase?». Ogni riorganizzazione ne 
 qualcuno, perché chi sposta una sezione porta con sé i fatti che le servivano senza togliere
 quelli rimasti dove stavano.
 
+### Quando un fatto ha due facce legittime
+
+Capita che lo stesso oggetto abbia due aspetti che appartengono a sezioni diverse: un file può
+essere insieme **congelato** (vincolo) e **da aggiornare in certi casi** (manutenzione); un
+comando può essere insieme uno strumento e un obbligo. La tentazione è metterne una faccia per
+sezione — ed è il modo in cui il doppione rientra a ogni riorganizzazione, perché ogni faccia
+sembra a casa propria.
+
+**Le due facce vanno nella stessa voce**, in una sezione sola, in una frase che le tiene
+insieme: «X è congelato nella struttura, e si aggiorna nel contenuto quando cambia Y». Altrove,
+se serve, solo un rimando.
+
+Il segnale che questo caso si sta presentando: la stessa cosa compare in due sezioni **con
+verbi opposti** — «non modificare» da una parte, «aggiorna» dall'altra. Non è una
+contraddizione da risolvere scegliendo, è un fatto spezzato da ricomporre.
+
 ## Nessuna istruzione può contraddire le regole in cima
 
 Le prime sezioni del file sono le regole che valgono più di tutto. Qualsiasi istruzione più
