@@ -61,6 +61,13 @@ oppure l'elenco dei problemi trovati. Un indice incoerente va segnalato prima de
 proposto come intervento fra gli altri: significa che una migrazione precedente si è fermata a
 metà, e finché resta così ogni altra proposta lavora su una base sbagliata.
 
+**L'elenco dei `SENZA CONOSCENZA` va riportato sempre per esteso, con i nomi.** Anche quando
+la causa è una sola e vale per tutti — per esempio `docs/knowledge/` che non esiste ancora —
+non riassumere in «nessuna pagina di conoscenza»: quella è una descrizione dello stato, mentre
+i nomi sono la lista delle pagine da scrivere. Se sono molti, riportali in forma compatta su
+poche righe, ma riportali: il giorno in cui ne resta scoperto uno solo su venti, un riassunto
+lo renderebbe invisibile — ed è esattamente il caso in cui il controllo serve.
+
 `SENZA CONOSCENZA` **è un difetto vero**: esiste il cantiere di un lavoro e nessuna pagina di
 conoscenza lo cita, quindi di quel lavoro non resta nulla di leggibile. Va riportato fra i
 problemi e proposto come intervento — non necessariamente una pagina nuova: spesso il posto
@@ -115,6 +122,27 @@ sostituire la voce nell'indice sono un intervento solo, non due**. Fra i due pas
 finestra in cui il repo è incoerente — pagine che nessuno cita e un indice che punta ancora al
 vecchio contenuto — e se l'esecuzione si interrompe lì resta così, senza che nessun errore lo
 segnali. Formula l'intervento in modo che chi lo esegue non possa fermarsi a metà.
+
+## Le contraddizioni si verificano nel codice, non si girano al dev
+
+Quando trovi due affermazioni in conflitto, **non chiedere quale sia quella giusta: vai a
+vedere**. Il `CLAUDE.md` descrive un sistema che esiste, e il sistema è l'arbitro. Hai `Read`
+e `Grep` per questo.
+
+Esempi di verifica che devi fare da solo:
+
+- il `CLAUDE.md` dice che un valore è statico in un file e un'altra voce dice che è letto a
+  runtime → apri quel file e guarda com'è scritto oggi
+- una voce descrive un comando che verrebbe eseguito → cerca quel comando nel repo: se non
+  compare da nessuna parte, quella voce descrive qualcosa che non accade più
+
+Riporta il rilievo con **la prova**, nella stessa forma degli altri riferimenti: percorso,
+riga, estratto verbatim di ciò che hai trovato. Una contraddizione risolta contro il codice è
+un fatto e si propone come tale; una contraddizione girata al dev come domanda gli chiede di
+ricordare, che è meno affidabile del file che avevi davanti.
+
+Resta al dev la sola decisione che il codice non può dare: **cosa farne** della voce ormai
+falsa — se vada rimossa o conservata come versione superata.
 
 ## Cosa non fai mai
 
