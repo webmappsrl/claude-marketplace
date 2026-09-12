@@ -39,30 +39,13 @@ Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
 - **`wm-skills`** — skill interne Webmapp (convenzioni di codice, checklist PR, processo deploy),
   mantenute in questo repo sotto `plugins/wm-skills/`
 
-## Struttura e ruolo dei file di config
+## Vincoli sui file di config
 
-```
-.claude-plugin/
-  marketplace.json          catalogo del marketplace: nome, owner, lista plugin con sorgente
-plugins/
-  wm-skills/
-    .claude-plugin/
-      plugin.json           manifesto del plugin: name, description, author, license, keywords
-    skills/
-      <nome-skill>/
-        SKILL.md            contenuto della skill (frontmatter YAML + corpo Markdown)
-```
-
-### `.claude-plugin/marketplace.json`
-
-Definisce il marketplace. Il campo `name` **non deve** contenere prefissi come `claude-*` o
-impersonare nomi Anthropic ufficiali — il plugin system li blocca con errore di schema.
-
-### `plugins/wm-skills/.claude-plugin/plugin.json`
-
-**Ha un campo `version` (semver), aggiornato ad ogni release.** Il flusso è cadenzato: ad ogni
-release si fa il bump di `version` in questo file e si tagga il commit corrispondente su
-`claude-marketplace` con un tag `v<version>` (es. `v1.1.0`).
+- Il campo `name` in `.claude-plugin/marketplace.json` **non può** contenere prefissi come
+  `claude-*` né impersonare nomi Anthropic ufficiali: il plugin system lo blocca con errore di
+  schema.
+- `plugins/wm-skills/.claude-plugin/plugin.json` ha un `version` semver, aggiornato ad ogni
+  release insieme al tag `v<version>` sul commit corrispondente.
 
 ## Ambiente
 
@@ -75,8 +58,8 @@ release si fa il bump di `version` in questo file e si tagga il commit corrispon
 ## File da non modificare a mano
 
 - `plugins/wm-skills/bin/orchestrator-mcp` — binario generato: si rigenera con `build.sh`.
-- Struttura, CSS e stile di `docs/guide/wm-plan-diagramma/index.html` — il template è congelato
-  (oc:8283). Si aggiorna il contenuto: nodi e paragrafi quando cambia il workflow.
+- `docs/guide/wm-plan-diagramma/index.html` — il template grafico è congelato; i vincoli stanno
+  in `.claude/rules/wm-plan-diagramma.md`, che si carica quando tocchi quei file.
 
 ## Comandi
 
@@ -91,13 +74,7 @@ release si fa il bump di `version` in questo file e si tagga il commit corrispon
 copre frontmatter e manifesti. I test Go vanno lanciati quando si tocca `mcp/`, e il binario
 ricompilato ad ogni release, perché viaggia nel plugin.
 
-In CI girano il controllo del diagramma (`.github/workflows/coerenza.yml`) e la pubblicazione
-delle guide su Pages (`pages.yml`, solo `docs/guide/`).
-
-**Istanza locale di Orchestrator**: `http://localhost:8099`, avviata con Docker dal repo
-`webmappsrl/orchestrator`. È l'unico ambiente su cui provare le scritture. La configurazione
-sta in `.mcp.json.example`, da copiare in `.mcp.json` (ignorato da git) adattando il percorso
-del file di credenziali.
+In CI gira il controllo di coerenza fra skill e diagramma, e la pubblicazione delle guide.
 
 ## Lingua
 
@@ -198,63 +175,23 @@ Tre skill: `wm-plan`, `wm-review-ticket`, `wm-tag`. **Quando si attiva ciascuna 
 versioni divergeranno. Ogni skill può comporre skill di `superpowers`, installato a parte.
 
 
-## Integrazione con Orchestrator (sistema ticket Webmapp)
+## Orchestrator
 
-I ticket Webmapp vivono su **Orchestrator** (`webmappsrl/orchestrator`), piattaforma Laravel interna.
+I ticket vivono su Orchestrator, piattaforma Laravel interna. Formato ID: `oc:<numero>`.
 
-**Formato ID ticket:** `oc:<numero>` (es. `oc:7815`)
+**Se manca un endpoint si estende l'API, non si costruisce un aggiramento lato skill**: quegli
+endpoint sono nati per queste skill, non sono un servizio terzo.
 
-**Come fornire un ticket a Claude:** basta l'ID (`oc:<numero>`) — le skill leggono il ticket via API. In alternativa si può incollare il contenuto nella chat (Titolo, Richiesta, Note di sviluppo).
+**Nei documenti generati dalle skill**: ogni file `docs/features/` inizia con
+`> Ticket: oc:<ID>`; lo slug di una feature è `<ID>-<titolo-in-kebab-case>`; lo scope dei commit
+è `feat(oc:<ID>): …` / `fix(oc:<ID>): …` / `refactor(oc:<ID>): …`.
 
-**L'API di Orchestrator è dedicata alle skill Claude.** Gli endpoint sotto `/api` (documentati in OpenAPI su <https://orchestrator.maphub.it/docs/api.json>) non sono un servizio terzo a cui adattarsi: sono stati costruiti per `wm-plan` e le altre skill `wm-skills`. Conseguenze operative:
-
-- **Se serve un endpoint che non esiste, si aggiunge.** Non vanno costruiti workaround lato skill per aggirare un buco dell'API — si apre un ticket su `webmappsrl/orchestrator` e si estende l'API. Esempio noto: manca `GET /stories` (lista/ricerca), mentre `/tasks`, `/quotes` e `/customers` hanno tutti un index con filtri e sort.
-- **Chi modifica l'API sta modificando il contratto delle skill.** Un cambio di campi, enum o regole di autorizzazione va propagato nello stesso giro alle skill che lo consumano.
-- **La spec OpenAPI è la fonte autoritativa** per campi, tipi ed enum — preferibile a leggere i singoli file PHP quando serve la superficie completa.
-
-**Dove provare le chiamate a Orchestrator (incluso il server MCP):** usa l'**istanza locale** di `webmappsrl/orchestrator`, avviata con Docker, puntandoci `ORCHESTRATOR_URL`. Non provare mai scritture contro la produzione (`https://orchestrator.maphub.it`): alcune scritture hanno effetti verso l'esterno non annullabili — `customer_request` su una story fa scattare `addResponse()`, che **notifica il cliente**, e i link PDF firmati dei preventivi restano validi fino a 90 giorni senza poter essere revocati.
-
-Esiste anche un'istanza di sviluppo, ma al momento **le manca un certificato HTTPS valido**: usala solo come verifica facoltativa su dati più realistici, e non introdurre l'accettazione dei certificati non validi come comportamento predefinito di nessuno strumento — va richiesta esplicitamente ogni volta, per non rischiare che diventi il comportamento normale anche verso la produzione.
-
-**Convenzioni nei documenti generati da skill:**
-- Ogni file `docs/features/` inizia con `> Ticket: oc:<ID>`
-- Feature slug: `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tramite-osm-id`)
-- Commit scope: `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
+Il resto — formato dei campi, specifica OpenAPI, ripiego se il server MCP non parte — in
+[docs/knowledge/orchestrator-integrazione.md](docs/knowledge/orchestrator-integrazione.md).
 
 ## File `.mcp.json` locale
 
 Il repo ignora `.mcp.json` (contiene percorsi assoluti personali, es. il file di auth di sviluppo): copia `.mcp.json.example` in `.mcp.json` e adatta i percorsi al tuo ambiente prima di usare il server MCP `orchestrator-dev`.
-
-## Aggiornare superpowers
-
-`superpowers` è pinato a `ref: main` di `obra/superpowers`. Per pinnare a una versione stabile,
-cambiare `ref` con un tag specifico (es. `"ref": "v5.1.0"`) in `.claude-plugin/marketplace.json`.
-
-## Diagramma di flusso wm-plan
-
-Il diagramma del workflow di `wm-plan` è una pagina pubblicata su GitHub Pages:
-<https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/>
-
-Il sorgente è in `docs/guide/wm-plan-diagramma/index.html` e viene pubblicato dal workflow
-`.github/workflows/pages.yml`, che pubblica **solo `docs/guide/`**: tutto il resto di `docs/`
-è interno e non deve finire online.
-
-**Dopo una modifica al workflow di `wm-plan`, aggiorna il sorgente del diagramma.** Non serve
-altro: la pagina si ripubblica da sola al push su `main`. Non esiste più alcun redeploy
-manuale.
-
-**Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano**
-(`.github/scripts/verifica-diagramma.sh`, eseguito dal workflow `coerenza.yml`). Falla se
-aggiungi o rinomini una fase senza aggiornare la pagina. Il confronto è sui **nomi**: se una
-fase cambia comportamento mantenendo il titolo, il controllo passa e il diagramma resta
-vecchio — quello resta responsabilità di chi modifica la skill.
-
-**Il template grafico è congelato** (oc:8283): due colonne di pari altezza, legenda a piena
-larghezza sotto, palette e tipografia date. Si aggiorna il **contenuto** — nodi e paragrafi,
-quando una fase viene aggiunta, rinominata o rimossa — mai struttura, CSS o stile.
-
-Il runtime Mermaid è caricato dalla pagina stessa: su GitHub Pages non lo fornisce nessuno, e
-senza quello script il diagramma non viene disegnato.
 
 ## Decisioni architetturali
 
