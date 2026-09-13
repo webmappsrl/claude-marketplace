@@ -774,14 +774,22 @@ In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a writ
 ### estimation: analisi
 
 La stima è prodotta dall'agente **cieco** `wm-estimate`, che riceve i percorsi di
-`overview.md` e `plan.md` e **nient'altro** — nessun riassunto della conversazione, stesso
-principio di `challenge: subagent`. Chi ha condotto il dialogo e scritto l'overview stima
-ottimista in modo sistematico: il valore dell'agente sta nel non aver vissuto quella
-conversazione.
+`overview.md` e `plan.md`, **la durata misurata della pianificazione**, e nient'altro — nessun
+riassunto della conversazione, stesso principio di `challenge: subagent`. Chi ha condotto il
+dialogo e scritto l'overview stima ottimista in modo sistematico: il valore dell'agente sta nel
+non aver vissuto quella conversazione.
+
+**Perché la durata misurata non rompe la cecità.** Ciò che renderebbe l'agente compiacente è
+sapere *come* si è arrivati all'overview — quali dubbi sono stati sciolti, di cosa il dev si è
+convinto. Quanto è durata la pianificazione non è nulla di tutto questo: è un fatto, l'unico
+numero certo disponibile, e senza di esso l'agente somma componenti nel vuoto. Gli serve come
+**ancora per giudicare il proprio totale**, non come addendo: la quota misurata la somma il
+context principale, come sempre.
 
 Restano nel context principale:
 
-- **la quota misurata** della pianificazione, che l'agente non può conoscere:
+- **la quota misurata** della pianificazione, che va calcolata qui e **passata all'agente**
+  insieme ai percorsi:
 
   ```bash
   NOW=$(date -u +"%Y-%m-%dT%H:%M:%S%z")
