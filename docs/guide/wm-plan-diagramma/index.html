@@ -419,6 +419,7 @@ flowchart TD
 
     INIT --> REV["Fase: reverse-interaction\nDialogo socratico, minimo 5 domande"]
     REV -. delega la ricerca a .-> RESAG(["wm-codebase-research\ndossier con prova verbatim verificabile"])
+    REV -. delega la ricerca a .-> TRAG(["wm-transcript-research\ncitazioni attribuite dalle call"])
     REV --> OV["Fase: overview\nScrive overview.md, approvazione utente"]
     OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
     CH --> TYPE{"Tipo ticket?"}
@@ -487,7 +488,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: reverse-interaction<span class="tag phase">fase</span></h3>
-        <p>Un dialogo socratico obbligatorio, una domanda alla volta: minimo cinque domande, ciascuna costruita sulla risposta precedente, mai preparate in anticipo. Prima di ogni domanda la fase impone di cercare la risposta nel codice e nel database locale — solo se entrambe le ricerche falliscono la domanda viene posta, arricchita da un consiglio di best practice esplicito. La ricerca è affidata all'agente <code>wm-codebase-research</code>, con una chiamata sola a inizio fase: legge nel proprio context e restituisce un dossier corto in cui ogni affermazione porta percorso, righe ed estratto verbatim. Ogni prova viene verificata a macchina prima di essere usata; se una non combacia il dossier è inattendibile e la ricerca si rifà nel context principale. Il dialogo resta dove deve stare: un agente non può parlare con il dev.</p>
+        <p>Un dialogo socratico obbligatorio, una domanda alla volta: minimo cinque domande, ciascuna costruita sulla risposta precedente, mai preparate in anticipo. Prima di ogni domanda la fase impone di cercare la risposta nel codice, nel database locale e nelle trascrizioni delle call del team — solo se le ricerche falliscono la domanda viene posta, arricchita da un consiglio di best practice esplicito. La ricerca sul codice è affidata all'agente <code>wm-codebase-research</code>, con una chiamata sola a inizio fase: legge nel proprio context e restituisce un dossier corto in cui ogni affermazione porta percorso, righe ed estratto verbatim. Ogni prova viene verificata a macchina prima di essere usata; se una non combacia il dossier è inattendibile e la ricerca si rifà nel context principale. La seconda fonte è <code>wm-transcript-research</code>, che cerca nelle call ciò che il team ha già deciso a voce: restituisce le citazioni — con chi le ha pronunciate e quando — prima della conclusione che ne trae, perché su un parlato a più voci la sintesi è già un'interpretazione e chi era presente deve poterla contestare. Ogni risposta dichiara quante call ha letto: senza, un «non se n'è parlato» dopo tre call su venti sarebbe indistinguibile da uno dopo venti su venti. Il dialogo resta dove deve stare: un agente non può parlare con il dev.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: overview<span class="tag phase">fase</span></h3>

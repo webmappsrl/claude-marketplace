@@ -31,7 +31,7 @@ cieco ne distrugge la ragione d'essere.
 | Perché | indipendenza di giudizio | volume di lettura |
 | Riceve | solo percorsi e istruzioni | il contesto utile al compito |
 | Non riceve mai | alcun riassunto della conversazione | — |
-| Casi | `challenge`, `review-gate`, `wm-estimate` | `wm-codebase-research`, `wm-env-detect`, `wm-context-guard`, `wm-context-doctor` |
+| Casi | `challenge`, `review-gate`, `wm-estimate` | `wm-codebase-research`, `wm-transcript-research`, `wm-env-detect`, `wm-context-guard`, `wm-context-doctor` |
 | Revisione col dev | mai per `challenge` e `review-gate`; ammessa per `wm-estimate` | ammessa, tranne `wm-env-detect` |
 
 La riga sulla revisione non segue il taglio cieca/informata, perché dipende da
@@ -87,8 +87,8 @@ come si è arrivati all'overview.
 **Regola generale, valida anche per agenti futuri**: la revisione si applica a ogni
 agente il cui esito è un **giudizio** — una stima, un rilievo, una conclusione tratta
 da ciò che ha letto, un piano proposto. Oggi copre gli agenti informati
-(`wm-codebase-research`, `wm-context-guard`, `wm-context-doctor`), oltre a
-`wm-estimate`. Il piano di `wm-context-doctor` è il caso in cui la revisione serve
+(`wm-codebase-research`, `wm-transcript-research`, `wm-context-guard`,
+`wm-context-doctor`), oltre a `wm-estimate`. Il piano di `wm-context-doctor` è il caso in cui la revisione serve
 di più: il dev accetta tipicamente solo una parte degli interventi proposti, e senza
 un giro di revisione l'unica alternativa sarebbe prendere o lasciare l'intero piano.
 
@@ -113,6 +113,16 @@ nel principale.
 Superato il tetto, il context principale chiede all'agente una sintesi entro il
 limite invece di accettare l'output lungo. Un output che resta oltre il tetto al
 secondo tentativo va trattato come fallimento (vedi `## Fallback`).
+
+**Un'eccezione, nominata:** `wm-transcript-research` non ha tetto. La regola vale
+quando il valore della delega sta nel rapporto fra letto e restituito — leggo venti
+file, ti dico una riga. Per le trascrizioni il valore è un altro: non dover riaprire
+le call. Una risposta tagliata costringe a riaprirle, cioè annulla il motivo per cui
+si è delegato.
+
+L'altro vincolo resta intatto anche lì, ed è quello che conta davvero: **il materiale
+grezzo non entra nel context principale**. Chi propone una nuova eccezione argomenti
+su questo, non sul precedente: il tetto è la regola.
 
 ## Fallback
 

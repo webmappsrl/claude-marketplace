@@ -230,6 +230,7 @@ Fasi che delegano, e a chi:
 |---|---|---|
 | `environment-setup` | `wm-env-detect` | informata |
 | `reverse-interaction` | `wm-codebase-research` | informata |
+| `reverse-interaction` | `wm-transcript-research` | informata |
 | `challenge` | subagente già previsto | **cieca** |
 | `estimation` | `wm-estimate` | **cieca** |
 | `review-gate` | subagente già previsto | **cieca** |
@@ -627,8 +628,36 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   ricerca nel principale — vedi `## Revisione con l'agente` in
   `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
+- **Non chiedere ciò che il team ha già deciso in call.** Insieme alla ricerca sul codice,
+  interroga `wm-transcript-research` sulle trascrizioni dello scrum: passagli **numero e
+  titolo del ticket**, la sua data di creazione e le domande che stai per fare al dev.
+
+  Vale la stessa regola dell'altra ricerca: **una chiamata sola a inizio fase**, per non
+  spezzare il dialogo.
+
+  L'agente restituisce le citazioni prima della conclusione: **leggi le citazioni**, non
+  solo la risposta. Su un parlato a più voci la conclusione di un agente è
+  un'interpretazione, e chi ha partecipato alla call se ne accorge in un attimo.
+
+  Se una citazione risponde a una domanda che avevi in programma, **non farla come se nulla
+  fosse**: dì al dev cosa risulta e chiedi conferma — «allo scrum del 09/09 risulta che
+  avete deciso X, confermi?». È diverso dal chiedere da zero, e gli fa risparmiare il
+  fastidio di ripetersi.
+
+  Se l'agente risponde `Risposta: non determinabile dalle trascrizioni`, la domanda va fatta
+  al dev: è l'esito che rende utile la delega, non un fallimento.
+
+  **Guarda sempre la `Copertura`.** Un «non trovato» su tre call lette su venti non è un
+  «non se n'è parlato»: è una ricerca incompleta, e se la domanda è importante chiedi
+  all'agente una ricerca verbosa prima di girarla al dev.
+
+  Se l'agente restituisce `RICERCA FALLITA`, prosegui il dialogo senza le trascrizioni e
+  dillo al dev: la fonte non era raggiungibile, non è che non ci fosse nulla.
+
 - **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
-  Prima di ogni domanda scrivi esplicitamente: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
+  Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
+
+  La riga sulle call non è un ornamento: obbliga a **guardare le citazioni prima di formulare la domanda**, invece di farla e accorgersi dopo che la risposta c'era già. Una fonte che gira e che nessuno legge prima di parlare è peggio di non averla, perché costa e non evita nulla. Se l'agente delle trascrizioni non ha trovato niente, scrivilo: «dalle call, nulla» è un'informazione, e dice al dev che su quel punto non esiste una decisione pregressa.
 
 **Aree da coprire nel dialogo (adatta e riordina in base alle risposte):**
 - Perché ora? Qual è il trigger business/tecnico che rende necessaria questa feature?
