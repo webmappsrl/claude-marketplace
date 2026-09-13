@@ -125,6 +125,7 @@ In CI girano il controllo di coerenza fra skill e diagramma e la pubblicazione d
 | Aggiungere una skill al plugin | [docs/howto/aggiungere-una-skill.md](docs/howto/aggiungere-una-skill.md) |
 | Provare una skill in locale senza pushare | [docs/howto/test-in-locale.md](docs/howto/test-in-locale.md) |
 | Aggiornare o pinnare `superpowers` | [docs/howto/aggiornare-superpowers.md](docs/howto/aggiornare-superpowers.md) |
+| Provare `wm-transcript-research` dopo averne toccato il prompt | [docs/howto/provare-wm-transcript-research.md](docs/howto/provare-wm-transcript-research.md) |
 
 ## Orchestrator
 
@@ -153,3 +154,4 @@ Il resto — formato dei campi, specifica OpenAPI, ripiego se il server MCP non 
 | `wm-tag` e la tag-mode | Naming dei tag, `repos.json`, cosa salta `wm-plan` in tag-mode | [docs/knowledge/wm-tag-e-tag-mode.md](docs/knowledge/wm-tag-e-tag-mode.md) |
 | Delega ad agenti | Quali fasi vanno a un agente, i due tipi di delega, come si contesta un esito | [docs/knowledge/wm-skills-delega-agentica.md](docs/knowledge/wm-skills-delega-agentica.md) |
 | `wm-review-ticket` | Contratto artefatti letto a runtime, stash pre-checkout | [docs/knowledge/wm-review-ticket.md](docs/knowledge/wm-review-ticket.md) |
+| Le trascrizioni come fonte | Com'è fatta la fonte, come si scelgono le call, perché Drive e non un MCP | [docs/knowledge/wm-transcript-research.md](docs/knowledge/wm-transcript-research.md) |
