@@ -1,4 +1,4 @@
-# CLAUDE.md
+# claude-marketplace — CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -12,6 +12,36 @@ prevede un commit, quell'istruzione è sbagliata.
 «committa» detto guardando il risultato, non «fai X e committa».
 
 Il commit è il momento in cui il dev può dire di no: committare dentro il lavoro glielo toglie.
+
+## Quando un difetto emerge in un repo, si corregge la skill
+
+Lavorando su un `CLAUDE.md` di prodotto — con `wm-context-doctor`, `wm-context-guard` o a mano —
+i difetti che emergono sono quasi sempre difetti dello strumento che non li ha trovati. **La prima
+domanda è se il doctor o il guard l'avrebbero visto. Se no, la correzione va prima nello strumento,
+poi nel file.**
+
+Correggere solo il file chiude un caso e lascia il buco aperto per tutti i repo successivi. E non
+è nemmeno la strada più corta: il difetto va comunque portato nella skill, quindi il giro si fa due
+volte invece di una.
+
+Il ciclo è: ripristina il file allo stato di partenza → lancia il doctor → valuta cosa trova e cosa
+no → **correggi la skill** → riavvia la sessione, perché le definizioni degli agenti si caricano
+all'avvio (`shared/claude-md-rules.md` no, quello si legge a runtime) → rilancia. Solo quando lo
+strumento regge si esegue il piano sul file.
+
+## Lingua: mai modi di dire inglesi tradotti
+
+Vale per tutto ciò che si scrive — documentazione, commenti, messaggi di commit, prompt delle
+skill, risposte al dev. **Un'espressione idiomatica inglese non si traduce alla lettera**: il team
+è italiano e quei modi di dire non li conosce, quindi parola per parola non si capiscono. «Alzare
+il pavimento» per *raise the floor*, «strato sottile» per *thin layer*, «a colpo d'occhio» per *at
+a glance*: sono frasi che sembrano italiane e non lo sono.
+
+I **termini tecnici** restano in inglese: commit, branch, merge, build, deploy, review, gate. È
+l'errore opposto, e fa lo stesso danno.
+
+Se non diresti quella frase parlando con un collega, non scriverla: di' la cosa in modo esplicito,
+anche se è più lungo.
 
 ## Seconda regola: mai scritture sulla produzione di Orchestrator
 
@@ -90,7 +120,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-tag` ↔ `wm-plan` | tag-mode | `wm-tag` invoca `wm-plan` in tag-mode, e `caso-c` in `Fase: ticket` cede il controllo a `wm-tag`. La divisione dei compiti sta nei due `SKILL.md`. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
 
-### Convenzioni per le skill
+## Convenzioni per le skill
 
 - **Prefisso `wm-` obbligatorio**, in kebab-case, sia sul nome della cartella sia sul campo
   `name` del frontmatter.
@@ -140,6 +170,12 @@ endpoint sono nati per queste skill, non sono un servizio terzo.
 
 Il resto — formato dei campi, specifica OpenAPI, ripiego se il server MCP non parte — in
 [docs/knowledge/orchestrator-integrazione.md](docs/knowledge/orchestrator-integrazione.md).
+
+## Trappole
+
+Stanno in `.claude/rules/`, con il frontmatter `paths:` che le carica quando si toccano i file
+corrispondenti: `wm-plan-diagramma` tiene i vincoli del template grafico pubblicato su GitHub
+Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
 
 ## Conoscenza
 

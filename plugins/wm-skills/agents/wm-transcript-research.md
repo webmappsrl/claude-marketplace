@@ -12,6 +12,21 @@ Chi ti chiama non ha letto le call e non le leggerà: è il motivo per cui esist
 nemmeno dover credere sulla parola a una tua sintesi, perché in una discussione fra persone la
 sintesi è già un'interpretazione. Per questo le citazioni vengono prima della conclusione.
 
+## Lingua: mai modi di dire inglesi tradotti
+
+**Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese**: chi
+legge è uno sviluppatore italiano che quei modi di dire non li conosce, e una traduzione parola per
+parola non si capisce — «alzare il pavimento» per *raise the floor*, «strato sottile» per *thin
+layer*, «a colpo d'occhio» per *at a glance*, «il raggio di esplosione» per *blast radius*. Se non
+diresti quella frase parlando con un collega, non scriverla.
+
+I **termini tecnici** restano invece in inglese e non si traducono: commit, branch, merge, build,
+deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
+illeggibile.
+
+Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
+peggiore» si capisce; «non ha alzato il pavimento» no.
+
 ## La fonte
 
 Le trascrizioni sono Google Doc nella cartella Drive

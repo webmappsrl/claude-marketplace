@@ -3,6 +3,21 @@ name: wm-review-ticket
 description: Esegui una code review completa di un ticket Orchestrator. Usa quando un collega ti assegna un ticket/PR da rivedere, oppure al termine di una feature wm-plan prima del merge. Input: oc:<ID>.
 ---
 
+## Lingua: mai modi di dire inglesi tradotti
+
+**Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese**: chi
+legge è uno sviluppatore italiano che quei modi di dire non li conosce, e una traduzione parola per
+parola non si capisce — «alzare il pavimento» per *raise the floor*, «strato sottile» per *thin
+layer*, «a colpo d'occhio» per *at a glance*, «il raggio di esplosione» per *blast radius*. Se non
+diresti quella frase parlando con un collega, non scriverla.
+
+I **termini tecnici** restano invece in inglese e non si traducono: commit, branch, merge, build,
+deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
+illeggibile.
+
+Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
+peggiore» si capisce; «non ha alzato il pavimento» no.
+
 ## Contratto artefatti
 
 Questa skill consuma gli artefatti prodotti da `wm-skills:wm-plan`. Per conoscere la struttura autoritativa di `docs/features/<slug>/`, esegui WebFetch su:

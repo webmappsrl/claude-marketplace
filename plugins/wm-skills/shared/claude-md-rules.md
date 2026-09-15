@@ -29,6 +29,24 @@ stata corretta a mano, quelle correzioni non le ha fatte il metodo, quindi ripre
 nulla su quanto il metodo funzioni. Il risultato deve dipendere solo dalle regole: è l'unico
 modo per accorgersi di quale regola manca quando esce sbagliato.
 
+## Lingua: mai modi di dire inglesi tradotti
+
+**Si scrive in italiano corrente. Un'espressione idiomatica inglese non si traduce alla lettera**:
+chi legge è uno sviluppatore italiano che quei modi di dire non li conosce, e parola per parola non
+si capiscono — «alzare il pavimento» per *raise the floor*, «strato sottile» per *thin layer*, «a
+colpo d'occhio» per *at a glance*, «il raggio di esplosione» per *blast radius*. Se non diresti
+quella frase parlando con un collega, non scriverla.
+
+I **termini tecnici** restano in inglese e non si traducono: commit, branch, merge, build, deploy,
+review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto illeggibile.
+
+Nel dubbio si dice la cosa in modo esplicito, anche se è più lungo: «non ha migliorato il risultato
+peggiore» si capisce, «non ha alzato il pavimento» no.
+
+**È anche un rilievo**, quando si controlla un file scritto da altri: una frase che non si capisce
+perché ricalca un idioma inglese va segnalata come si segnala un errore, non lasciata passare
+perché il senso «si intuisce».
+
 ## Ogni fatto ha una residenza
 
 Un fatto — un comando, un percorso, un vincolo, un valore — vive in **una sezione sola**.
@@ -166,6 +184,38 @@ non solo al `CLAUDE.md`: spostare una procedura non la esonera.
 | **duplicato dal codice** | già leggibile da un file, da un test o dalla git history | non scrivere affatto |
 | **fuori posto** | procedura o dettaglio che non serve a chi apre il repo | spostare in un file dedicato, lasciare il rimando |
 
+## Lo scheletro minimo: cosa un `CLAUDE.md` deve avere
+
+Le regole finora dicono dove va ciò che si scrive e cosa si taglia. Questa dice cosa non può
+mancare — ed è l'unica che si verifica guardando ciò che **non** c'è, quindi è anche la sola che
+nessun controllo di coerenza può far scattare da sola.
+
+Un `CLAUDE.md` completo ha almeno queste parti, in quest'ordine:
+
+1. **Cos'è questo repo** — quattro o cinque righe: cosa produce, chi lo consuma, che rapporto ha
+   con gli altri repo del sistema (package, consumer, submodule), lo stack in una riga. È la metà
+   del lavoro di orientamento: senza, chi apre il file sa come si scrive il codice ma non cosa sta
+   guardando. Il resto del file presuppone questa risposta.
+2. **Le regole che non si possono violare**, in forma di divieto e non di descrizione. Stanno in
+   cima perché nessuna istruzione più in basso può contraddirle, e perché sono le uniche righe che
+   devono essere lette anche da chi smette di leggere subito.
+3. **Comandi** — quelli che si eseguono davvero su questo repo: test, build, lint, generazione.
+   Una tabella basta. Senza, ogni sessione li deduce, e dedurli male costa più che scriverli.
+4. **Convenzioni** che si discostano dal comportamento predefinito degli strumenti: lingua della
+   documentazione, formato degli identificatori, dove vivono i documenti e come si chiamano.
+5. **L'indice della conoscenza**, con i rimandi alle pagine per argomento.
+6. **Le trappole**, che non stanno qui: stanno in `.claude/rules/`, e il file dice in due righe
+   che ci sono e come si caricano.
+
+**La prima sezione è un posto, non un caso.** È l'unica che viene letta sempre, anche da chi si
+ferma dopo dieci righe, e quello che ci si trova dichiara implicitamente cosa conta in questo
+repo. Un tutorial o una procedura in prima posizione dice che la cosa più importante è come si
+esegue un passaggio, e spinge fuori dalla vista le regole che non si possono violare.
+
+**L'assenza di una di queste parti è un rilievo pieno**, non una nota di stile: il file può essere
+corto, coerente, senza contraddizioni e senza rimandi rotti, e lasciare comunque chi lo legge
+senza sapere cosa sia il repo e come si lanciano i test.
+
 ## Dove va cosa
 
 - **La documentazione segue il codice.** Ciò che riguarda un submodule va nel `CLAUDE.md`
@@ -287,6 +337,15 @@ non solo al `CLAUDE.md`: spostare una procedura non la esonera.
   parte più preziosa di un `CLAUDE.md`, perché non si deducono leggendo il codice — e sono anche
   la più numerosa, quindi mescolarle alle regole trasforma quella sezione in un contenitore
   indifferenziato.
+
+  **Il criterio che le distingue è cosa succede a chi non la conosce.** Una convenzione ignorata
+  produce codice difforme, che si vede in review; una trappola ignorata produce codice che *non
+  funziona*, o che funziona per caso — e non si vede affatto. Se la frase dice cosa accadrà
+  scrivendo il codice, è una trappola e va in `.claude/rules/`, anche quando è formulata come una
+  regola di stile. Caso di confine risolto così: «un singolo binding raggiunge tutte le direttive
+  sullo stesso host element» sembra una convenzione di template, ma lo si scopre duplicando il
+  binding e vedendo che non serviva — è una trappola. L'ordine in cui si scrivono quegli attributi
+  è invece forma, e viaggia nella stessa regola perché si applica nello stesso momento.
 
   Vivono in **regole path-scoped**, un file per soggetto sotto `.claude/rules/`, con il
   frontmatter `paths:` che dice quando si caricano:
@@ -420,9 +479,22 @@ quali servizi esistono, quali comandi rispondono. Sono le righe che aprono il fi
 ogni sessione legge per prime e che nessuno rilegge mai — e invecchiano in silenzio, perché un
 aggiornamento di versione non tocca la documentazione.
 
-## Quando un repo monta un package condiviso, la conoscenza si divide in due
+## Quando un repo monta codice condiviso — package o submodule — la conoscenza si divide in due
 
-Un consumer di `wm-package` — o di una libreria frontend come `wm-core` o `map-core` — non ha
+**Due parole per due cose diverse, e qui contano entrambe.** *Submodule* è il meccanismo — come
+il codice arriva nel consumer, dichiarato in `.gitmodules`; *package* è il ruolo — codice
+condiviso che ha dei consumer e avanza per conto suo. `wm-package` è un pacchetto Composer;
+`wm-core`, `map-core` e `wm-types` sono submodule Git. La regola che segue vale per entrambi,
+perché dipende dal ruolo e non dal meccanismo: dove c'è codice montato da più repo, la conoscenza
+si divide.
+
+**Il criterio non è la parola né il `package.json`: è da quanti repo è montato.** Un submodule
+con un consumer solo è una separazione di repo, e non ha «gli altri consumer» da cui distinguere
+la customizzazione. Uno montato da due o più repo ha la divisione, che sia pubblicato o no —
+`map-core` ha `private: true` e non è un pacchetto npm, ma è montato da due prodotti, quindi la
+regola vale identica. Si controlla nei `.gitmodules` dei repo che lo montano.
+
+Un consumer di `wm-package` — o di un submodule frontend come `wm-core` o `map-core` — non ha
 una conoscenza sola: ne ha due, con residenze diverse.
 
 - **Nel package** vive il **dominio**: come funziona il meccanismo, quali tabelle usa, quali
@@ -449,6 +521,56 @@ nata lavorando sul cliente.
 nel package. Vale anche al contrario — un vincolo che esiste solo per un cliente non sale nel
 package, dove varrebbe per tutti senza motivo.
 
+**Fuori posto significa spostato, mai cancellato.** Un contenuto che non appartiene al file in
+cui si trova non è un contenuto di troppo: è un contenuto nel posto sbagliato, e qualcuno l'ha
+scritto perché serviva. Toglierlo e basta lo perde, e lo perde nel modo peggiore — senza che
+nessuno se ne accorga, perché il file da cui è sparito adesso è più pulito di prima.
+
+Quindi l'intervento nomina **il repo di destinazione** e ci porta il contenuto, e le due metà —
+scrivere là, togliere qua — sono un intervento solo. Dentro il repo di destinazione valgono le
+quattro destinazioni di sempre: il `CLAUDE.md` accoglie un vincolo o l'inquadramento, una
+procedura va in `docs/howto/`, una trappola in `.claude/rules/`, il perché di una scelta in
+`docs/knowledge/`. Arrivare nel repo giusto e fermarsi nel file sbagliato sposta il problema
+invece di risolverlo.
+
+## Un fatto, una residenza — e la residenza è dove sta la cosa
+
+Le regole sulla divisione fra package e consumer dicono *cosa* va dove. Questa dice come si decide
+quando la risposta non è ovvia, perché con sei repo federati un fatto trova quasi sempre due
+posti plausibili, ed è così che nascono le copie.
+
+**Il criterio è dove sta fisicamente la cosa che la regola governa.** Non dove è nata, non dove si
+capisce meglio, non dove qualcuno la cercherebbe: dove sono i file. Un caso reale: la regola su
+come si scrivono i test E2E era finita nel `CLAUDE.md` della libreria che quei test esercitano —
+sembra sensato, è il dominio — ma i file `cypress/` stanno nei due prodotti, e nella libreria non
+esiste quella cartella. La regola va nei prodotti; alla libreria resta la procedura, che descrive
+il proprio dominio e non il modo di scrivere un test.
+
+**In subordine, quando i file stanno in più posti o in nessuno: chi si rompe se la regola viene
+violata.** Se a rompersi è la build di un consumer, la regola sta nel consumer anche se il vincolo
+nasce dal package.
+
+**E il caso opposto: un fatto simmetrico che sta in un repo solo mentre l'altro tace.** Quando due
+repo condividono la stessa condizione — file che sono copie l'uno dell'altro, un'invariante che
+lega due percorsi di codice, un ordine di deploy che vale per entrambi — scriverla in uno solo non
+è «una residenza e un rimando»: è metà lavoro. Chi apre l'altro repo non ha modo di sapere che
+esiste un vincolo, perché non c'è niente da cui risalire. Le forme ammesse sono due: la regola in
+entrambi, ciascuna che nomina l'altro repo, oppure in uno solo **con un rimando esplicito
+nell'altro**. «In uno solo, e l'altro tace» non è fra queste.
+
+**Una convenzione che contraddice quella di un repo con cui si condivide codice va dichiarata in
+entrambi, ciascuno nominando l'altro.** Non è un caso a parte: è la reciprocità vista da un altro
+lato. Se un repo dichiara «le interfacce hanno il prefisso `I`» e il submodule che monta le
+dichiara senza, nessuno dei due si contraddice al proprio interno — ma chi legge il primo e poi
+scrive codice nel secondo applica una regola dove non vale, e il repo che subisce il danno non è
+quello che ha scritto la frase. La forma corretta è la stessa del fatto simmetrico: ciascuno dichiara
+dove la propria convenzione **non** si applica, nominando l'altro repo.
+
+**Due residenze non sono «ridondanza utile»: sono due versioni.** La seconda copia non viene
+aggiornata — chi cambia il fatto tocca il repo in cui sta lavorando — e da quel momento una delle
+due mente, senza che nulla lo segnali. L'unica forma ammessa è **una residenza e un rimando**: il
+posto che non ospita il fatto dice dove sta, in una riga, e non lo ripete.
+
 ## Un fatto si verifica dove vive, non dove è scritto
 
 Il codice dice cosa il programma *farebbe*. Se le cose stiano davvero così lo dice solo il
@@ -468,6 +590,14 @@ la stessa — *dove vive il fatto che sto affermando?*
   il comportamento, la console del browser per gli errori a runtime.
 - **Ovunque**: se una cosa si può eseguire invece che dedurre, si esegue.
 
+**Quando i consumer sono più d'uno, «il repo principale» non esiste.** Una libreria condivisa è
+montata da prodotti diversi, ciascuno con la propria struttura: `wm-core` sta sotto
+`core/src/app/shared/` in `webmapp-app` e sotto `src/app/shared/` in `wm-webapp`. Prima di
+verificare un'affermazione che parla del consumer, stabilisci **quale**, e cercala lì. Un caso
+reale: `core/angular.json`, cercato nel consumer sbagliato, ha prodotto un grep vuoto e la
+conclusione che il file non esistesse — un falso negativo con tanto di prova allegata, che è il
+modo più convincente di sbagliare.
+
 **Lo stack non si indovina: lo si chiede a `wm-env-detect`.** È l'agente che rileva stack,
 Docker, submodule e strumenti del repo e restituisce **solo i valori risolti**, senza portare
 nel context l'output dei comandi di rilevamento. Dedurre l'ambiente dai nomi dei file è il modo
@@ -481,6 +611,14 @@ che non è stata verificata.
 scrittura, nessuna migration, nessun comando che tocchi i dati. Se l'unico ambiente
 raggiungibile è la produzione, non si verifica: si scrive la frase senza la cifra, o non la si
 scrive affatto.
+
+**Anche l'esistenza di una cosa si verifica in un checkout, a una data.** La regola sulla data non
+vale solo per le quantità: che una classe esista, che una riga sia ancora lì, che un fix sia stato
+mergeato sono fatti veri **in quel repo, su quel branch, quel giorno**. Un caso reale: due fix
+risultavano assenti su entrambi i branch controllati, e un'ora dopo — allineato il repo — erano
+presenti, con un commento che citava il ticket. La verifica non era sbagliata: era datata. Quindi
+una riga che afferma l'assenza di qualcosa porta sempre repo, branch e data; e prima di dichiarare
+che un lavoro non è mai atterrato, si guarda se il checkout è aggiornato.
 
 **Ogni cifra porta la data del rilevamento** — «(produzione, 2026-09-02)» — perché un dato
 misurato invecchia mentre il codice resta, che sia il conteggio di una tabella o il peso di un

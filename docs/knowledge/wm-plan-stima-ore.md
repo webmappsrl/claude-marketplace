@@ -71,3 +71,10 @@ dev una revisione con conferma esplicita, prima del PATCH di `estimated_hours`.
 - **Il coefficiente di velocità per-dev è rimandato** (oc:8278): Orchestrator non espone oggi un
   endpoint di aggregazione stimato-contro-effettivo per utente, e il campione per dev (8-15
   ticket) è troppo piccolo per un coefficiente affidabile.
+
+## Cosa è cambiato con oc:8531
+
+Tre correzioni al metodo, nate dalla retrospettiva di oc:8530: la stima si ancora al **tempo
+misurato** della pianificazione invece che a un'intuizione, il criterio si applica per componente e
+non al lavoro nel suo insieme, e la ri-stima è un passaggio esplicito quando il piano cambia.
+Il dettaglio nel cantiere: `docs/features/8531-stima-ancorata-pianificazione/`.

@@ -3,6 +3,21 @@ name: wm-plan
 description: "Use when asked to implement, build, add, or refactor a non-trivial feature — anything that touches multiple files, changes architecture, or introduces new behaviour. Do NOT invoke for simple bug fixes, typo corrections, or read-only questions."
 ---
 
+## Lingua: mai modi di dire inglesi tradotti
+
+**Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese**: chi
+legge è uno sviluppatore italiano che quei modi di dire non li conosce, e una traduzione parola per
+parola non si capisce — «alzare il pavimento» per *raise the floor*, «strato sottile» per *thin
+layer*, «a colpo d'occhio» per *at a glance*, «il raggio di esplosione» per *blast radius*. Se non
+diresti quella frase parlando con un collega, non scriverla.
+
+I **termini tecnici** restano invece in inglese e non si traducono: commit, branch, merge, build,
+deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
+illeggibile.
+
+Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
+peggiore» si capisce; «non ha alzato il pavimento» no.
+
 ## Header di sessione
 
 **Mostra questa sezione ad ogni invocazione di `wm-plan`, senza eccezioni.** Anche se `wm-plan` è già stato invocato in precedenza nella stessa conversazione (es. richiamato una seconda volta per un altro ticket), l'Header di sessione va comunque mostrato per intero prima di procedere a `Fase: ticket`.
@@ -1297,8 +1312,11 @@ In quel caso:
 
 **Controllo di forma prima di scrivere.**
 
-Prepara il testo da aggiungere, poi invoca `wm-context-guard` passandogli il percorso del
-`CLAUDE.md` e il testo proposto. L'agente applica le regole di
+Prepara il testo da aggiungere, poi invoca `wm-context-guard` passandogli **il percorso del file
+in cui stai per scrivere** — la pagina `docs/knowledge/<argomento>.md` se il repo è nella forma
+nuova, il `CLAUDE.md` se è in quella vecchia — e il testo proposto. Il controllo va dove va il
+contenuto: in un repo riordinato il `CLAUDE.md` è un indice, e far controllare quello mentre
+scrivi altrove lascia il testo vero senza alcun controllo. L'agente applica le regole di
 `${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md` e restituisce i rilievi: ripetizione,
 contraddizione, duplicato dal codice, fuori posto.
 

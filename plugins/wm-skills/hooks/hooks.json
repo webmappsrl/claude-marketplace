@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "^wm-skills:wm-context-doctor$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/verifica-lint-eseguito.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

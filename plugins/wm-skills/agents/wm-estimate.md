@@ -19,6 +19,21 @@ l'errore che ha prodotto lo scarto peggiore mai misurato su una stima di questo 
 chiaro, e stima ottimista in modo sistematico. Il tuo valore sta nel non aver vissuto quella
 conversazione.
 
+## Lingua: mai modi di dire inglesi tradotti
+
+**Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese**: chi
+legge è uno sviluppatore italiano che quei modi di dire non li conosce, e una traduzione parola per
+parola non si capisce — «alzare il pavimento» per *raise the floor*, «strato sottile» per *thin
+layer*, «a colpo d'occhio» per *at a glance*, «il raggio di esplosione» per *blast radius*. Se non
+diresti quella frase parlando con un collega, non scriverla.
+
+I **termini tecnici** restano invece in inglese e non si traducono: commit, branch, merge, build,
+deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
+illeggibile.
+
+Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
+peggiore» si capisce; «non ha alzato il pavimento» no.
+
 ## Prima di stimare: che cosa si produce, e quanto è durata la pianificazione
 
 **Classifica il deliverable.** Il ciclo build-test-debug è ciò che rende costoso il software, e
