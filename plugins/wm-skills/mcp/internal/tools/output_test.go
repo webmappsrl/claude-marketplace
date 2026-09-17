@@ -29,6 +29,82 @@ func TestJSONOrTextDecodesValidJSONInsteadOfNestingIt(t *testing.T) {
 	}
 }
 
+// oc:8545 — il protocollo MCP impone che structuredContent sia un oggetto.
+// Gli endpoint di collezione di Orchestrator (GET /api/tags, /api/tasks,
+// /api/customers…) rispondono invece con un array JSON top-level: restituirlo
+// così com'è fa rifiutare la risposta dal client, prima ancora che il modello
+// la veda, con "expected: record" su structuredContent.
+
+func TestJSONOrTextWrapsTopLevelArray(t *testing.T) {
+	// Come list_tags: GET /api/tags risponde con un array.
+	raw := []byte(`[{"id":561,"name":"[RDO][FORESTAS][2026]1"}]`)
+	got := jsonOrText(raw)
+
+	m, ok := got.(map[string]any)
+	if !ok {
+		t.Fatalf("un array top-level va incapsulato in un oggetto, o il client rifiuta la risposta: %#v", got)
+	}
+	items, ok := m["items"].([]any)
+	if !ok {
+		t.Fatalf("gli elementi devono restare raggiungibili sotto items: %#v", m)
+	}
+	if len(items) != 1 {
+		t.Fatalf("l'incapsulamento non deve perdere né aggiungere elementi: %#v", items)
+	}
+	first, ok := items[0].(map[string]any)
+	if !ok || first["name"] != "[RDO][FORESTAS][2026]1" {
+		t.Fatalf("gli elementi devono restare quelli restituiti da Orchestrator: %#v", items[0])
+	}
+}
+
+func TestJSONOrTextWrapsEmptyArray(t *testing.T) {
+	// Una ricerca senza risultati è il caso normale di list_tags con un
+	// cliente nuovo: deve restare un oggetto con una lista vuota, non
+	// diventare un errore né sparire.
+	got := jsonOrText([]byte(`[]`))
+
+	m, ok := got.(map[string]any)
+	if !ok {
+		t.Fatalf("anche un array vuoto va incapsulato: %#v", got)
+	}
+	items, ok := m["items"].([]any)
+	if !ok || len(items) != 0 {
+		t.Fatalf("items deve essere una lista vuota, non nil né assente: %#v", m["items"])
+	}
+}
+
+func TestJSONOrTextLeavesObjectUntouched(t *testing.T) {
+	// get_tag e get_story restituiscono già un oggetto: non devono finire
+	// annidati sotto items, o cambierebbe la forma di risposte che oggi
+	// funzionano.
+	got := jsonOrText([]byte(`{"id":561,"name":"[RDO][FORESTAS][2026]1"}`))
+
+	m, ok := got.(map[string]any)
+	if !ok {
+		t.Fatalf("un oggetto deve restare un oggetto: %#v", got)
+	}
+	if _, wrapped := m["items"]; wrapped {
+		t.Fatalf("un oggetto non va incapsulato una seconda volta: %#v", m)
+	}
+	if m["id"] != float64(561) {
+		t.Fatalf("i campi devono restare al primo livello: %#v", m)
+	}
+}
+
+func TestJSONOrTextWrapsScalar(t *testing.T) {
+	// Un corpo JSON valido ma scalare (un numero, "null") non è un record:
+	// passarlo nudo romperebbe come l'array.
+	got := jsonOrText([]byte(`42`))
+
+	m, ok := got.(map[string]any)
+	if !ok {
+		t.Fatalf("uno scalare JSON va incapsulato come l'array: %#v", got)
+	}
+	if m["items"] != float64(42) {
+		t.Fatalf("il valore deve restare raggiungibile: %#v", m)
+	}
+}
+
 func TestJSONOrTextFallsBackToTextWhenNotJSON(t *testing.T) {
 	got := jsonOrText([]byte("non è json"))
 	out, ok := got.(textOutput)
