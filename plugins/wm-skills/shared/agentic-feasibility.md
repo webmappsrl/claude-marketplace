@@ -38,10 +38,13 @@ Due controlli prima di dire sì:
 | `repo-map` | delegabile in futuro, nessun agente attuale | meccanica (find + jq), ma il compito non coincide con lo scope dichiarato di `wm-env-detect` (rilevamento ambiente per `wm-plan`, non discovery di repo generici); in caso di dubbio non si stira lo scope di un agente esistente |
 | `client-extraction` | no | propone un nome e **attende conferma esplicita** del dev — è un giudizio che nasce nel dialogo |
 | `tag-naming` | no | il calcolo di N è minimo (una `list_tags` + un conteggio), non c'è lavoro intermedio grande da spostare fuori; la fase termina comunque con una proposta da confermare |
-| `tag-description` | no | il testo sorgente (trascrizione) è già stato letto nel principale in `input`: non c'è un input piccolo da passare a un agente senza duplicare la lettura; la fase si chiude con approvazione esplicita del dev, incluse correzioni iterative |
+| `tag-description` | **sì, la voce «Esiste»** (`wm-codebase-research`) | il testo sorgente (trascrizione) è già stato letto nel principale in `input`: non c'è un input piccolo da passare a un agente senza duplicare la lettura; la fase si chiude con approvazione esplicita del dev, incluse correzioni iterative. Fa eccezione la voce «Esiste» di ogni macro area, che è una domanda sul codice e si delega |
 | `tag-creation` | no | scrittura su Orchestrator con preview e conferma esplicita — stessa regola delle scritture in `wm-plan: ticket` |
-| `ticket-list` (step 1 e 2) | no | entrambi gli step terminano con una richiesta di feedback/approvazione esplicita al dev; il materiale su cui lavorano è lo stesso testo già in context, non un input piccolo isolabile |
-| `ticket-loop` | no | orchestrazione del dialogo (annuncio, invocazione di `wm-plan`, richiesta di continuare o fermarsi ad ogni iterazione) — non è delegabile un ciclo che deve poter dialogare col dev ad ogni passo |
+| `tag-resume` | **sì, la verifica delle voci in standby** (`wm-codebase-research`) | il giro di verifica sui blocchi: «il prerequisito esiste ora nel repo?» è una domanda sul codice, con input piccolo (le voci in standby lette dal tag) e risposta breve, quindi si delega in una chiamata sola. Il resto — le situazioni aperte, che si sbloccano solo con una risposta che porta il dev — è dialogo |
+| `candidate-list` | no | termina con una richiesta di feedback esplicita al dev; il materiale su cui lavora è lo stesso testo già in context, non un input piccolo isolabile |
+| `candidate-review` | no | è il vaglio uno per volta: ogni candidato si chiude con un sì o un no del dev, e senza quel sì non si crea nulla — è dialogo puro |
+| `ticket-loop` | no | orchestrazione del dialogo (annuncio, invocazione di `wm-plan`) — non è delegabile un ciclo che deve poter dialogare col dev ad ogni passo |
+| `tag-update` | no | scrittura su Orchestrator con preview e conferma esplicita, sulla descrizione mostrata per intero al dev |
 
 ## wm-review-ticket
 
