@@ -36,11 +36,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.4.1
+**Versione installata:** v1.4.2
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.4.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.4.2` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -588,6 +588,67 @@ Al termine: `✅ Container \`<DOCKER_PROJECT_DIR_NAME>\` avviato, ambiente norma
 
 ---
 
+### environment-setup: tag-ambiente
+
+Propone i tag Orchestrator che si deducono dal **posto in cui si lavora**, prima ancora di
+sapere cosa farà questo ticket. I tag che dipendono dal contenuto del lavoro arrivano dopo,
+in `overview: tag-contenuto`.
+
+Salta la fase se non c'è un ticket, e **non eseguirla in tag-mode**: lì il tag padre lo decide
+`wm-tag`.
+
+**I termini** si ricavano da quello che la fase ha già in mano, senza chiedere nulla:
+
+| Caratteristica | Da dove | Esempio |
+|---|---|---|
+| Repository | `basename` dell'URL di `git remote get-url origin`, senza `.git` | `claude-marketplace` |
+| Area | `stack_type` e `stack_ui` di `environment-setup: project-detection` | `backend`, `webapp`, `app` |
+
+Mostra i termini al dev prima di cercare: può aggiungerne dei suoi.
+
+**La ricerca e il filtro non si fanno nel prompt**, si fanno con lo script:
+
+```bash
+plugins/wm-skills/scripts/tag-candidati.sh <ID> <termine>...
+```
+
+Restituisce `candidati` (tag che esistono, sono etichette, non sono già sul ticket e non portano
+un trimestre nel nome) e `scoperti` (termini per cui non esiste nulla, varianti del nome
+comprese). **Le descrizioni dei tag non entrano mai nel context:** lo script le usa solo per
+scartare, e alcune contengono credenziali in chiaro.
+
+Il trimestre non è fra i termini: lo assegna Orchestrator alla creazione del ticket. E ogni tag
+che lo porta nel nome è escluso dallo script — `[26Q3]FORESTAS` è il tag di un cliente, e
+proporlo su un lavoro interno lo sposterebbe nelle cose di quel cliente.
+
+**Se lo script fallisce** (exit diverso da 0, o nessun output), **fermati e chiedi al dev**:
+
+> ⚠️ Non sono riuscito a leggere i tag da Orchestrator: <motivo>. Riprovo, o vado avanti senza?
+
+Non proseguire in silenzio: un avviso che scorre via mentre il dev legge altro lo lascia
+convinto che i tag ci siano. Se il dev sceglie di proseguire, registralo in `notes.md`
+(sezione `## Decisioni`), creando il file se non esiste.
+
+**Per ogni candidato, uno per volta**, mostra nome e provenienza e chiedi:
+
+> Il ticket oc:<ID> non ha il tag `claude-marketplace` (trovato cercando "marketplace",
+> caratteristica: repository). Lo associo?
+
+Solo dopo un **sì esplicito** chiama `attach_story_to_tag`, prima senza `confirm` per
+l'anteprima e poi con `confirm: true`. Nessuna approvazione in blocco, nessun silenzio-assenso.
+
+Sui termini scoperti in questa fase **non proporre la creazione**: un tag di ambiente che non
+esiste raramente vale la pena, e il momento giusto per creare è `overview: tag-contenuto`, quando
+si sa cosa caratterizza il lavoro. Dichiara solo che non hai trovato nulla.
+
+**Registra in `notes.md`** (sezione `## Decisioni`) ogni tag associato: se un giorno si torna
+indietro serve la lista di cosa è stato fatto, perché due tag su Orchestrator non si possono
+fondere.
+
+**La fase non blocca mai il workflow:** un tag mancante non ferma un lavoro.
+
+---
+
 ## Fase: init-context
 
 Leggi il file `CLAUDE.md` nella root del progetto target.
@@ -734,6 +795,40 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 ```
 
 Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
+
+---
+
+### overview: tag-contenuto
+
+Eseguita **dopo l'approvazione dell'overview**, e solo se esiste un ticket. Non eseguirla in
+tag-mode.
+
+Qui i termini non si deducono dall'ambiente: si leggono nel lavoro appena descritto. La domanda
+è **quali caratteristiche hanno segnato questo lavoro**, e per ciascuna: *tornerà in altri
+lavori?* Se la risposta è sì, quella caratteristica è un buon tag. Se vale solo per questo
+ticket, non lo è — un raggruppamento destinato a contenere un elemento solo non è un
+raggruppamento.
+
+Esempio: un lavoro sulla skill `wm-plan` è caratterizzato dal fatto di toccare `wm-plan`, e ogni
+lavoro futuro sulla skill lo toccherà: `wm-plan` è un tag. «Proposta dei tag» invece descrive
+solo questo ticket: non è un tag, è il suo titolo.
+
+Proponi i termini al dev prima di cercare, con il motivo per cui li ritieni ripetibili, e
+lasciagli aggiungere o togliere. Poi passa i termini approvati allo stesso script:
+
+```bash
+plugins/wm-skills/scripts/tag-candidati.sh <ID> <termine>...
+```
+
+Per i **candidati** vale quanto in `environment-setup: tag-ambiente`: uno per volta, sì esplicito,
+`attach_story_to_tag` con anteprima e conferma.
+
+Per i **termini scoperti** puoi proporre la creazione del tag con `create_tag`. Il nome esprime
+la caratteristica, non uno schema sintattico: conta cosa qualcuno cercherà fra sei mesi. `wm-plan`
+crea **solo etichette** — tag senza descrizione — mai tag dossier: quelli sono di `wm-tag`.
+
+Anche la creazione passa dal doppio giro anteprima senza `confirm` e conferma esplicita, un tag
+per volta, e finisce in `notes.md`.
 
 ---
 

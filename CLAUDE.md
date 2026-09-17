@@ -119,6 +119,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-plan` | `wm-review-ticket` | `wm-plan` è fonte autoritativa del contratto artefatti `docs/features/<slug>/`. `wm-review-ticket` lo referenzia, non lo duplica: modificare la struttura richiede solo aggiornare `wm-plan`. |
 | `wm-tag` ↔ `wm-plan` | tag-mode | `wm-tag` invoca `wm-plan` in tag-mode, e `caso-c` in `Fase: ticket` cede il controllo a `wm-tag`. La divisione dei compiti sta nei due `SKILL.md`. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
+| `wm-plan` (proposta tag) | `wm-tag` | `wm-tag` crea tag dossier, con descrizione; `wm-plan` propone e crea solo etichette, cioè tag con `description` nulla. Il confine è il filtro sulla descrizione: se cambia in una delle due, verifica l'altra. |
 
 ## Convenzioni per le skill
 
@@ -191,3 +192,4 @@ Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
 | Delega ad agenti | Quali fasi vanno a un agente, i due tipi di delega, come si contesta un esito | [docs/knowledge/wm-skills-delega-agentica.md](docs/knowledge/wm-skills-delega-agentica.md) |
 | `wm-review-ticket` | Contratto artefatti letto a runtime, stash pre-checkout | [docs/knowledge/wm-review-ticket.md](docs/knowledge/wm-review-ticket.md) |
 | Le trascrizioni come fonte | Com'è fatta la fonte, come si scelgono le call, perché Drive e non un MCP | [docs/knowledge/wm-transcript-research.md](docs/knowledge/wm-transcript-research.md) |
+| Proposta dei tag in `wm-plan` | I due momenti, filtro sulle descrizioni, conferma per singolo tag | [docs/knowledge/wm-plan-proposta-tag.md](docs/knowledge/wm-plan-proposta-tag.md) |

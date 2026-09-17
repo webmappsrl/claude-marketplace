@@ -405,7 +405,7 @@
     <div class="diagram-scroll">
 <pre class="mermaid">
 flowchart TD
-    T["Fase: ticket\nMenu A/B/C — collega o crea il ticket Orchestrator"] --> ENV["Fase: environment-setup\nRileva stack, Docker, UX detection"]
+    T["Fase: ticket\nMenu A/B/C — collega o crea il ticket Orchestrator"] --> ENV["Fase: environment-setup\nRileva stack, Docker, UX detection — propone i tag di ambiente"]
     T -. caso C .-> TAG(["wm-skills:wm-tag\ntrascrizione/brief → tag + ticket"])
     T -. caso A, Help desk .-> SPLIT{{"ticket: caso-a-split-detection\nSubagente cieco — rileva richieste multiple"}}
     SPLIT -- 1 sola richiesta --> ENV
@@ -420,7 +420,7 @@ flowchart TD
     INIT --> REV["Fase: reverse-interaction\nDialogo socratico, minimo 5 domande"]
     REV -. delega la ricerca a .-> RESAG(["wm-codebase-research\ndossier con prova verbatim verificabile"])
     REV -. delega la ricerca a .-> TRAG(["wm-transcript-research\ncitazioni attribuite dalle call"])
-    REV --> OV["Fase: overview\nScrive overview.md, approvazione utente"]
+    REV --> OV["Fase: overview\nScrive overview.md, approvazione utente — propone i tag di contenuto"]
     OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
     CH --> TYPE{"Tipo ticket?"}
     TYPE -- Feature --> EST["Fase: estimation\nStima per-componente, approvata dal dev"]
