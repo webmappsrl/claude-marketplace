@@ -22,8 +22,22 @@ due decisioni distinte, e la seconda non è il seguito automatico della prima.
 
 I candidati a ticket si vagliano **uno per volta**, ciascuno presentato in forma autoconsistente, e
 **nessun ticket si crea senza un sì esplicito** su quel singolo candidato. La descrizione del tag si
-aggiorna una volta sola a fine sessione (`tag-update`): durante il vaglio i rimandi ai ticket non
-sono ancora noti.
+aggiorna una volta sola a fine sessione (`tag-update`), per non chiedere al dev una preview e una
+conferma a ogni candidato vagliato.
+
+**Rilanciare `wm-tag` su un tag esistente è un lavoro diverso dal primo giro**: non riprende un
+elenco lasciato a metà, ma verifica se i blocchi sono caduti. Le voci *In standby* si controllano
+nel codice (`wm-codebase-research`), quelle in *Situazioni aperte* si chiedono al dev, perché la
+risposta viene da fuori. Quelle sbloccate tornano candidati e passano dallo stesso vaglio. Un punto
+che ha già un ticket non è più un candidato: le informazioni nuove si portano sul ticket.
+
+L'alternativa — aprire subito un ticket per ogni punto bloccato e lasciarlo in backlog — è stata
+scartata: un ticket in backlog con informazioni che nessuno aggiorna è peggio dell'assenza del
+ticket, perché chi lo prende in mano mesi dopo non sa che la descrizione è ferma.
+
+**I ticket aperti dal tag non si elencano nella descrizione**: l'associazione è una relazione vera
+su Orchestrator, che la pagina del tag mostra già. Una tabella scritta a mano sarebbe una seconda
+copia dello stesso dato, e divergerebbe alla prima associazione fatta fuori dalla skill.
 
 La navigazione multi-repo usa `~/.config/webmapp/repos.json`, un dizionario persistente
 **aggiornato in modo incrementale** e mai riscritto da zero, così i path inseriti a mano
@@ -43,3 +57,7 @@ tag**, non solo sulle story.
   precedente («quello del custode») erano illeggibili fuori dal momento in cui erano stati scritti.
 - **Situazioni aperte e standby stanno nel tag, non nei ticket** (2026-09-16): un punto bloccato da
   una risposta esterna aperto come ticket resta fermo in board e sparisce dal contesto della call.
+- **La tabella dei ticket nella descrizione del tag** (2026-09-17, superata): la prima stesura del
+  vaglio la prevedeva, per ritrovare dal tag i ticket che ne erano nati. Caduta perché quel dato
+  Orchestrator ce l'ha già come relazione e lo mostra nella pagina del tag: la tabella era una
+  copia mantenuta a mano, cieca a ogni associazione fatta dall'interfaccia.
