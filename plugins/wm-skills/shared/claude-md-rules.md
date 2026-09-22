@@ -235,6 +235,28 @@ senza sapere cosa sia il repo e come si lanciano i test.
   Nell'indice del `CLAUDE.md` compare la **conoscenza**, con i rimandi a howto e guide dove
   servono. Il cantiere non va nell'indice.
 
+- **Un argomento è una domanda a cui si torna, non un sottosistema.** È la scelta che decide se
+  una pagina di conoscenza resterà leggibile o diventerà un raccoglitore, e si sbaglia sempre
+  nella stessa direzione: verso l'alto. «Come un sentiero arriva ad avere il suo numero» è una
+  domanda, e la pagina che le risponde ha un confine; «Catasto Sentieri» è un pezzo di software,
+  e quella pagina finisce per contenere tabelle, stati, import e numerazione senza che nessuna
+  delle quattro ci stia bene.
+
+  Il controllo è il **nome**: se è quello di un modulo, di un dominio, di una tabella o di una
+  classe, quasi sempre l'argomento è troppo largo. Un secondo segnale è il numero di lavori che
+  lo toccano — se sono tanti e non hanno niente in comune fra loro se non il sottosistema, non è
+  un argomento, è una cartella.
+
+  Quando il sottosistema è davvero grande, la pagina stretta non impedisce le altre: nascono
+  quando qualcuno tornerà su quelle domande, e si collegano fra loro.
+
+- **Se la pagina di conoscenza spiega come funziona il meccanismo, sta riscrivendo la
+  documentazione d'uso.** La conoscenza risponde al perché e a cosa è già stato provato; il come
+  funziona sta dove il repo lo tiene — `docs/resources/`, un README, la guida. Una pagina che
+  apre con «come funziona oggi» e ricalca la stessa spiegazione con gli stessi esempi crea due
+  descrizioni dello stesso meccanismo, che divergono al primo cambiamento. Il rimedio è un
+  rimando di due righe alla fonte, e tenere qui solo il ragionamento.
+
 - **«Utente finale» si legge rispetto a cosa produce quel repo.** Non significa sempre «il
   cliente»: significa chi usa la cosa che il repo produce. In un progetto Laravel per un
   cliente è il cliente; in un repo di strumenti interni — un plugin, una libreria, un CLI —
