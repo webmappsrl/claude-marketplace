@@ -52,3 +52,12 @@ func dataResult(message string, raw []byte) (*mcp.CallToolResult, any, error) {
 		StructuredContent: data,
 	}, nil, nil
 }
+
+// plainText restituisce un unico blocco di testo semplice, con gli a capo
+// veri. Le anteprime dei tool di scrittura, senza confirm, vanno costruite
+// così: passandole come Out (il secondo valore di ritorno) invece che come
+// Content, l'SDK le ri-serializza in JSON e gli a capo diventano "\n" scritti
+// per intero nel testo, illeggibili in una sessione di terminale.
+func plainText(s string) *mcp.CallToolResult {
+	return &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: s}}}
+}

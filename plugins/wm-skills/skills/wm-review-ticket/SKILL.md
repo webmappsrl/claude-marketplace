@@ -247,10 +247,11 @@ L'esito della review si scrive nella `description` del ticket rivisto, non in un
 correggerà riprende quel ticket con `wm-plan`, che legge proprio la `description` come base per
 overview e domande. Un esito che sta altrove non lo vede nessuno.
 
-**La `description` si sovrascrive per intero.** `update_story` non accoda: il valore inviato
-sostituisce tutto il testo. Prima di scrivere rileggi il ticket con `get_story` e ricopia la
-`description` attuale identica, carattere per carattere: una review che la cancella fa perdere i
-cicli precedenti.
+**L'esito si aggiunge, non si riscrive.** `update_story` con `description` sostituirebbe tutto il
+campo e cancellerebbe i cicli precedenti. Usa invece i parametri dell'aggiunta: la sezione del
+ciclo corrente va in `prepend`, le etichette sui cicli precedenti in `annotations`. Il tool legge
+la `description`, compone il testo nuovo e lascia identico tutto il resto: non ricopiare mai la
+`description` attuale.
 
 **Struttura della nuova `description`:**
 
@@ -267,8 +268,9 @@ cicli precedenti.
    N è il numero dei titoli `<h2>` «… ciclo» già presenti nella `description`, più uno: alla
    prima review è «Primo ciclo».
 2. **Sotto, il testo esistente, invariato salvo le etichette.** Se contiene cicli precedenti,
-   aggiungi a ogni loro punto un'etichetta in grassetto con la data, senza toccare il testo
-   originale:
+   aggiungi a ogni loro punto un'etichetta in grassetto con la data, passandola in `annotations`:
+   `after` è la frase esatta del punto, come compare nell'HTML letto con `get_story`, e `text` è
+   l'etichetta. Se la frase compare più volte, indica `occurrence` (1 = la prima). Le etichette:
    - `✅ Risolto (<data>)` — il problema non c'è più;
    - `⚠️ Risolto in parte (<data>): <cosa manca>`;
    - `⚠️ Superato (<data>): <perché> — vedi <sezione>` — la correzione ha introdotto un problema
@@ -276,7 +278,8 @@ cicli precedenti.
    - `⚠️ Da togliere (<data>): vedi <sezione>`.
 
    Etichetta anche il titolo del ciclo precedente, che dice ancora «da fare»: aggiungi in coda
-   `<strong>⚠️ Sostituito dal <N>-esimo ciclo (<data>)</strong>`. Senza, chi legge il ticket
+   `<strong>⚠️ Sostituito dal <N>-esimo ciclo (<data>)</strong>`. Anche questa è un'annotazione, con
+   `after` uguale al testo del titolo. Senza, chi legge il ticket
    trova più sezioni «da fare» e non sa quale vale.
 
    Non dichiarare «superata» un'intera sezione: i cicli precedenti di solito sono incompleti, non
@@ -287,9 +290,9 @@ bloccanti entrano solo se il dev li vuole nel ticket.
 
 Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi la sezione nuova in HTML (`<h2>`/`<h3>`/`<p>`/`<ul><li>`/`<table>`, `<strong>` per il verdetto) prima di inviarlo — non inviare il Markdown dell'output di Fase 5d as-is.
 
-Prima di chiamare il tool mostra al dev la sezione nuova per intero e l'elenco delle etichette
-aggiunte ai cicli precedenti: l'anteprima del tool riporta solo l'inizio del testo e la lunghezza,
-non basta per rivedere il contenuto.
+L'anteprima del tool mostra ogni campo per intero, reso come testo leggibile, e per ogni
+etichetta il punto in cui finisce. Mostrala al dev così com'è: non riassumerla, non sostituirla
+con un rimando a testo già mostrato, anche se ti sembra ripetitiva.
 
 Gli status disponibili sono elencati direttamente nello schema del tool `update_story` (campo `status`, letto dagli enum PHP di Orchestrator): non serve scaricare nulla da GitHub, il tool stesso rifiuta un valore fuori elenco.
 
@@ -300,7 +303,13 @@ Gli status disponibili sono elencati direttamente nello schema del tool `update_
 **Se ci sono bloccanti:**
 > "Trovati [N] finding bloccanti. Propongo di impostare lo status a `todo` per richiedere correzioni. Confermo?"
 
-Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <description completa>` — la sezione nuova in testa più il testo esistente con le etichette, mai la sola sezione nuova, che cancellerebbe il resto del ticket — senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
+Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>`, `prepend: <sezione del
+ciclo corrente in HTML>` e `annotations: <etichette sui cicli precedenti>`, **senza**
+`description` e senza `confirm`: esito e status partono in una sola scrittura. Mostra al dev
+l'anteprima del tool, attendi conferma esplicita, poi richiama `update_story` con gli stessi campi
+e `confirm: true`. Se il tool rifiuta un'annotazione (frase che non c'è, che compare più volte,
+che cade dentro un tag), correggi `after` o `occurrence` e rifai l'anteprima: non ripiegare mai
+su `description`.
 
 ### 6c — Review sulla PR (se il ticket ne ha una aperta)
 

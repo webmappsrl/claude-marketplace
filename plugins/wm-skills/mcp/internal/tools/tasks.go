@@ -79,7 +79,7 @@ func registerTasks(server *mcp.Server, deps Deps) {
 			fields["notes"] = in.Notes
 		}
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.NewResource(fields)}, nil
+			return plainText(preview.NewResource(fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", "/api/tasks", fields)
 		if err != nil {
@@ -107,7 +107,7 @@ func registerTasks(server *mcp.Server, deps Deps) {
 			return nil, nil, err
 		}
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.Diff(decodeMap(currentRaw), fields)}, nil
+			return plainText(preview.Diff(decodeMap(currentRaw), fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "PATCH", path, fields)
 		if err != nil {

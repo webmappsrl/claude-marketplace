@@ -42,27 +42,49 @@ func TestDiffShowsEmptyPreviousValue(t *testing.T) {
 	}
 }
 
-func TestDiffTruncatesLongStringOnRuneBoundary(t *testing.T) {
-	// 119 caratteri di un byte seguiti da caratteri accentati di due byte:
-	// tagliare a byte 120 (come faceva t[:120]) cade a metà del primo "à".
-	// %q rende comunque la stringa risultante UTF-8 valida, ma nasconde il
-	// difetto scrivendo la coda del byte spezzato come sequenza di scampo
-	// letterale "\xc3" al posto dell'ultimo carattere — è quella che il
-	// risultato non deve contenere.
-	s := strings.Repeat("x", 119) + strings.Repeat("à", 50)
-	current := map[string]any{"campo": nil}
-	requested := map[string]any{"campo": s}
-
-	got := Diff(current, requested)
+func TestDiffShowsLongStringInFull(t *testing.T) {
+	s := strings.Repeat("x", 119) + strings.Repeat("à", 500) + "FINE"
+	got := Diff(map[string]any{"campo": nil}, map[string]any{"campo": s})
 
 	if !utf8.ValidString(got) {
-		t.Fatalf("la troncatura ha prodotto UTF-8 non valido:\n%q", got)
+		t.Fatalf("UTF-8 non valido:\n%q", got)
 	}
-	if strings.Contains(got, `\x`) {
-		t.Fatalf("la troncatura ha spezzato un carattere multi-byte (sequenza di scampo residua):\n%s", got)
+	if !strings.Contains(got, s) {
+		t.Fatalf("l'anteprima deve contenere il valore per intero, senza troncamenti:\n%s", got)
 	}
-	if !strings.Contains(got, "à\"…") {
-		t.Fatalf("la troncatura deve terminare su un carattere accentato intero:\n%s", got)
+}
+
+func TestDiffRendersDescriptionAsReadableText(t *testing.T) {
+	got := Diff(
+		map[string]any{"description": "<p>vecchio</p>"},
+		map[string]any{"description": "<h2>Nuovo</h2><p>vecchio</p>"},
+		"description",
+	)
+	if strings.Contains(got, "<h2>") || strings.Contains(got, "<p>") {
+		t.Fatalf("la description va mostrata come testo, non come HTML:\n%s", got)
+	}
+	if !strings.Contains(got, "NUOVO") || !strings.Contains(got, "prima:") || !strings.Contains(got, "dopo:") {
+		t.Fatalf("mancano etichette o contenuto:\n%s", got)
+	}
+}
+
+func TestDiffWarnsWhenDescriptionLosesMostOfItsText(t *testing.T) {
+	got := Diff(
+		map[string]any{"description": strings.Repeat("a", 1000)},
+		map[string]any{"description": strings.Repeat("a", 100)},
+	)
+	if !strings.Contains(got, "⚠️ description: 1000 → 100 caratteri — si perde il 90% del testo attuale.") {
+		t.Fatalf("manca l'avviso sul testo perso:\n%s", got)
+	}
+	if strings.Index(got, "⚠️") > strings.Index(got, "prima:") {
+		t.Fatalf("l'avviso va in cima all'anteprima:\n%s", got)
+	}
+}
+
+func TestDiffNoWarningWhenDescriptionGrows(t *testing.T) {
+	got := Diff(map[string]any{"description": "a"}, map[string]any{"description": "ab"})
+	if strings.Contains(got, "si perde") {
+		t.Fatalf("nessun avviso se il testo cresce:\n%s", got)
 	}
 }
 
@@ -71,5 +93,42 @@ func TestNewResourceListsAllFields(t *testing.T) {
 
 	if !strings.Contains(got, "name") || !strings.Contains(got, "Nuovo ticket") {
 		t.Fatalf("la creazione deve elencare i campi inviati:\n%s", got)
+	}
+}
+
+// I1 — un cambio di solo markup (stesso testo reso, HTML grezzo diverso) deve
+// comunque comparire come modifica: altrimenti l'anteprima dice «Nessuna
+// modifica» mentre la PATCH, che manda il campo grezzo, scrive qualcosa di
+// diverso.
+func TestDiffShowsFormattingOnlyChangeAsModification(t *testing.T) {
+	got := Diff(
+		map[string]any{"description": "<p><b>Bloccante</b></p>"},
+		map[string]any{"description": "<p><strong>Bloccante</strong></p>"},
+		"description",
+	)
+
+	if strings.Contains(strings.ToLower(got), "nessuna modifica") {
+		t.Fatalf("un markup diverso è comunque una modifica, anche se il testo reso è identico:\n%s", got)
+	}
+	if !strings.Contains(got, "cambia solo la formattazione (HTML), il testo resta uguale") {
+		t.Fatalf("manca la riga che spiega che cambia solo il markup:\n%s", got)
+	}
+}
+
+// I2 — senza dichiarare htmlFields, un campo chiamato "description" ma
+// Markdown (come quello di un tag) non va reso come HTML: le sue entità
+// restano scritte come le ha inviate l'utente, invece di essere decodificate
+// da Readable.
+func TestDiffLeavesNonHTMLDescriptionUntouched(t *testing.T) {
+	got := Diff(
+		map[string]any{"description": ""},
+		map[string]any{"description": "## Cosa\n\n- a\n- Uso &amp; commerciale"},
+	)
+
+	if !strings.Contains(got, "&amp;") {
+		t.Fatalf("una description Markdown non dichiarata come campo HTML non va decodificata da Readable:\n%s", got)
+	}
+	if strings.Contains(got, "- a\n    - Uso & commerciale") {
+		t.Fatalf("l'entità non va decodificata: solo un campo HTML dichiarato lo farebbe:\n%s", got)
 	}
 }
