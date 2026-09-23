@@ -420,7 +420,7 @@ Invoca immediatamente `wm-skills:wm-tag`, passando come contesto qualsiasi testo
 
 ### ticket: aggiornamenti-espliciti
 
-Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), chiama `update_story`. Chiamalo sempre prima senza `confirm` per mostrare la differenza al dev, e solo dopo l'approvazione esplicita richiamalo con `confirm: true`.
+Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), chiama `update_story`. Chiamalo sempre prima senza `confirm` per mostrare la differenza al dev, e solo dopo l'approvazione esplicita richiamalo con `confirm: true`. Se il campo è `description`, il valore inviato sostituisce tutto il testo: aggiungi la nota in testa alla `description` attuale, come in `update-context: orchestrator`.
 
 ### ticket: estrazione
 
@@ -1474,4 +1474,6 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 - [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
 - [ ] Solo dopo approvazione esplicita, chiama `update_story` con i campi `status`, `description`, `customer_request` — prima senza `confirm` per mostrare la differenza, poi con `confirm: true`
 
-  **Importante:** manda solo il testo pulito nei campi `customer_request` e `description` — il backend chiama internamente `addResponse()` e `addDevNote()` che gestiscono formato HTML, timestamp, prepend e notifiche. Non costruire HTML manualmente.
+  **Importante — i due campi si comportano in modo diverso:**
+  - `customer_request`: manda solo il testo pulito. Il backend chiama `addResponse()`, che aggiunge in testa la risposta con autore e data e notifica il cliente.
+  - `description`: **si sovrascrive per intero** (Orchestrator oc:8549). Rileggi il ticket con `get_story` e invia la bozza delle note dev in testa, in HTML, seguita dalla `description` attuale copiata identica: mandare solo le note cancellerebbe l'overview scritta in `Fase: ticket` e le review precedenti. Prima della chiamata mostra al dev le note per intero, perché l'anteprima del tool riporta solo l'inizio del testo e la lunghezza.

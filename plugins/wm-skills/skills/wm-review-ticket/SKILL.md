@@ -263,13 +263,21 @@ cicli precedenti.
      chi implementa sa cosa costruire, ma senza questo elenco lascia codice morto o modifiche non
      più giustificate;
    - cosa serve per il rilascio (test da aggiungere, verifiche da eseguire).
-2. **Sotto, il testo esistente, invariato.** Se contiene cicli precedenti, aggiungi a ogni loro
-   punto un'etichetta in grassetto con la data, senza toccare il testo originale:
+
+   N è il numero dei titoli `<h2>` «… ciclo» già presenti nella `description`, più uno: alla
+   prima review è «Primo ciclo».
+2. **Sotto, il testo esistente, invariato salvo le etichette.** Se contiene cicli precedenti,
+   aggiungi a ogni loro punto un'etichetta in grassetto con la data, senza toccare il testo
+   originale:
    - `✅ Risolto (<data>)` — il problema non c'è più;
    - `⚠️ Risolto in parte (<data>): <cosa manca>`;
    - `⚠️ Superato (<data>): <perché> — vedi <sezione>` — la correzione ha introdotto un problema
      nuovo, o la decisione è cambiata;
    - `⚠️ Da togliere (<data>): vedi <sezione>`.
+
+   Etichetta anche il titolo del ciclo precedente, che dice ancora «da fare»: aggiungi in coda
+   `<strong>⚠️ Sostituito dal <N>-esimo ciclo (<data>)</strong>`. Senza, chi legge il ticket
+   trova più sezioni «da fare» e non sa quale vale.
 
    Non dichiarare «superata» un'intera sezione: i cicli precedenti di solito sono incompleti, non
    sbagliati, e l'etichetta punto per punto dice esattamente cosa vale ancora.
@@ -277,7 +285,7 @@ cicli precedenti.
 Nella sezione del ciclo corrente vanno i bloccanti e ciò che serve per chiuderli. I cleanup non
 bloccanti entrano solo se il dev li vuole nel ticket.
 
-Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi il riepilogo in HTML (`<h2>`/`<h3>`/`<p>`/`<ul><li>`/`<table>`, `<strong>` per il verdetto) prima di inviarlo — non inviare il Markdown dell'output di Fase 5d as-is.
+Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi la sezione nuova in HTML (`<h2>`/`<h3>`/`<p>`/`<ul><li>`/`<table>`, `<strong>` per il verdetto) prima di inviarlo — non inviare il Markdown dell'output di Fase 5d as-is.
 
 Prima di chiamare il tool mostra al dev la sezione nuova per intero e l'elenco delle etichette
 aggiunte ai cicli precedenti: l'anteprima del tool riporta solo l'inizio del testo e la lunghezza,
@@ -292,7 +300,7 @@ Gli status disponibili sono elencati direttamente nello schema del tool `update_
 **Se ci sono bloccanti:**
 > "Trovati [N] finding bloccanti. Propongo di impostare lo status a `todo` per richiedere correzioni. Confermo?"
 
-Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <riepilogo HTML>` senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
+Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <description completa>` — la sezione nuova in testa più il testo esistente con le etichette, mai la sola sezione nuova, che cancellerebbe il resto del ticket — senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
 
 ### 6c — Review sulla PR (se il ticket ne ha una aperta)
 
@@ -307,6 +315,11 @@ aggiornamento, e chi legge la copia vecchia corregge la cosa sbagliata.
 | DA CORREGGERE | `--request-changes` | verdetto, bloccanti, rimando al ticket |
 | APPROVATO CON RISERVE | `--comment` | verdetto, i soli punti da tenere d'occhio, rimando al ticket |
 | APPROVATO | `--approve` | una riga |
+
+**Se la PR è tua, usa sempre `--comment`.** GitHub rifiuta `--request-changes` e `--approve`
+sulle PR di cui si è autori, e questa skill si usa anche a fine feature, sulla propria PR.
+Confronta l'autore (`gh pr view <numero> --repo <owner>/<repo> --json author --jq .author.login`)
+con `gh api user --jq .login`; il verdetto resta scritto in testa al commento.
 
 **Cosa va sulla PR:**
 - il verdetto e il commit rivisto;
