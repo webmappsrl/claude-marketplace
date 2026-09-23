@@ -16,3 +16,10 @@ termine: nessun rischio di perdere lavoro in corso.
 - **Copiare la struttura degli artefatti dentro `wm-review-ticket` è stato scartato** (oc:8068):
   due copie divergono alla prima modifica, e il sintomo sarebbe una review che cerca file che
   `wm-plan` non scrive più.
+- **L'esito in un ticket Bug nuovo è stato scartato**: chi corregge riprende il ticket rivisto con
+  `wm-plan`, che legge la sua `description` come base. Un esito scritto altrove non lo vede
+  nessuno. Per questo l'esito va in testa alla `description`, un ciclo sopra l'altro, con i punti
+  dei cicli precedenti etichettati uno per uno (risolto, in parte, superato, da togliere).
+- **Sulla PR va solo il riepilogo, il dettaglio sta nel ticket** (review di oc:8543): lo stesso
+  contenuto scritto in due posti diverge al primo aggiornamento, e chi legge la copia vecchia
+  corregge la cosa sbagliata.

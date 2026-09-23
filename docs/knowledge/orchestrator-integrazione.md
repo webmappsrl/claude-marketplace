@@ -34,6 +34,12 @@ Nessuno dei due campi viene sanitizzato lato backend — `StoryApiRequest` e `Ta
 validano solo `string` generico. Un errore di formato non produce un errore API: si traduce in
 un rendering sbagliato nell'editor, quindi va rispettato per convenzione e non per vincolo.
 
+In scrittura i due campi di una Story si comportano in modo diverso. `customer_request` passa da
+`addResponse()`, che aggiunge il testo in testa con autore e data e notifica il cliente.
+`description` invece **si sovrascrive per intero** da oc:8549, in produzione dal 15 settembre
+2026: prima passava da `addDevNote()`, che aggiungeva in testa. Chi vuole aggiungere una nota
+deve quindi rileggere la `description` e rimandarla completa.
+
 ## Come ci siamo arrivati
 
 - **Chiamate HTTP costruite a mano dentro le skill** (oc:7961) — il primo approccio: ogni skill

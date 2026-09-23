@@ -243,9 +243,53 @@ fi
 
 ### 6b — Aggiorna ticket Orchestrator
 
-Prepara il riepilogo tecnico della review (finding, esito, eventuali azioni richieste) e mostra il preview all'utente prima di inviare.
+L'esito della review si scrive nella `description` del ticket rivisto, non in un ticket nuovo: chi
+correggerà riprende quel ticket con `wm-plan`, che legge proprio la `description` come base per
+overview e domande. Un esito che sta altrove non lo vede nessuno.
 
-Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi il riepilogo in HTML (`<h3>`/`<p>`/`<ul><li>`, `<strong>` per il verdetto) prima di inviarlo nel payload della PATCH — non inviare il Markdown dell'output di Fase 5d as-is.
+**La `description` si sovrascrive per intero.** `update_story` non accoda: il valore inviato
+sostituisce tutto il testo. Prima di scrivere rileggi il ticket con `get_story` e ricopia la
+`description` attuale identica, carattere per carattere: una review che la cancella fa perdere i
+cicli precedenti.
+
+**Struttura della nuova `description`:**
+
+1. **In testa, la sezione del ciclo corrente** — `<h2>N-esimo ciclo — da fare (review del <data>
+   su commit <hash>)</h2>` — scritta in modo che si regga da sola, senza rimandi a testo generato
+   in conversazione:
+   - repo, branch, link alla PR, esito;
+   - i bloccanti, ciascuno con causa, `file:linea` e cosa fare;
+   - **«Da togliere dal codice attuale»**, se la correzione rende superato codice già scritto:
+     chi implementa sa cosa costruire, ma senza questo elenco lascia codice morto o modifiche non
+     più giustificate;
+   - cosa serve per il rilascio (test da aggiungere, verifiche da eseguire).
+
+   N è il numero dei titoli `<h2>` «… ciclo» già presenti nella `description`, più uno: alla
+   prima review è «Primo ciclo».
+2. **Sotto, il testo esistente, invariato salvo le etichette.** Se contiene cicli precedenti,
+   aggiungi a ogni loro punto un'etichetta in grassetto con la data, senza toccare il testo
+   originale:
+   - `✅ Risolto (<data>)` — il problema non c'è più;
+   - `⚠️ Risolto in parte (<data>): <cosa manca>`;
+   - `⚠️ Superato (<data>): <perché> — vedi <sezione>` — la correzione ha introdotto un problema
+     nuovo, o la decisione è cambiata;
+   - `⚠️ Da togliere (<data>): vedi <sezione>`.
+
+   Etichetta anche il titolo del ciclo precedente, che dice ancora «da fare»: aggiungi in coda
+   `<strong>⚠️ Sostituito dal <N>-esimo ciclo (<data>)</strong>`. Senza, chi legge il ticket
+   trova più sezioni «da fare» e non sa quale vale.
+
+   Non dichiarare «superata» un'intera sezione: i cicli precedenti di solito sono incompleti, non
+   sbagliati, e l'etichetta punto per punto dice esattamente cosa vale ancora.
+
+Nella sezione del ciclo corrente vanno i bloccanti e ciò che serve per chiuderli. I cleanup non
+bloccanti entrano solo se il dev li vuole nel ticket.
+
+Il campo `description` del ticket è renderizzato da un editor WYSIWYG (HTML, non Markdown): componi la sezione nuova in HTML (`<h2>`/`<h3>`/`<p>`/`<ul><li>`/`<table>`, `<strong>` per il verdetto) prima di inviarlo — non inviare il Markdown dell'output di Fase 5d as-is.
+
+Prima di chiamare il tool mostra al dev la sezione nuova per intero e l'elenco delle etichette
+aggiunte ai cicli precedenti: l'anteprima del tool riporta solo l'inizio del testo e la lunghezza,
+non basta per rivedere il contenuto.
 
 Gli status disponibili sono elencati direttamente nello schema del tool `update_story` (campo `status`, letto dagli enum PHP di Orchestrator): non serve scaricare nulla da GitHub, il tool stesso rifiuta un valore fuori elenco.
 
@@ -256,4 +300,38 @@ Gli status disponibili sono elencati direttamente nello schema del tool `update_
 **Se ci sono bloccanti:**
 > "Trovati [N] finding bloccanti. Propongo di impostare lo status a `todo` per richiedere correzioni. Confermo?"
 
-Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <riepilogo HTML>` senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
+Chiama `update_story` con `story_id: <ID>`, `status: <status scelto>` e `description: <description completa>` — la sezione nuova in testa più il testo esistente con le etichette, mai la sola sezione nuova, che cancellerebbe il resto del ticket — senza `confirm`: mostra al dev la differenza calcolata dal tool rispetto allo stato attuale. Attendi conferma esplicita, poi richiama `update_story` con gli stessi campi e `confirm: true`.
+
+### 6c — Review sulla PR (se il ticket ne ha una aperta)
+
+Il dettaglio sta nel ticket; sulla PR va solo ciò che serve a chi la guarda da GitHub, con un
+rimando al ticket. **Niente duplicati**: un contenuto scritto in due posti diverge al primo
+aggiornamento, e chi legge la copia vecchia corregge la cosa sbagliata.
+
+**Tipo di review, in base al verdetto di Fase 5d:**
+
+| Verdetto | Review GitHub | Contenuto |
+|---|---|---|
+| DA CORREGGERE | `--request-changes` | verdetto, bloccanti, rimando al ticket |
+| APPROVATO CON RISERVE | `--comment` | verdetto, i soli punti da tenere d'occhio, rimando al ticket |
+| APPROVATO | `--approve` | una riga |
+
+**Se la PR è tua, usa sempre `--comment`.** GitHub rifiuta `--request-changes` e `--approve`
+sulle PR di cui si è autori, e questa skill si usa anche a fine feature, sulla propria PR.
+Confronta l'autore (`gh pr view <numero> --repo <owner>/<repo> --json author --jq .author.login`)
+con `gh api user --jq .login`; il verdetto resta scritto in testa al commento.
+
+**Cosa va sulla PR:**
+- il verdetto e il commit rivisto;
+- i bloccanti, **una riga ciascuno**, con `file:linea`;
+- il rimando al ticket come unica fonte aggiornata: `oc:<ID>`, sezione «N-esimo ciclo — da fare»;
+- commenti inline su una riga **solo** per i difetti che si capiscono guardando quella riga (un bug
+  puntuale, una condizione sbagliata), mai per requisiti o decisioni di design.
+
+**Cosa non va sulla PR, perché sta nel ticket:** requisiti, tabelle, elenco dei test, codice da
+togliere, cleanup non bloccanti, finding confutati, casi d'uso dell'utente. Mai dati letti da un
+database reale né riferimenti ad altri clienti.
+
+La PR è visibile fuori dal team: mostra al dev il testo esatto e il tipo di review, e pubblica con
+`gh pr review <numero> --repo <owner>/<repo> <tipo> --body-file <file>` solo dopo una conferma
+esplicita, come per le scritture su Orchestrator.
