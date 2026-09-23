@@ -5,6 +5,9 @@
       "env": {
         "ORCHESTRATOR_MCP_GROUPS": "tags"
       }
+    },
+    "notebooklm": {
+      "command": "notebooklm-mcp"
     }
   }
 }

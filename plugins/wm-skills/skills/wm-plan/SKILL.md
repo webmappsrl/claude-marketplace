@@ -256,6 +256,7 @@ Fasi che delegano, e a chi:
 |---|---|---|
 | `environment-setup` | `wm-env-detect` | informata |
 | `reverse-interaction` | `wm-codebase-research` | informata |
+| `ticket` (avvio e caso B) | `wm-transcript-research` | informata |
 | `reverse-interaction` | `wm-transcript-research` | informata |
 | `challenge` | subagente già previsto | **cieca** |
 | `estimation` | `wm-estimate` | **cieca** |
@@ -287,6 +288,14 @@ date -u +"%Y-%m-%dT%H:%M:%S%z"
 ```
 
 Tieni questo valore attivo per tutto il workflow — serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato).
+
+**Subito dopo, lancia in background `wm-skills:wm-transcript-research` con la richiesta «prepara»**:
+crea o completa il notebook NotebookLM del giorno (`scrum AAAA-MM-GG`) con le call di oggi. Non
+aspettarne la risposta: prosegui con il menu, così il notebook è pronto quando servono le call.
+**Prima di ogni altra richiesta a `wm-transcript-research`, aspetta che «prepara» abbia risposto**:
+due richieste partite insieme creano lo stesso notebook due volte. Se
+risponde `RICERCA FALLITA`, dillo al dev in modo evidente, riportando il comando se c'è
+(`! nlm login`).
 
 All'inizio del workflow, presenta sempre questo menu all'utente:
 
@@ -395,7 +404,12 @@ Se l'utente risponde no, procedi direttamente alla Fase: init-context senza modi
 
 ### ticket: caso-b
 
-Chiedi all'utente una descrizione della feature (anche breve). Con quella, proponi subito il testo del ticket:
+Chiedi all'utente una descrizione della feature (anche breve). **Prima di proporre il testo del
+ticket**, chiedi a `wm-skills:wm-transcript-research` cosa si è detto su quell'argomento nelle call
+di oggi (notebook del giorno): capita spesso che un ticket nasca da una cosa spiegata allo scrum. Se
+risulta qualcosa, verifica le citazioni con `${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md` e
+parti da lì, citandole; altri giorni o tag solo se il dev lo chiede esplicitamente. Poi proponi il
+testo del ticket:
 
 ```
 name: <titolo sintetico della feature>
@@ -716,8 +730,31 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
 - **Non chiedere ciò che il team ha già deciso in call.** Insieme alla ricerca sul codice,
-  interroga `wm-transcript-research` sulle trascrizioni dello scrum: passagli **numero e
-  titolo del ticket**, la sua data di creazione e le domande che stai per fare al dev.
+  interroga `wm-transcript-research` sulle call: passagli **numero e titolo del ticket**, la
+  **finestra di giorni** (da qualche giorno prima della creazione del ticket a oggi: l'agente usa il
+  notebook `scrum AAAA-MM-GG` di ogni giorno con almeno una call), le domande che stai per fare al
+  dev e, per **ogni tag associato al ticket**, il nome del tag e gli **id dei documenti
+  collegati**:
+
+  - per ogni tag, le righe `**Fonte:**` e i link a Google Doc della sua descrizione (l'agente usa
+    il notebook `tag <nome del tag>` **solo se esiste già**: qui non lo crea). `get_tag` può superare il limite di output e finire su file: in quel caso estrai
+    solo i link, senza caricare la descrizione:
+
+    ```bash
+    jq -r '.description' <file> | grep -o -E 'https://docs\.google\.com/document/d/[A-Za-z0-9_-]+'
+    ```
+
+  - i link a Google Doc nella `description` e nella `customer_request` del ticket;
+  - gli URL che il dev ti ha dato.
+
+  L'id di un Google Doc è la parte dopo `/document/d/`. Fogli, siti web e GitHub non si passano.
+
+  **Senza ticket** la finestra è «oggi»: le call di oggi ci sono sempre, con o senza ticket.
+
+  **Domande dirette** del dev sulle call («cosa si è deciso su questo ticket?», «guarda cosa si è
+  deciso in call»): richiama l'agente con i giorni o i tag indicati, anche fuori dalla finestra, e con
+  «crea se manca» per i notebook dei tag. Se la `Copertura` riporta tag senza notebook, dillo al dev:
+  può chiederti di crearli.
 
   Vale la stessa regola dell'altra ricerca: **una chiamata sola a inizio fase**, per non
   spezzare il dialogo.
@@ -725,6 +762,14 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   L'agente restituisce le citazioni prima della conclusione: **leggi le citazioni**, non
   solo la risposta. Su un parlato a più voci la conclusione di un agente è
   un'interpretazione, e chi ha partecipato alla call se ne accorge in un attimo.
+
+  **Verifica ogni citazione prima di usarla**, con la procedura di
+  `${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md`: l'agente può sbagliare l'attribuzione, e
+  questo è il controllo che non dipende da lui.
+
+  **Alla prima ricerca della sessione mostra al dev i link dei notebook** (`Notebook:` nella
+  risposta) e invitalo a interrogarli anche da sé: le regole del team valgono anche per le sue
+  domande.
 
   Se una citazione risponde a una domanda che avevi in programma, **non farla come se nulla
   fosse**: dì al dev cosa risulta e chiedi conferma — «allo scrum del 09/09 risulta che
@@ -734,12 +779,14 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   Se l'agente risponde `Risposta: non determinabile dalle trascrizioni`, la domanda va fatta
   al dev: è l'esito che rende utile la delega, non un fallimento.
 
-  **Guarda sempre la `Copertura`.** Un «non trovato» su tre call lette su venti non è un
-  «non se n'è parlato»: è una ricerca incompleta, e se la domanda è importante chiedi
-  all'agente una ricerca verbosa prima di girarla al dev.
+  **Guarda sempre la `Copertura`**: le call caricate non sono le call da cui NotebookLM ha citato, e
+  un notebook con meno call caricate di quelle dell'elenco non ha visto tutto il giorno. Un «non determinabile» vale come «non se
+  n'è parlato» solo perché l'agente ha già fatto una seconda domanda mirata; se ci sono call escluse,
+  dillo al dev.
 
-  Se l'agente restituisce `RICERCA FALLITA`, prosegui il dialogo senza le trascrizioni e
-  dillo al dev: la fonte non era raggiungibile, non è che non ci fosse nulla.
+  Se l'agente restituisce `RICERCA FALLITA`, dillo al dev **in modo evidente**, riportando il comando
+  se c'è (`! nlm login`), e prosegui il dialogo senza le trascrizioni: la fonte non era
+  raggiungibile, non è che non ci fosse nulla.
 
 - **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
   Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
@@ -1474,6 +1521,10 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
 - [ ] Sorgente del diagramma di flusso `wm-plan` aggiornato, se questa sessione ha modificato il workflow della skill nel repo `claude-marketplace` — la pagina si ripubblica da sé al push, nessun redeploy manuale. Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano: se hai aggiunto o rinominato una fase e non hai toccato la pagina, fallisce
+- [ ] Notebook NotebookLM segnalati dall'agente in `Notebook vecchi:` (notebook del giorno con più
+  di 90 giorni) e in `Notebook doppi:` (il notebook tenuto ha già tutte le call del giorno): proponi al dev di cancellarli, uno per volta, con
+  `mcp__plugin_wm-skills_notebooklm__notebook_delete`, prima senza `confirm` e poi con
+  `confirm: true` solo dopo il suo sì.
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 
