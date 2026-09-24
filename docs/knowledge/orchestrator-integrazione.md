@@ -34,8 +34,25 @@ Nessuno dei due campi viene sanitizzato lato backend — `StoryApiRequest` e `Ta
 validano solo `string` generico. Un errore di formato non produce un errore API: si traduce in
 un rendering sbagliato nell'editor, quindi va rispettato per convenzione e non per vincolo.
 
+In scrittura i due campi di una Story si comportano in modo diverso. `customer_request` passa da
+`addResponse()`, che aggiunge il testo in testa con autore e data e notifica il cliente.
+`description` invece **si sovrascrive per intero** da oc:8549, in produzione dal 15 settembre
+2026: prima passava da `addDevNote()`, che aggiungeva in testa.
+
+Per questo il server MCP distingue le due operazioni. `update_story` con `description`
+sostituisce, e serve solo per riformattare o invalidare il campo. Con `prepend` e `annotations`
+aggiunge: legge la `description`, mette il blocco in testa e le etichette dopo frasi esatte,
+lascia identico il resto e manda una sola PATCH insieme agli altri campi. Il testo esistente non
+passa mai dal modello: una copia fatta dal modello su testi lunghi può saltarne dei pezzi, e
+l'anteprima troncata di allora non lo mostrava.
+
 ## Come ci siamo arrivati
 
+- **Chiedere all'agente di ricopiare la `description`** (PR #20, superata): funzionava su testi
+  brevi, ma su ticket da 18.000 caratteri una copia del modello può riassumere, e nessuno lo vede.
+- **Un endpoint di Orchestrator per aggiungere in testa**: scartato, la PATCH esiste già e il
+  modo di usarla è una scelta degli strumenti; e oc:8549 aveva escluso un'opzione per scegliere
+  fra aggiungere e sostituire.
 - **Chiamate HTTP costruite a mano dentro le skill** (oc:7961) — il primo approccio: ogni skill
   sapeva quali endpoint chiamare e con quali campi. Caduto: la superficie dell'API si ripeteva
   in tre `SKILL.md` e invecchiava in silenzio ad ogni cambio del backend. Sostituito dal server

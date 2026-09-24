@@ -29,6 +29,13 @@ altrimenti il server non parte sulla macchina di chi lo installa.
 - **Ogni tool di scrittura accetta `confirm`**: senza, restituisce l'anteprima della differenza
   e non scrive. È il meccanismo su cui si reggono le conferme delle skill — non aggiungere tool
   di scrittura che scrivano al primo colpo.
+- **L'anteprima mostra ogni campo per intero**, con i campi HTML resi come testo leggibile
+  (`preview.Readable`): niente troncamenti. Un'anteprima tagliata fa approvare alla cieca ed è
+  così che `wm-plan` ha cancellato la `description` di 11 ticket senza che nessuno se ne
+  accorgesse.
+- **Aggiungere alla `description` si fa nel codice** (`internal/compose`), non chiedendo al
+  modello di ricopiare il testo esistente: `update_story` con `prepend`/`annotations` legge,
+  compone e manda una sola PATCH.
 - **Comunicazione su stdio, nessuna porta in ascolto**: esclude per costruzione i conflitti con
   i container Docker del team. Non introdurre un trasporto HTTP.
 - **Il file delle credenziali è un parametro** (`--auth-file`), non un percorso fisso: serve a

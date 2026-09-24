@@ -36,11 +36,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.4.2
+**Versione installata:** v1.4.3
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.4.2` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.4.3` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -116,6 +116,15 @@ Somma `input_tokens`, `cache_creation_input_tokens` e `cache_read_input_tokens`,
 # Webmapp Feature Workflow
 
 Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per feature o refactor non banali. Segui le fasi in ordine senza saltarne nessuna.
+
+## Una domanda per messaggio, in tutto il workflow
+
+**Ogni messaggio al dev contiene una sola cosa a cui deve rispondere.** Vale in ogni fase — dialogo iniziale, challenge, approvazione di overview e piano, review-gate, chiusura — non solo in `reverse-interaction`.
+
+- Accanto alla domanda **non mettere** decisioni prese al posto del dev, proposte da approvare, una seconda domanda o un «intanto procedo con…»: per il dev sono tutte domande, e risponde a una per volta.
+- Dopo la domanda **fermati** e aspetta la risposta.
+- Se il dev risponde a una cosa sola di un messaggio che ne conteneva di più, **il silenzio sulle altre non è una delega**: il messaggio era sbagliato. Riproponi la cosa rimasta aperta, da sola, nel messaggio successivo.
+- Un'informazione che non richiede risposta (un esito, una verifica fatta) può stare nel messaggio, purché sia chiaro che non chiede nulla.
 
 <HARD-GATE>
 Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano nel filesystem e siano stati esplicitamente approvati dall'utente. Questo vale sempre, indipendentemente dalla semplicità percepita del task.
@@ -219,7 +228,9 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 | Tag: elenco, lettura, creazione, modifica | `list_tags`, `get_tag`, `create_tag`, `update_tag` |
 | Associare o togliere un ticket da un tag | `attach_story_to_tag`, `detach_story_from_tag` |
 
-**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri.
+**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
+
+**Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata.
 
 **Tipi e stati.** Non scrivere valori a memoria: il tool rifiuta i valori fuori elenco e ti dice quali sono ammessi.
 
@@ -420,7 +431,7 @@ Invoca immediatamente `wm-skills:wm-tag`, passando come contesto qualsiasi testo
 
 ### ticket: aggiornamenti-espliciti
 
-Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), chiama `update_story`. Chiamalo sempre prima senza `confirm` per mostrare la differenza al dev, e solo dopo l'approvazione esplicita richiamalo con `confirm: true`.
+Se in qualsiasi momento l'utente chiede di aggiornare un campo del ticket (es. "aggiorna lo status a progress", "scrivi nelle note dev che…"), chiama `update_story`. Chiamalo sempre prima senza `confirm` per mostrare la differenza al dev, e solo dopo l'approvazione esplicita richiamalo con `confirm: true`. Una nota da aggiungere alla `description` («scrivi nelle note dev che…») va in `prepend`, non in `description`: vedi `## Orchestrator` → «Aggiungere o sostituire la `description`».
 
 ### ticket: estrazione
 
@@ -856,18 +867,28 @@ Analizza questi 5 assi:
 5. Difficoltà di rollback — Quanto è facile tornare indietro? Migrazioni, API breaking change, dipendenze esterne?
 
 Per ogni asse scrivi almeno un punto concreto. Non puoi scrivere "nessun rischio" senza motivazione esplicita.
+
+Classifica ogni punto:
+- REALE — è già successo, oppure succede nel caso d'uso normale della feature;
+- IPOTETICO — richiede una combinazione improbabile di condizioni.
+Per ogni punto REALE descrivi lo scenario concreto; per ogni IPOTETICO scrivi in una riga quale
+condizione improbabile serve.
 ```
 
 **Non aggiungere al prompt nessun altro contesto, riassunto o spiegazione della conversazione precedente. Solo il percorso del file e le istruzioni sopra. Il subagente deve leggere `overview.md` autonomamente dal filesystem.**
 
 ### challenge: dialog
 
-Ricevuto il report del subagente, presentalo all'utente e affronta gli assi uno alla volta in ordine di criticità (dal più critico al meno). Per ogni asse:
-- Riassumi il rischio in una riga
+Ricevuto il report del subagente, porta al dev **solo i rischi REALI**, uno per messaggio, in ordine di criticità (dal più critico al meno). Per ciascuno:
+- Riassumi il rischio in una riga, con lo scenario concreto
 - Proponi come intendi gestirlo
 - Chiedi all'utente se vuole modificare l'approccio su quel punto
 
-Aspetta la risposta prima di passare all'asse successivo.
+Aspetta la risposta prima di passare al rischio successivo.
+
+I rischi IPOTETICI non diventano domande: elencali una volta sola, in un'unica riga ciascuno, con la dicitura «ipotetico, lo ignorerei», e prosegui. Ci torna il dev se vuole. Presentare uno scenario improbabile con lo stesso peso di un danno reale costringe il dev a riprogettare per coprirlo, e dopo alcuni giri il progetto cambia per rischi che non ci sono.
+
+Prima di portare un rischio come REALE verificalo tu: se il revisore lo ha classificato REALE ma lo scenario richiede condizioni improbabili, trattalo come IPOTETICO.
 
 ### challenge: overview-update
 
@@ -1472,6 +1493,14 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
   - Niente nomi di file, classi, branch o dettagli implementativi
   - Tono chiaro e orientato al beneficio per l'utente finale
 - [ ] Mostra entrambe le bozze all'utente e chiedi approvazione esplicita — la risposta cliente è letta dal cliente, richiede revisione attenta
-- [ ] Solo dopo approvazione esplicita, chiama `update_story` con i campi `status`, `description`, `customer_request` — prima senza `confirm` per mostrare la differenza, poi con `confirm: true`
+- [ ] Solo dopo approvazione esplicita, chiama `update_story` con `status`, `customer_request` e
+  `prepend: <bozza delle note dev in HTML>` — **non** `description` — prima senza `confirm` per
+  mostrare l'anteprima, poi con `confirm: true`. Una sola chiamata: status, risposta al cliente e
+  note partono insieme.
 
-  **Importante:** manda solo il testo pulito nei campi `customer_request` e `description` — il backend chiama internamente `addResponse()` e `addDevNote()` che gestiscono formato HTML, timestamp, prepend e notifiche. Non costruire HTML manualmente.
+  **I due campi si comportano in modo diverso:**
+  - `customer_request`: manda solo il testo pulito. Il backend chiama `addResponse()`, che aggiunge
+    in testa la risposta con autore e data e notifica il cliente.
+  - `description`: la PATCH la sostituisce per intero (Orchestrator oc:8549). Per questo le note
+    dev vanno in `prepend`: il tool le mette in testa e lascia identici l'overview scritta in
+    `Fase: ticket` e le review precedenti.

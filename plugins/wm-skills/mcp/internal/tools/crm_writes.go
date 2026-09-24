@@ -63,7 +63,7 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in customerFieldsInput) (*mcp.CallToolResult, any, error) {
 		fields := fieldsOf(in, "customer_id", "confirm")
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.NewResource(fields)}, nil
+			return plainText(preview.NewResource(fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", "/api/customers", fields)
 		if err != nil {
@@ -85,7 +85,7 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 			return nil, nil, err
 		}
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.Diff(decodeMap(currentRaw), fields)}, nil
+			return plainText(preview.Diff(decodeMap(currentRaw), fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "PATCH", path, fields)
 		if err != nil {
@@ -103,7 +103,7 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 		}
 		fields := fieldsOf(in, "quote_id", "confirm")
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.NewResource(fields)}, nil
+			return plainText(preview.NewResource(fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", "/api/quotes", fields)
 		if err != nil {
@@ -125,7 +125,7 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 			return nil, nil, err
 		}
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.Diff(decodeMap(currentRaw), fields)}, nil
+			return plainText(preview.Diff(decodeMap(currentRaw), fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "PATCH", path, fields)
 		if err != nil {
@@ -152,9 +152,9 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 			if isIrreversible("delete_quote") {
 				notice = irreversibleNotice("delete_quote", in.QuoteID, title)
 			}
-			return nil, textOutput{Text: fmt.Sprintf(
+			return plainText(fmt.Sprintf(
 				"ANTEPRIMA — nulla è stato eliminato\n%s\n\nPer eseguire richiama con confirm: true e quote_title: %q.",
-				notice, title)}, nil
+				notice, title)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "DELETE", path, nil)
 		if err != nil {
@@ -173,9 +173,9 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 		}
 		path := quoteProductPath(in.QuoteID, in.ProductID, in.Recurring)
 		if !in.Confirm {
-			return nil, textOutput{Text: fmt.Sprintf(
+			return plainText(fmt.Sprintf(
 				"ANTEPRIMA — nulla è stato scritto\n  al preventivo %d verrebbe associato il prodotto %d in quantità %d\n\nPer applicare, richiama con confirm: true.",
-				in.QuoteID, in.ProductID, in.Quantity)}, nil
+				in.QuoteID, in.ProductID, in.Quantity)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", path, map[string]any{"quantity": in.Quantity})
 		if err != nil {
@@ -191,9 +191,9 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in quoteProductInput) (*mcp.CallToolResult, any, error) {
 		path := quoteProductPath(in.QuoteID, in.ProductID, in.Recurring)
 		if !in.Confirm {
-			return nil, textOutput{Text: fmt.Sprintf(
+			return plainText(fmt.Sprintf(
 				"ANTEPRIMA — nulla è stato scritto\n  dal preventivo %d verrebbe tolto il prodotto %d\n\nPer applicare, richiama con confirm: true.",
-				in.QuoteID, in.ProductID)}, nil
+				in.QuoteID, in.ProductID)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "DELETE", path, nil)
 		if err != nil {
@@ -229,10 +229,10 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 			if isIrreversible("create_quote_pdf_link") {
 				notice = irreversibleNotice("create_quote_pdf_link", in.QuoteID, title) + "\n"
 			}
-			return nil, textOutput{Text: fmt.Sprintf(
+			return plainText(fmt.Sprintf(
 				"ANTEPRIMA — nessun collegamento è stato generato\n%s  durata: %d giorni\n\n"+
 					"Per generarlo richiama con confirm: true e quote_title: %q.",
-				notice, days, title)}, nil
+				notice, days, title)), nil, nil
 		}
 
 		body := map[string]any{"expires_in_days": days}

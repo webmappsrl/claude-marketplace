@@ -91,7 +91,7 @@ func registerTags(server *mcp.Server, deps Deps) {
 			return nil, nil, fmt.Errorf("name è obbligatorio per creare un tag")
 		}
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.NewResource(fields)}, nil
+			return plainText(preview.NewResource(fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", "/api/tags", fields)
 		if err != nil {
@@ -120,7 +120,7 @@ func registerTags(server *mcp.Server, deps Deps) {
 		current := decodeMap(currentRaw)
 
 		if !in.Confirm {
-			return nil, textOutput{Text: preview.Diff(current, fields)}, nil
+			return plainText(preview.Diff(current, fields)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "PATCH", path, fields)
 		if err != nil {
@@ -135,7 +135,7 @@ func registerTags(server *mcp.Server, deps Deps) {
 			"Da preferire sempre alla modifica del campo tags, che sostituisce l'elenco completo e può cancellare tag già presenti.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in tagStoryInput) (*mcp.CallToolResult, any, error) {
 		if !in.Confirm {
-			return nil, textOutput{Text: fmt.Sprintf("ANTEPRIMA — nulla è stato scritto\n  il ticket %d verrebbe associato al tag %d\n\nPer applicare, richiama con confirm: true.", in.StoryID, in.TagID)}, nil
+			return plainText(fmt.Sprintf("ANTEPRIMA — nulla è stato scritto\n  il ticket %d verrebbe associato al tag %d\n\nPer applicare, richiama con confirm: true.", in.StoryID, in.TagID)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "POST", attachPath(in.TagID, in.StoryID), nil)
 		if err != nil {
@@ -149,7 +149,7 @@ func registerTags(server *mcp.Server, deps Deps) {
 		Description: "Toglie l'associazione fra un ticket e un tag, lasciando intatti gli altri tag del ticket.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in tagStoryInput) (*mcp.CallToolResult, any, error) {
 		if !in.Confirm {
-			return nil, textOutput{Text: fmt.Sprintf("ANTEPRIMA — nulla è stato scritto\n  il ticket %d verrebbe tolto dal tag %d\n\nPer applicare, richiama con confirm: true.", in.StoryID, in.TagID)}, nil
+			return plainText(fmt.Sprintf("ANTEPRIMA — nulla è stato scritto\n  il ticket %d verrebbe tolto dal tag %d\n\nPer applicare, richiama con confirm: true.", in.StoryID, in.TagID)), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "DELETE", attachPath(in.TagID, in.StoryID), nil)
 		if err != nil {

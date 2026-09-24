@@ -82,6 +82,10 @@ Salva l'ID restituito (`$.id`) come `<ID>` del ticket per il resto del workflow.
 
 ### Aggiornamento ticket (PATCH — richiede conferma esplicita)
 
+**Non usare questo ripiego per aggiungere informazione alla `description`** (note dev, esito di
+una review): la PATCH sostituisce tutto il campo, e senza il server MCP l'unico modo di non
+perdere il testo sarebbe ricopiarlo a mano. Fermati e chiedi al dev di far ripartire il server.
+
 Prima di eseguire, mostra sempre un riepilogo tabellare:
 
 > **Aggiornamento ticket oc:\<ID\>**
