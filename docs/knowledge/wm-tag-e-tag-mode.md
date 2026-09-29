@@ -17,6 +17,14 @@ documento. Accanto alle macro aree il tag ospita anche ciò che **non** diventa 
 *Situazioni aperte* (si aspetta un responso da fuori) e *In standby* (manca un prerequisito
 nostro).
 
+Prima di creare il tag, ogni citazione del «Cosa» si verifica con una ricerca Drive sulla frase
+(`plugins/wm-skills/shared/verifica-citazioni.md`): una citazione che non si trova nella fonte si
+corregge o il punto va fra le *Situazioni aperte*. Alla creazione `wm-tag` crea anche il notebook
+NotebookLM `tag <nome del tag>` con le trascrizioni del tag e ne mette il link nella descrizione
+(riga `**Notebook:**`): le domande successive sulla call passano da lì, anche da `wm-plan`. La
+struttura delle macro aree la scrive `wm-tag` leggendo la trascrizione, non NotebookLM: vedi
+[le trascrizioni come fonte](wm-transcript-research.md).
+
 **Il tag vale da solo.** Dopo la creazione si chiede al dev se vuole procedere con i ticket: sono
 due decisioni distinte, e la seconda non è il seguito automatico della prima.
 

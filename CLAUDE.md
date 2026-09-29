@@ -120,6 +120,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-tag` ↔ `wm-plan` | tag-mode | `wm-tag` invoca `wm-plan` in tag-mode, e `caso-c` in `Fase: ticket` cede il controllo a `wm-tag`. La divisione dei compiti sta nei due `SKILL.md`. |
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
 | `wm-plan` (proposta tag) | `wm-tag` | `wm-tag` crea tag dossier, con descrizione; `wm-plan` propone e crea solo etichette, cioè tag con `description` nulla. Il confine è il filtro sulla descrizione: se cambia in una delle due, verifica l'altra. |
+| `wm-plan` ↔ `wm-tag` | NotebookLM | Entrambe usano `wm-transcript-research` (che contiene il template dei notebook), la verifica `shared/verifica-citazioni.md` e i nomi dei notebook (`scrum AAAA-MM-GG`, `tag <nome del tag>`). Se cambia uno di questi, verifica l'altra skill. |
 
 ## Convenzioni per le skill
 
@@ -157,6 +158,7 @@ In CI girano il controllo di coerenza fra skill e diagramma e la pubblicazione d
 | Provare una skill in locale senza pushare | [docs/howto/test-in-locale.md](docs/howto/test-in-locale.md) |
 | Aggiornare o pinnare `superpowers` | [docs/howto/aggiornare-superpowers.md](docs/howto/aggiornare-superpowers.md) |
 | Provare `wm-transcript-research` dopo averne toccato il prompt | [docs/howto/provare-wm-transcript-research.md](docs/howto/provare-wm-transcript-research.md) |
+| Installare NotebookLM per `wm-transcript-research` | [docs/howto/installare-notebooklm.md](docs/howto/installare-notebooklm.md) |
 
 ## Orchestrator
 
@@ -191,5 +193,5 @@ Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
 | `wm-tag` e la tag-mode | Naming dei tag, `repos.json`, cosa salta `wm-plan` in tag-mode | [docs/knowledge/wm-tag-e-tag-mode.md](docs/knowledge/wm-tag-e-tag-mode.md) |
 | Delega ad agenti | Quali fasi vanno a un agente, i due tipi di delega, come si contesta un esito | [docs/knowledge/wm-skills-delega-agentica.md](docs/knowledge/wm-skills-delega-agentica.md) |
 | `wm-review-ticket` | Contratto artefatti letto a runtime, stash pre-checkout | [docs/knowledge/wm-review-ticket.md](docs/knowledge/wm-review-ticket.md) |
-| Le trascrizioni come fonte | Com'è fatta la fonte, come si scelgono le call, perché Drive e non un MCP | [docs/knowledge/wm-transcript-research.md](docs/knowledge/wm-transcript-research.md) |
+| Le trascrizioni come fonte | NotebookLM che legge le call, notebook per giorno e per tag, attribuzioni e verifica delle citazioni | [docs/knowledge/wm-transcript-research.md](docs/knowledge/wm-transcript-research.md) |
 | Proposta dei tag in `wm-plan` | I due momenti, filtro sulle descrizioni, conferma per singolo tag | [docs/knowledge/wm-plan-proposta-tag.md](docs/knowledge/wm-plan-proposta-tag.md) |

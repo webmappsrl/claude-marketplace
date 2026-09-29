@@ -9,13 +9,22 @@ riassunto della conversazione — e usa `--find-renames --find-copies`. Il riepi
 di orientamento: il gate reale resta l'approvazione esplicita del developer sul diff completo.
 La revisione formale opzionale è una sotto-fase a sé, `execution: formal-review`.
 
+**Una domanda per volta, il commit per ultimo.** Dopo il riepilogo il gate chiede da solo se c'è da
+correggere, poi da sola se serve la review formale; completa `notes` e `update-context`, e solo
+allora, quando non resta altro, chiede il commit con una domanda a sé.
+
 **Esegue PHPStan** sui repo Laravel che hanno PHPStan in CI. Blocco duro sugli errori che
 ricadono sui file del diff corrente e sui fallimenti infrastrutturali (comando assente, crash,
 timeout di 5 minuti). Gli errori preesistenti fuori dal diff non bloccano: `wm-plan` propone un
-ticket Orchestrator dedicato. Il bypass richiede una conferma distinta dal "procedi" del gate,
+ticket Orchestrator dedicato. Il bypass richiede una conferma distinta dal sì al commit del gate,
 con motivazione confermata in preview e registrata in `notes.md` a nome del dev.
 
 ## Come ci siamo arrivati
+
+- **Un solo messaggio per commit, correzioni e review formale** (superato il 29/09/2026): il gate
+  chiedeva insieme «vuoi eseguire i commit, oppure c'è qualcosa da correggere?» e se fare la
+  review formale. Contraddiceva la regola di `wm-plan` «una domanda per messaggio», e metteva il
+  commit accanto ad altre decisioni: un sì dato a una di queste veniva preso come sì al commit.
 
 - **Fallimenti infrastrutturali trattati come errori di qualità** (oc:8341): si era considerato
   un fail-soft per comando non trovato, crash e timeout; la decisione finale del dev in

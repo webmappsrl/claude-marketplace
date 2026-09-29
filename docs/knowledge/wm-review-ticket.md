@@ -11,6 +11,13 @@ struttura non può produrre drift fra le due skill.
 Se il working tree è sporco, la skill fa `git stash` prima del checkout e `git stash pop` al
 termine: nessun rischio di perdere lavoro in corso.
 
+**Un bloccante è un problema che succede, non uno che potrebbe succedere.** Prima di riportarlo la
+skill ne prova l'impatto — percorso dal punto d'ingresso reale, conteggio sui dati locali in sola
+lettura, test quando si può — e nella riga **Verificato:** riporta la prova (i `file:riga`, il numero, l'esito del test), non il metodo. Ciò che richiede condizioni
+che nel flusso normale non si verificano va in `## Ipotetici`, una riga, «ipotetico, ignorabile»,
+mai fra i bloccanti: presentato con lo stesso peso, un dev meno esperto lo prende per vero e
+riprogetta per coprirlo (richiesta del dev, 29/09/2026).
+
 ## Come ci siamo arrivati
 
 - **Copiare la struttura degli artefatti dentro `wm-review-ticket` è stato scartato** (oc:8068):

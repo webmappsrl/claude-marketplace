@@ -161,6 +161,7 @@ zero.
 
 ```markdown
 **Fonte:** <URL Drive o "Testo fornito in chat">
+**Notebook:** <link del notebook NotebookLM del tag, se creato>
 
 ## Contesto
 
@@ -210,6 +211,17 @@ Attendi approvazione esplicita prima di procedere alla creazione del tag.
 ---
 
 ## Fase: tag-creation
+
+**Prima di creare il tag, verifica ogni citazione del «Cosa»** con la procedura di
+`${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md`, usando come fonte la trascrizione della riga
+`**Fonte:**`. Una citazione che non si trova si corregge rileggendo il punto, oppure il punto va fra
+le *Situazioni aperte*: un «Cosa» senza fonte non si scrive.
+
+**Poi prepara il notebook del tag**: chiedi a `wm-skills:wm-transcript-research`, con
+`tag: <nome del tag>` e l'id della trascrizione (o il testo incollato, se la fonte è «Testo fornito
+in chat»), l'elenco degli argomenti della call. Serve a creare il notebook `tag <nome del tag>`
+con le fonti caricate; il suo link va nella riga `**Notebook:**` della descrizione. Se l'agente
+restituisce `RICERCA FALLITA`, crea il tag senza la riga `**Notebook:**` e dillo al dev.
 
 Chiama `create_tag` con `name` e `description` senza `confirm`: mostra l'anteprima calcolata dal tool sui campi reali. Presentala all'utente e attendi conferma esplicita.
 
@@ -380,6 +392,10 @@ Contiene la descrizione del tag **per intero**, non le sole modifiche: è la ver
 `tag-update` scriverà, e tenerla completa evita di dover ricomporre a fine sessione un testo da
 frammenti. Riscrivilo ad ogni esito registrato, così se la sessione si interrompe il lavoro fatto
 fino a lì è su disco e non solo nella conversazione.
+
+**Se un candidato richiede di tornare sulla call** — una frase ambigua, un «Come» di cui non si
+ricorda la decisione — non rileggere la trascrizione: fai la domanda a
+`wm-skills:wm-transcript-research` con `tag: <nome del tag>`, e verifica le citazioni che usi.
 
 ---
 

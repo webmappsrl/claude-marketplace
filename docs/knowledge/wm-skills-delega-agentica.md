@@ -9,7 +9,7 @@ nel proprio context e restituiscono solo conclusioni.
 | Agente | Fase | Cosa restituisce |
 |---|---|---|
 | `wm-codebase-research` | `reverse-interaction` | risposte con **prova verbatim**: percorso, righe, estratto |
-| `wm-transcript-research` | `reverse-interaction`, e su richiesta del dev | citazioni dalle call — con speaker, data ed etichetta — poi la conclusione. Unico **senza tetto**: vedi [le trascrizioni come fonte](wm-transcript-research.md) |
+| `wm-transcript-research` | avvio di `wm-plan` (prepara il notebook del giorno), caso B e `reverse-interaction` di `wm-plan`, `wm-tag`, e su richiesta del dev | citazioni dalle call — con speaker, data ed etichetta — poi la conclusione. Unico **senza tetto**: vedi [le trascrizioni come fonte](wm-transcript-research.md) |
 | `wm-env-detect` | `environment-setup` | i flag d'ambiente già risolti, con contratto nominale |
 | `wm-estimate` | `estimation` | la stima, **cieco**: legge solo overview e piano |
 | `wm-context-guard` | `update-context` | rilievi di forma sul `CLAUDE.md`, mai sul merito |

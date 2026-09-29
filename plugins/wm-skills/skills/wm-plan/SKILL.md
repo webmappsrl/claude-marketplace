@@ -36,11 +36,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.4.3
+**Versione installata:** v1.5.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.4.3` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.5.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -125,6 +125,12 @@ Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per featu
 - Dopo la domanda **fermati** e aspetta la risposta.
 - Se il dev risponde a una cosa sola di un messaggio che ne conteneva di più, **il silenzio sulle altre non è una delega**: il messaggio era sbagliato. Riproponi la cosa rimasta aperta, da sola, nel messaggio successivo.
 - Un'informazione che non richiede risposta (un esito, una verifica fatta) può stare nel messaggio, purché sia chiaro che non chiede nulla.
+
+**Scrivi ogni messaggio come se fosse il primo.** Il dev non ha in testa il ragionamento che ti ha portato lì: prima il contesto (di quale pezzo parli, dove sta, cosa succede in pratica), poi un **esempio concreto** con dati veri, e nessun rimando a testo di messaggi precedenti («l'asse 5», «questa cosa»). Una scelta A/B senza il caso d'uso non si capisce: mostra cosa succede oggi e cosa succederebbe dopo. Due fatti nella stessa frase vanno collegati dal loro nesso; se il nesso non c'è, spezza la frase.
+
+**Un problema sollevato dal dev tiene il campo finché non si dice soddisfatto lui.** Se il dev solleva un dubbio o segnala qualcosa che non torna, non riprendere il workflow e non proporre il passo successivo nello stesso messaggio: rispondi, fermati, e riparti solo quando te lo dice.
+
+**Un'azione negata si chiede, non si aggira.** Se una chiamata necessaria viene bloccata — dal classificatore dell'auto mode, da un hook, da una regola di permesso — non dichiarare «non si può» e non proseguire con un ripiego: fermati, di' al dev quale azione serve, cosa l'ha bloccata e come può sbloccarla (cambiare modalità, aggiungere una regola di permesso), e aspetta. Un rifiuto del classificatore non diventa da solo una richiesta di permesso: l'unica strada è chiederlo a parole.
 
 <HARD-GATE>
 Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano nel filesystem e siano stati esplicitamente approvati dall'utente. Questo vale sempre, indipendentemente dalla semplicità percepita del task.
@@ -222,13 +228,14 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 | Operazione | Tool |
 |---|---|
 | Leggere un ticket | `get_story` |
+| Giorni in cui al ticket è successo qualcosa (stati, progress, commit, oggi) | `get_story_days` |
 | Creare un ticket | `create_story` |
 | Modificare un ticket | `update_story` |
 | Utente corrente | `me` |
 | Tag: elenco, lettura, creazione, modifica | `list_tags`, `get_tag`, `create_tag`, `update_tag` |
 | Associare o togliere un ticket da un tag | `attach_story_to_tag`, `detach_story_from_tag` |
 
-**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
+**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. **Se il dev ha già approvato quell'azione precisa** («associalo», «crealo così») **e l'anteprima mostra esattamente quella**, applica senza chiedere di nuovo; chiedi solo se l'anteprima contiene qualcosa di diverso o in più. `customer_request` si chiede sempre: scriverlo notifica il cliente, e una email inviata non si annulla. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
 
 **Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata.
 
@@ -256,6 +263,7 @@ Fasi che delegano, e a chi:
 |---|---|---|
 | `environment-setup` | `wm-env-detect` | informata |
 | `reverse-interaction` | `wm-codebase-research` | informata |
+| `ticket` (avvio e caso B) | `wm-transcript-research` | informata |
 | `reverse-interaction` | `wm-transcript-research` | informata |
 | `challenge` | subagente già previsto | **cieca** |
 | `estimation` | `wm-estimate` | **cieca** |
@@ -287,6 +295,14 @@ date -u +"%Y-%m-%dT%H:%M:%S%z"
 ```
 
 Tieni questo valore attivo per tutto il workflow — serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato).
+
+**Subito dopo, lancia in background `wm-skills:wm-transcript-research` con la richiesta «prepara»**:
+crea o completa il notebook NotebookLM del giorno (`scrum AAAA-MM-GG`) con le call di oggi. Non
+aspettarne la risposta: prosegui con il menu, così il notebook è pronto quando servono le call.
+**Prima di ogni altra richiesta a `wm-transcript-research`, aspetta che «prepara» abbia risposto**:
+due richieste partite insieme creano lo stesso notebook due volte. Se
+risponde `RICERCA FALLITA`, dillo al dev in modo evidente, riportando il comando se c'è
+(`! nlm login`).
 
 All'inizio del workflow, presenta sempre questo menu all'utente:
 
@@ -379,6 +395,9 @@ Mostra l'elenco di tutti i ticket del gruppo:
 > Su quale vuoi continuare il workflow ora? (oppure "nessuno" per tornare al menu)
 
 - **Se l'utente sceglie un ticket:** prosegui il workflow in `Fase: init-context` usando i dati già noti di quel ticket (senza rifare la GET).
+  Se è uno dei ticket nuovi, in `reverse-interaction` aggiungi ai suoi giorni quelli del ticket
+  originale (`get_story_days` con l'id originale): il ticket nuovo nasce oggi e non ha storia,
+  mentre le sue richieste sono state discusse nei giorni del ticket da cui viene.
 - **Se l'utente risponde "nessuno":** torna al menu A/B/C di `Fase: ticket`.
 
 ### ticket: progress
@@ -395,7 +414,12 @@ Se l'utente risponde no, procedi direttamente alla Fase: init-context senza modi
 
 ### ticket: caso-b
 
-Chiedi all'utente una descrizione della feature (anche breve). Con quella, proponi subito il testo del ticket:
+Chiedi all'utente una descrizione della feature (anche breve). **Prima di proporre il testo del
+ticket**, chiedi a `wm-skills:wm-transcript-research` cosa si è detto su quell'argomento nelle call
+di oggi (notebook del giorno): capita spesso che un ticket nasca da una cosa spiegata allo scrum. Se
+risulta qualcosa, verifica le citazioni con `${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md` e
+parti da lì, citandole; altri giorni o tag solo se il dev lo chiede esplicitamente. Poi proponi il
+testo del ticket:
 
 ```
 name: <titolo sintetico della feature>
@@ -715,9 +739,37 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   ricerca nel principale — vedi `## Revisione con l'agente` in
   `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
-- **Non chiedere ciò che il team ha già deciso in call.** Insieme alla ricerca sul codice,
-  interroga `wm-transcript-research` sulle trascrizioni dello scrum: passagli **numero e
-  titolo del ticket**, la sua data di creazione e le domande che stai per fare al dev.
+- **Non chiedere ciò che il team ha già deciso in call.** Prima calcola i **giorni del ticket**:
+  chiama `get_story_days` con l'id del ticket, senza `repos` (vale il repository in cui lavori, con i
+  submodule). Restituisce i cambi di stato, i giorni in `progress`, i giorni con un commit
+  `(oc:<ID>)` e oggi. Mostra al dev i giorni e, **in modo evidente**, ogni riga di `warnings`: un
+  endpoint, un `git fetch` o un submodule non riusciti vogliono dire giorni mancanti.
+
+  Poi, insieme alla ricerca sul codice, interroga `wm-transcript-research` sulle call: passagli
+  **numero e titolo del ticket**, i **giorni del ticket** (l'agente usa il notebook
+  `scrum AAAA-MM-GG` di ogni giorno con almeno una call), le domande che stai per fare al
+  dev e, per **ogni tag associato al ticket**, il nome del tag e gli **id dei documenti
+  collegati**:
+
+  - per ogni tag, le righe `**Fonte:**` e i link a Google Doc della sua descrizione (l'agente usa
+    il notebook `tag <nome del tag>` **solo se esiste già**: qui non lo crea). `get_tag` può superare il limite di output e finire su file: in quel caso estrai
+    solo i link, senza caricare la descrizione:
+
+    ```bash
+    jq -r '.description' <file> | grep -o -E 'https://docs\.google\.com/document/d/[A-Za-z0-9_-]+'
+    ```
+
+  - i link a Google Doc nella `description` e nella `customer_request` del ticket;
+  - gli URL che il dev ti ha dato.
+
+  L'id di un Google Doc è la parte dopo `/document/d/`. Fogli, siti web e GitHub non si passano.
+
+  **Senza ticket** i giorni sono solo oggi: le call di oggi ci sono sempre, con o senza ticket.
+
+  **Domande dirette** del dev sulle call di quel ticket («cosa si è deciso su questo ticket?»,
+  «guarda cosa si è deciso in call»): richiama `get_story_days` e passa all'agente i giorni del
+  ticket, più i giorni che il dev indica («guarda anche il 10/09»), e i tag con «crea se manca». Se
+  la `Copertura` riporta tag senza notebook, dillo al dev: può chiederti di crearli.
 
   Vale la stessa regola dell'altra ricerca: **una chiamata sola a inizio fase**, per non
   spezzare il dialogo.
@@ -725,6 +777,14 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   L'agente restituisce le citazioni prima della conclusione: **leggi le citazioni**, non
   solo la risposta. Su un parlato a più voci la conclusione di un agente è
   un'interpretazione, e chi ha partecipato alla call se ne accorge in un attimo.
+
+  **Verifica ogni citazione prima di usarla**, con la procedura di
+  `${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md`: l'agente può sbagliare l'attribuzione, e
+  questo è il controllo che non dipende da lui.
+
+  **Alla prima ricerca della sessione mostra al dev i link dei notebook** (`Notebook:` nella
+  risposta) e invitalo a interrogarli anche da sé: le regole del team valgono anche per le sue
+  domande.
 
   Se una citazione risponde a una domanda che avevi in programma, **non farla come se nulla
   fosse**: dì al dev cosa risulta e chiedi conferma — «allo scrum del 09/09 risulta che
@@ -734,12 +794,14 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   Se l'agente risponde `Risposta: non determinabile dalle trascrizioni`, la domanda va fatta
   al dev: è l'esito che rende utile la delega, non un fallimento.
 
-  **Guarda sempre la `Copertura`.** Un «non trovato» su tre call lette su venti non è un
-  «non se n'è parlato»: è una ricerca incompleta, e se la domanda è importante chiedi
-  all'agente una ricerca verbosa prima di girarla al dev.
+  **Guarda sempre la `Copertura`**: le call caricate non sono le call da cui NotebookLM ha citato, e
+  un notebook con meno call caricate di quelle dell'elenco non ha visto tutto il giorno. Un «non determinabile» vale come «non se
+  n'è parlato» solo perché l'agente ha già fatto una seconda domanda mirata; se ci sono call escluse,
+  dillo al dev.
 
-  Se l'agente restituisce `RICERCA FALLITA`, prosegui il dialogo senza le trascrizioni e
-  dillo al dev: la fonte non era raggiungibile, non è che non ci fosse nulla.
+  Se l'agente restituisce `RICERCA FALLITA`, dillo al dev **in modo evidente**, riportando il comando
+  se c'è (`! nlm login`), e prosegui il dialogo senza le trascrizioni: la fonte non era
+  raggiungibile, non è che non ci fosse nulla.
 
 - **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
   Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
@@ -799,7 +861,7 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 [Criticità emerse dalla Fase: challenge con indicazione di come vengono mitigate]
 
 ## Out of scope
-[Cosa esplicitamente NON viene fatto in questo ciclo]
+[Ciò che resta valido ma non si fa in questo ciclo. Mai le alternative scartate nel dialogo: chi rilegge l'overview in una sessione successiva le prenderebbe per ipotesi ancora aperte. Se una scelta scartata va conservata, va nella pagina di conoscenza, in «Come ci siamo arrivati»]
 
 ## Moduli toccati
 [Lista di file, moduli o servizi che vengono modificati o creati]
@@ -888,7 +950,7 @@ Aspetta la risposta prima di passare al rischio successivo.
 
 I rischi IPOTETICI non diventano domande: elencali una volta sola, in un'unica riga ciascuno, con la dicitura «ipotetico, lo ignorerei», e prosegui. Ci torna il dev se vuole. Presentare uno scenario improbabile con lo stesso peso di un danno reale costringe il dev a riprogettare per coprirlo, e dopo alcuni giri il progetto cambia per rischi che non ci sono.
 
-Prima di portare un rischio come REALE verificalo tu: se il revisore lo ha classificato REALE ma lo scenario richiede condizioni improbabili, trattalo come IPOTETICO.
+Prima di portare un rischio come REALE **provane l'impatto tu, che esegui `wm-plan`** — non il subagente revisore, di cui non ti fidi sull'etichetta REALE: percorri il codice dall'ingresso reale fino al punto del rischio, conta sui dati locali in sola lettura quanti casi hanno quella condizione, oppure esegui un test quando si può (leggi prima la regola in cima al `CLAUDE.md` del repo: alcuni test scrivono fuori). Se lo scenario richiede condizioni che nel flusso normale non si verificano, trattalo come IPOTETICO. Nel messaggio al dev riporta la **prova**, non il metodo: i `file:riga` del percorso dall'ingresso al punto del rischio, oppure la query e il numero uscito, oppure il nome del test e il suo esito. «Ho controllato il codice» non è una prova: un rischio senza il dato non è verificato e non si porta come REALE. Presentato senza prova, a un dev meno esperto, sembra vero.
 
 ### challenge: overview-update
 
@@ -1159,25 +1221,27 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
 
    > "PHPStan blocca il commit per [errori di codice sul diff / fallimento infrastrutturale]. Vuoi bypassare questo blocco specifico? Verrà registrato in notes.md con la motivazione: \"[motivazione confermata]\"."
 
-5. Solo se il dev conferma esplicitamente il bypass (non basta il "procedi" generico del punto 3 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
+5. Solo se il dev conferma esplicitamente il bypass (non basta il sì al commit del punto 5 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
 6. Se il dev non conferma il bypass, il workflow resta bloccato su questo punto: nessun commit finché gli errori non sono risolti o il bypass non viene confermato.
 
 #### review-gate: dialog
 
 1. Presenta all'utente il riepilogo prodotto dal subagente (o dal fallback).
 1bis. Se `has_phpstan_ci: true`, esegui `review-gate: phpstan-check` ora, prima di procedere al punto 2. Se ne emerge un blocco, gestiscilo con `review-gate: phpstan-override` prima di continuare.
-2. Chiedi conferma esplicita con questo messaggio:
+2. Chiedi, **da sola**, se c'è qualcosa da correggere:
 
-   > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo prima di procedere** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
-   >
-   > 💡 **Review formale opzionale:** vuoi eseguire una code review strutturata prima dei commit? Invoca `wm-skills:wm-review-ticket oc:<ID>` per finder paralleli e aggiornamento automatico del ticket. Rispondi **sì** per eseguirla ora, **no** per procedere direttamente ai commit.
-   >
-   > ℹ️ **Differenza con la review formale:** questo riepilogo del subagente è un controllo obbligatorio e leggero (solo diff strutturato). `wm-review-ticket` è un'analisi più approfondita e opzionale.
+   > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. C'è qualcosa da correggere?"
 
-3. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
-4. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase: notes e la Fase: update-context — così tutti i file vengono inclusi nello stesso commit.
-5. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-6. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
+   Se sì, correggi e ripresenta il riepilogo aggiornato.
+3. Quando non c'è più niente da correggere, proponi **da sola** la review formale:
+
+   > "Vuoi una code review strutturata con `wm-skills:wm-review-ticket oc:<ID>` (finder paralleli, aggiornamento del ticket)? È più approfondita del riepilogo del subagente, e facoltativa."
+
+   Se sì, segui `execution: formal-review`.
+4. Completa la Fase: notes e la Fase: update-context, così tutti i file entrano nello stesso commit.
+5. **Solo ora, quando non resta altro da fare**, chiedi il commit con una domanda singola ed esplicita, senza nient'altro nel messaggio: «Faccio il commit?». Il commit non si mette mai dentro un'altra proposta («aggiungo X e poi committo»): un sì alla proposta non è un sì al commit. Un silenzio o un «ok» generico non basta.
+6. Dopo il sì, esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
 **Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
@@ -1188,7 +1252,7 @@ Se l'utente risponde **sì** alla proposta di review formale in `execution: revi
 1. Invoca `wm-skills:wm-review-ticket oc:<ID>`
 2. Attendi il completamento della review
 3. Se emergono correzioni → applicale prima di procedere ai commit
-4. Torna al punto 6 di `execution: review-gate` (esegui i commit)
+4. Torna al punto 4 di `review-gate: dialog` (notes, update-context, poi la domanda sul commit)
 
 ---
 
@@ -1199,6 +1263,7 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 **Regole:**
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
+- **Non registrare la pulizia della sessione** — risorse di prova create e poi cancellate, i loro id, chi le ha cancellate: né qui né in `plan.md`. Non serve a chi riprende il lavoro, e una sessione futura potrebbe mettersi a cercare cose che non esistono più. La pulizia si fa e si riferisce al dev nella risposta.
 - **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
 - **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, non qui. In questa fase **verifica che i rimandi funzionino**: ogni riga `> ⚠️ L'implementazione ha deviato` in `plan.md` deve puntare a un titolo che esiste davvero in `notes.md`. Un rimando rotto non produce nessun errore in Markdown — resta lì e nessuno se ne accorge — quindi il controllo va fatto a macchina:
 
@@ -1269,7 +1334,9 @@ ls docs/knowledge/ 2>/dev/null
 - **Non esiste, ma un'altra pagina copre lo stesso tema con un altro nome** → proponi al dev di
   fondere le due in una pagina di argomento, con un nome che descrive il tema e non il lavoro.
   **Un argomento nasce al secondo lavoro che lo tocca**, non al primo: non inventare tassonomie
-  in anticipo.
+  in anticipo. **E un argomento è una domanda, non un sottosistema**: se il nome che stai per
+  dare è quello di un modulo, di un dominio o di una tabella, cerca la domanda più stretta a cui
+  il lavoro risponde (criterio completo nelle regole condivise).
 
 **Struttura della pagina** — lo stato attuale in cima, la storia sotto:
 
@@ -1277,7 +1344,9 @@ ls docs/knowledge/ 2>/dev/null
 # <Argomento>
 
 ## Come funziona oggi
-<cosa vale adesso: il comportamento corrente e i vincoli che lo governano>
+<se il meccanismo è già descritto nella documentazione d'uso del repo (docs/resources/, un
+README, una guida): una riga di rimando a quella, poi solo cosa vale adesso e i vincoli.
+Altrimenti: il comportamento corrente e i vincoli che lo governano>
 
 ## Perché così
 - **<scelta>** (oc:<ID>): <motivazione>
@@ -1474,6 +1543,10 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
 - [ ] Sorgente del diagramma di flusso `wm-plan` aggiornato, se questa sessione ha modificato il workflow della skill nel repo `claude-marketplace` — la pagina si ripubblica da sé al push, nessun redeploy manuale. Un controllo in CI verifica che le fasi della skill e i nodi del diagramma coincidano: se hai aggiunto o rinominato una fase e non hai toccato la pagina, fallisce
+- [ ] Notebook NotebookLM segnalati dall'agente in `Notebook vecchi:` (notebook del giorno con più
+  di 90 giorni) e in `Notebook doppi:` (il notebook tenuto ha già tutte le call del giorno): proponi al dev di cancellarli, uno per volta, con
+  `mcp__plugin_wm-skills_notebooklm__notebook_delete`, prima senza `confirm` e poi con
+  `confirm: true` solo dopo il suo sì.
 
 ### update-context: orchestrator (solo se esiste un ticket oc:\<ID\>)
 

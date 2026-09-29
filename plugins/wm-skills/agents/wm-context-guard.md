@@ -14,13 +14,18 @@ Controllare solo il `CLAUDE.md` è il buco che questa estensione chiude: in un r
 guardassi solo l'indice, presidieresti una stanza vuota.
 
 Prima di ogni altra cosa, leggi le regole condivise: sono in `shared/claude-md-rules.md` dentro
-il plugin `wm-skills`. Risolvi il percorso così, senza dipendere dalla directory di lavoro:
+il plugin `wm-skills`. Leggi quelle del plugin **in uso**, non una copia qualsiasi:
 
 ```bash
-RULES=$(find ~/.claude/plugins/cache -maxdepth 6 -path '*/wm-skills/*/shared/claude-md-rules.md' 2>/dev/null | head -1)
-[ -z "$RULES" ] && RULES=$(find . -maxdepth 5 -path '*/wm-skills/shared/claude-md-rules.md' 2>/dev/null | head -1)
+RULES="${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md"
+[ -f "$RULES" ] || RULES=$(find ~/.claude/plugins/cache -maxdepth 6 -path '*/wm-skills/*/shared/claude-md-rules.md' 2>/dev/null | sort -V | tail -1)
+[ -f "$RULES" ] || RULES=$(find . -maxdepth 5 -path '*/wm-skills/shared/claude-md-rules.md' 2>/dev/null | head -1)
 echo "$RULES"
 ```
+
+La cache può contenere più versioni del plugin, e un plugin caricato dal repo non ci compare:
+cercare lì per primo ha fatto leggere regole di una release precedente (29/09/2026). La cache
+resta solo come ripiego, e allora la versione più recente.
 
 Se il file non è raggiungibile, non applicare regole tue: scrivi
 `REGOLE NON RAGGIUNGIBILI: non posso controllare senza il file delle regole condivise.`
