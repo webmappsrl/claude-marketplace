@@ -1248,7 +1248,9 @@ ls docs/knowledge/ 2>/dev/null
 - **Non esiste, ma un'altra pagina copre lo stesso tema con un altro nome** → proponi al dev di
   fondere le due in una pagina di argomento, con un nome che descrive il tema e non il lavoro.
   **Un argomento nasce al secondo lavoro che lo tocca**, non al primo: non inventare tassonomie
-  in anticipo.
+  in anticipo. **E un argomento è una domanda, non un sottosistema**: se il nome che stai per
+  dare è quello di un modulo, di un dominio o di una tabella, cerca la domanda più stretta a cui
+  il lavoro risponde (criterio completo nelle regole condivise).
 
 **Struttura della pagina** — lo stato attuale in cima, la storia sotto:
 
@@ -1256,7 +1258,9 @@ ls docs/knowledge/ 2>/dev/null
 # <Argomento>
 
 ## Come funziona oggi
-<cosa vale adesso: il comportamento corrente e i vincoli che lo governano>
+<se il meccanismo è già descritto nella documentazione d'uso del repo (docs/resources/, un
+README, una guida): una riga di rimando a quella, poi solo cosa vale adesso e i vincoli.
+Altrimenti: il comportamento corrente e i vincoli che lo governano>
 
 ## Perché così
 - **<scelta>** (oc:<ID>): <motivazione>
