@@ -9,13 +9,18 @@ Ricevi il percorso di un `CLAUDE.md`. Esaminalo **nel suo insieme** e proponi un
 riordino.
 
 Prima di ogni altra cosa, leggi le regole condivise: sono in `shared/claude-md-rules.md` dentro
-il plugin `wm-skills`. Risolvi il percorso così, senza dipendere dalla directory di lavoro:
+il plugin `wm-skills`. Leggi quelle del plugin **in uso**, non una copia qualsiasi:
 
 ```bash
-RULES=$(find ~/.claude/plugins/cache -maxdepth 6 -path '*/wm-skills/*/shared/claude-md-rules.md' 2>/dev/null | head -1)
-[ -z "$RULES" ] && RULES=$(find . -maxdepth 5 -path '*/wm-skills/shared/claude-md-rules.md' 2>/dev/null | head -1)
+RULES="${CLAUDE_PLUGIN_ROOT}/shared/claude-md-rules.md"
+[ -f "$RULES" ] || RULES=$(find ~/.claude/plugins/cache -maxdepth 6 -path '*/wm-skills/*/shared/claude-md-rules.md' 2>/dev/null | sort -V | tail -1)
+[ -f "$RULES" ] || RULES=$(find . -maxdepth 5 -path '*/wm-skills/shared/claude-md-rules.md' 2>/dev/null | head -1)
 echo "$RULES"
 ```
+
+La cache può contenere più versioni del plugin, e un plugin caricato dal repo non ci compare:
+cercare lì per primo ha fatto leggere regole di una release precedente (29/09/2026). La cache
+resta solo come ripiego, e allora la versione più recente.
 
 Se il file non è raggiungibile, non applicare regole tue: scrivi
 `REGOLE NON RAGGIUNGIBILI: non posso controllare senza il file delle regole condivise.`
@@ -512,6 +517,63 @@ viaggiano insieme: la regola senza l'eccezione fa scartare una scelta legittima,
 la regola la fa diventare la norma. Cercale con il nome della cosa vietata, non con la parola
 «eccezione».
 
+**Ogni pagina di conoscenza risponde a una domanda e conosce il suo padre.** Sono due regole delle
+regole condivise — «Un argomento è una domanda a cui si torna, non un sottosistema» e «Il padre di
+una pagina di conoscenza è la documentazione d'uso del sottosistema» — e valgono per le pagine
+esistenti, non solo per quelle nuove. Averle lette non basta: vanno eseguite pagina per pagina.
+
+```bash
+REPO=<root del repo>
+ls "$REPO"/docs/resources/*.md "$REPO"/README.md "$REPO"/docs/guide/*/index.* 2>/dev/null
+for f in "$REPO"/docs/knowledge/*.md; do
+  printf '%s | %s righe | titolo: %s | cita la doc d uso: %s\n' "${f#$REPO/}" "$(wc -l < "$f")" \
+    "$(grep -m1 '^# ' "$f" | cut -c3-)" \
+    "$(grep -c -E 'docs/resources/|README|docs/guide/' "$f")"
+done
+```
+
+Per ogni pagina:
+
+1. **Il nome.** Se il titolo o il nome del file è quello di un modulo, di un dominio, di una
+   tabella, di una classe o di un servizio esterno («Analytics PostHog», «Catasto Sentieri»), è un
+   rilievo `[argomento largo]`: proponi la domanda più stretta a cui la pagina risponde davvero,
+   leggendo le sue voci di «Perché così». Se le voci rispondono a domande diverse fra loro, proponi
+   la divisione in pagine sorelle, una per domanda.
+2. **Il padre.** Non sceglierlo dal nome: confronta gli identificatori che le due pagine citano fra
+   apici inversi (classi, metodi, campi, chiavi di config). Per ogni pagina, contro ogni possibile
+   padre:
+
+   ```bash
+   bash -c '
+   ids(){ grep -oE "\`[A-Za-z_][A-Za-z0-9_:./>-]{3,}\`" "$1" | tr -d "\`" | sed -E "s#.*/##" | sort -u; }
+   for padre in <possibili padri>; do
+     c=$(comm -12 <(ids <pagina>) <(ids "$padre"))
+     printf "%s: %s in comune — %s\n" "$padre" "$(printf "%s" "$c" | grep -c .)" "$(printf "%s" "$c" | tr "\n" " ")"
+   done'
+   ```
+
+   Il numero non decide: un padre vero può condividere due soli identificatori, uno falso quattro
+   generici (`EcTrack`, `null`). Decidono **quali** sono: un padre è tale se condivide identificatori
+   specifici del sottosistema (il suo servizio, la sua action, le sue chiavi), e il rilievo li
+   riporta come prova. Se il padre copre solo una parte della pagina, dillo: è il segnale di una
+   pagina da dividere, e il rimando va nella sorella che nascerà.
+
+3. **La ripetizione.** Per ogni padre trovato, prendi fino a tre identificatori specifici in comune
+   e leggi dove compaiono nei due file (`grep -n` e le righe intorno). Per ciascuno scrivi se la
+   pagina di conoscenza ne **spiega il funzionamento** — cosa fa, in che ordine, con quali file: è
+   la parte del padre — o ne dà solo **il perché** e i vincoli. Se lo spiega, è `[ripete il padre]`
+   con le due righe citate, e la proposta è il rimando più il taglio di quelle righe. Se il padre
+   non è citato ma non c'è ripetizione, è solo `[padre non citato]`: basta la riga di rimando.
+   Nominare un elemento del padre per fissarne un vincolo non è ripetizione: «un solo formato
+   salvato, `{id: {<lingue>, _admin_level}}`; il filtro vale solo sulle uscite pubbliche» è stato e
+   vincolo, ed è ciò che lo stato in cima deve contenere. Ripetizione è la spiegazione del
+   funzionamento: i passi, il flusso, la struttura dei file che il padre già descrive.
+   Non chiudere la pagina senza questo confronto: «non ho confrontato riga per riga» non è un
+   esito, è il controllo non fatto.
+
+Una pagina senza padre non è un rilievo: descrive lo stato come sempre. L'esito entra nella riga
+`Argomenti:` dell'intestazione, con il conteggio delle pagine esaminate.
+
 ## Confronta anche con i criteri ufficiali
 
 Le regole condivise che hai letto contengono una sezione **«I criteri ufficiali, riportati
@@ -616,6 +678,7 @@ Doppio indice: <le due sezioni e i ticket che condividono, oppure "no">
 Trappole: <quelle rimaste FUORI da .claude/rules/, con la sezione che le ospita — non quelle già a posto; oppure "nessuna fuori posto">
 Cross-repo: <voci che descrivono file di un altro repo, e convenzioni che governano file di un altro repo — col repo; oppure "nessuna">
 Doppia residenza: <fatti scritti in due posti — fra CLAUDE.md e una rule, fra due pagine, fra due repo — oppure "nessuna">
+Argomenti: <pagine di conoscenza con nome da sottosistema, padre non citato o padre ripetuto — col padre e gli identificatori in comune; oppure "tutte a posto (N pagine esaminate, M coppie pagina-padre confrontate)">
 Cosa esce dal file: <per ogni intervento che sposta contenuto, dove atterra ciò che oggi è nel CLAUDE.md — e in particolare: divieti con effetto esterno, coppie regola/eccezione, ticket senza destinazione. Oppure "niente esce">
 Divieti: <i vincoli con effetto esterno che hai trovato nel repo e dove stanno oggi — "N nel file come divieti" / "in una rule o in una pagina, non nel file" / "nessuno">
 Cifre: <i conteggi che invecchiano, col valore vero se l'hai misurato, oppure "nessuna">
