@@ -126,6 +126,12 @@ Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per featu
 - Se il dev risponde a una cosa sola di un messaggio che ne conteneva di più, **il silenzio sulle altre non è una delega**: il messaggio era sbagliato. Riproponi la cosa rimasta aperta, da sola, nel messaggio successivo.
 - Un'informazione che non richiede risposta (un esito, una verifica fatta) può stare nel messaggio, purché sia chiaro che non chiede nulla.
 
+**Scrivi ogni messaggio come se fosse il primo.** Il dev non ha in testa il ragionamento che ti ha portato lì: prima il contesto (di quale pezzo parli, dove sta, cosa succede in pratica), poi un **esempio concreto** con dati veri, e nessun rimando a testo di messaggi precedenti («l'asse 5», «questa cosa»). Una scelta A/B senza il caso d'uso non si capisce: mostra cosa succede oggi e cosa succederebbe dopo. Due fatti nella stessa frase vanno collegati dal loro nesso; se il nesso non c'è, spezza la frase.
+
+**Un problema sollevato dal dev tiene il campo finché non si dice soddisfatto lui.** Se il dev solleva un dubbio o segnala qualcosa che non torna, non riprendere il workflow e non proporre il passo successivo nello stesso messaggio: rispondi, fermati, e riparti solo quando te lo dice.
+
+**Un'azione negata si chiede, non si aggira.** Se una chiamata necessaria viene bloccata — dal classificatore dell'auto mode, da un hook, da una regola di permesso — non dichiarare «non si può» e non proseguire con un ripiego: fermati, di' al dev quale azione serve, cosa l'ha bloccata e come può sbloccarla (cambiare modalità, aggiungere una regola di permesso), e aspetta. Un rifiuto del classificatore non diventa da solo una richiesta di permesso: l'unica strada è chiederlo a parole.
+
 <HARD-GATE>
 Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano nel filesystem e siano stati esplicitamente approvati dall'utente. Questo vale sempre, indipendentemente dalla semplicità percepita del task.
 </HARD-GATE>
@@ -229,7 +235,7 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 | Tag: elenco, lettura, creazione, modifica | `list_tags`, `get_tag`, `create_tag`, `update_tag` |
 | Associare o togliere un ticket da un tag | `attach_story_to_tag`, `detach_story_from_tag` |
 
-**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
+**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. **Se il dev ha già approvato quell'azione precisa** («associalo», «crealo così») **e l'anteprima mostra esattamente quella**, applica senza chiedere di nuovo; chiedi solo se l'anteprima contiene qualcosa di diverso o in più. `customer_request` si chiede sempre: scriverlo notifica il cliente, e una email inviata non si annulla. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
 
 **Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata.
 
@@ -855,7 +861,7 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 [Criticità emerse dalla Fase: challenge con indicazione di come vengono mitigate]
 
 ## Out of scope
-[Cosa esplicitamente NON viene fatto in questo ciclo]
+[Ciò che resta valido ma non si fa in questo ciclo. Mai le alternative scartate nel dialogo: chi rilegge l'overview in una sessione successiva le prenderebbe per ipotesi ancora aperte. Se una scelta scartata va conservata, va nella pagina di conoscenza, in «Come ci siamo arrivati»]
 
 ## Moduli toccati
 [Lista di file, moduli o servizi che vengono modificati o creati]
@@ -944,7 +950,7 @@ Aspetta la risposta prima di passare al rischio successivo.
 
 I rischi IPOTETICI non diventano domande: elencali una volta sola, in un'unica riga ciascuno, con la dicitura «ipotetico, lo ignorerei», e prosegui. Ci torna il dev se vuole. Presentare uno scenario improbabile con lo stesso peso di un danno reale costringe il dev a riprogettare per coprirlo, e dopo alcuni giri il progetto cambia per rischi che non ci sono.
 
-Prima di portare un rischio come REALE verificalo tu: se il revisore lo ha classificato REALE ma lo scenario richiede condizioni improbabili, trattalo come IPOTETICO.
+Prima di portare un rischio come REALE **provane l'impatto tu, che esegui `wm-plan`** — non il subagente revisore, di cui non ti fidi sull'etichetta REALE: percorri il codice dall'ingresso reale fino al punto del rischio, conta sui dati locali in sola lettura quanti casi hanno quella condizione, oppure esegui un test quando si può (leggi prima la regola in cima al `CLAUDE.md` del repo: alcuni test scrivono fuori). Se lo scenario richiede condizioni che nel flusso normale non si verificano, trattalo come IPOTETICO. Nel messaggio al dev riporta la **prova**, non il metodo: i `file:riga` del percorso dall'ingresso al punto del rischio, oppure la query e il numero uscito, oppure il nome del test e il suo esito. «Ho controllato il codice» non è una prova: un rischio senza il dato non è verificato e non si porta come REALE. Presentato senza prova, a un dev meno esperto, sembra vero.
 
 ### challenge: overview-update
 
@@ -1215,25 +1221,27 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
 
    > "PHPStan blocca il commit per [errori di codice sul diff / fallimento infrastrutturale]. Vuoi bypassare questo blocco specifico? Verrà registrato in notes.md con la motivazione: \"[motivazione confermata]\"."
 
-5. Solo se il dev conferma esplicitamente il bypass (non basta il "procedi" generico del punto 3 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
+5. Solo se il dev conferma esplicitamente il bypass (non basta il sì al commit del punto 5 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
 6. Se il dev non conferma il bypass, il workflow resta bloccato su questo punto: nessun commit finché gli errori non sono risolti o il bypass non viene confermato.
 
 #### review-gate: dialog
 
 1. Presenta all'utente il riepilogo prodotto dal subagente (o dal fallback).
 1bis. Se `has_phpstan_ci: true`, esegui `review-gate: phpstan-check` ora, prima di procedere al punto 2. Se ne emerge un blocco, gestiscilo con `review-gate: phpstan-override` prima di continuare.
-2. Chiedi conferma esplicita con questo messaggio:
+2. Chiedi, **da sola**, se c'è qualcosa da correggere:
 
-   > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo prima di procedere** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. Vuoi eseguire i commit, oppure c'è qualcosa da correggere?"
-   >
-   > 💡 **Review formale opzionale:** vuoi eseguire una code review strutturata prima dei commit? Invoca `wm-skills:wm-review-ticket oc:<ID>` per finder paralleli e aggiornamento automatico del ticket. Rispondi **sì** per eseguirla ora, **no** per procedere direttamente ai commit.
-   >
-   > ℹ️ **Differenza con la review formale:** questo riepilogo del subagente è un controllo obbligatorio e leggero (solo diff strutturato). `wm-review-ticket` è un'analisi più approfondita e opzionale.
+   > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. C'è qualcosa da correggere?"
 
-3. Aspetta una risposta esplicita di approvazione (`sì`, `procedi`, o equivalente). Un silenzio o un "ok" generico non è sufficiente — richiedi conferma del tipo "procedi con i commit".
-4. Solo dopo l'approvazione esplicita, **prima di eseguire i commit**, completa la Fase: notes e la Fase: update-context — così tutti i file vengono inclusi nello stesso commit.
-5. Esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-6. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
+   Se sì, correggi e ripresenta il riepilogo aggiornato.
+3. Quando non c'è più niente da correggere, proponi **da sola** la review formale:
+
+   > "Vuoi una code review strutturata con `wm-skills:wm-review-ticket oc:<ID>` (finder paralleli, aggiornamento del ticket)? È più approfondita del riepilogo del subagente, e facoltativa."
+
+   Se sì, segui `execution: formal-review`.
+4. Completa la Fase: notes e la Fase: update-context, così tutti i file entrano nello stesso commit.
+5. **Solo ora, quando non resta altro da fare**, chiedi il commit con una domanda singola ed esplicita, senza nient'altro nel messaggio: «Faccio il commit?». Il commit non si mette mai dentro un'altra proposta («aggiungo X e poi committo»): un sì alla proposta non è un sì al commit. Un silenzio o un «ok» generico non basta.
+6. Dopo il sì, esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
+7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
 
 **Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
@@ -1244,7 +1252,7 @@ Se l'utente risponde **sì** alla proposta di review formale in `execution: revi
 1. Invoca `wm-skills:wm-review-ticket oc:<ID>`
 2. Attendi il completamento della review
 3. Se emergono correzioni → applicale prima di procedere ai commit
-4. Torna al punto 6 di `execution: review-gate` (esegui i commit)
+4. Torna al punto 4 di `review-gate: dialog` (notes, update-context, poi la domanda sul commit)
 
 ---
 
@@ -1255,6 +1263,7 @@ Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzi
 **Regole:**
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
 - Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
+- **Non registrare la pulizia della sessione** — risorse di prova create e poi cancellate, i loro id, chi le ha cancellate: né qui né in `plan.md`. Non serve a chi riprende il lavoro, e una sessione futura potrebbe mettersi a cercare cose che non esistono più. La pulizia si fa e si riferisce al dev nella risposta.
 - **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
 - **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, non qui. In questa fase **verifica che i rimandi funzionino**: ogni riga `> ⚠️ L'implementazione ha deviato` in `plan.md` deve puntare a un titolo che esiste davvero in `notes.md`. Un rimando rotto non produce nessun errore in Markdown — resta lì e nessuno se ne accorge — quindi il controllo va fatto a macchina:
 

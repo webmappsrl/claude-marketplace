@@ -204,6 +204,30 @@ Ogni finder restituisce candidati: `{file, line, summary, failure_scenario, seve
 
 Deduplica i candidati sovrapposti. Per ogni candidato non ovvio, verifica che il problema non sia già risolto a HEAD.
 
+**Prova l'impatto di ogni candidato bloccante prima di riportarlo.** Un finder descrive uno scenario
+possibile; se lo scenario non si verifica nell'uso normale, portarlo come bloccante confonde chi
+corregge — un dev meno esperto lo prende per vero e riprogetta per coprirlo. Per ciascuno:
+
+1. **Percorri il codice dall'ingresso reale** — route, action Nova, job, comando — fino alla riga
+   del finding: la condizione che lo innesca può arrivarci con i chiamanti che esistono?
+2. **Guarda i dati, se c'è un database locale:** conta in sola lettura quanti record hanno quella
+   condizione («quante tracce hanno `manual_data` vuoto?»). Zero record e nessun flusso che li crea
+   è un segnale di ipotetico.
+3. **Esegui un test, quando serve e si può:** uno esistente, o uno scritto fuori dal repo e non
+   salvato. Prima leggi la regola in cima al `CLAUDE.md` del repo: alcuni test scrivono fuori, per
+   esempio su un registro condiviso, e allora si verifica leggendo, senza eseguire.
+
+Poi classifica:
+
+- **REALE** — riprodotto, oppure la condizione esiste nei dati o nel flusso normale. Resta
+  bloccante, con la riga **Verificato:** che riporta la **prova**, non il metodo: i `file:riga` del
+  percorso dal punto d'ingresso alla riga del problema; oppure la query e il numero uscito («765
+  tracce su 770 hanno `manual_data`»); oppure il nome del test e il suo esito. «Ho percorso il
+  codice» non è una prova: senza il dato, il finding non è verificato e non è bloccante.
+- **IPOTETICO** — richiede un input che nessun chiamante passa, dati che non esistono, una
+  configurazione mai usata. **Non è mai bloccante**: va in `## Ipotetici`, una riga ciascuno con la
+  condizione che servirebbe e la dicitura «ipotetico, ignorabile», oppure si scarta.
+
 ### 5d — Output
 
 Presenta in italiano:
@@ -221,9 +245,13 @@ Presenta in italiano:
 - **Problema:** [descrizione tecnica]
 - **Scenario utente:** [cosa vive l'utente se il bug si manifesta]
 - **Suggerimento:** [come correggerlo]
+- **Verificato:** [la prova: `file:riga` del percorso dall'ingresso al problema, oppure query e numero uscito, oppure nome del test ed esito]
 
 ## Finding cleanup
 [Non bloccanti — miglioramenti facoltativi]
+
+## Ipotetici
+[Una riga ciascuno: la condizione improbabile che servirebbe — «ipotetico, ignorabile». Se non ce ne sono, ometti la sezione]
 
 ## Finding confutati
 [Candidati scartati dalla verifica, con motivazione]
