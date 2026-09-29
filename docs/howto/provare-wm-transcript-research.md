@@ -25,8 +25,8 @@ cose, in quest'ordine:
 **Domanda:** «Cosa ha deciso il team sull'adozione di Redis per la cache, e su Kubernetes per
 il deploy?»
 
-**Contesto da passare all'agente:** un ticket qualsiasi recente, finestra degli ultimi trenta
-giorni.
+**Contesto da passare all'agente:** un ticket qualsiasi recente, con i giorni del ticket
+calcolati da `get_story_days`.
 
 **Risposta attesa:** `Risposta: non determinabile dalle trascrizioni`, con la `Copertura` che
 dichiara quante call ha guardato.
@@ -67,7 +67,8 @@ attribuire, etichettare — contano solo se questa regge.
 ### 2. Attribuzione fra call vicine (caso del 23/09/2026)
 
 **Domanda:** «Qualcuno ha segnalato che la ricerca sulle trascrizioni consuma troppi token? È stato
-proposto di chiedere conferma al dev prima di avviarla?» — finestra dal 2026/09/14 al 2026/09/18.
+proposto di chiedere conferma al dev prima di avviarla?» — giorni 2026/09/14, 2026/09/15, 2026/09/16,
+2026/09/17, 2026/09/18 (elenco di date, come le passa `wm-plan`).
 
 **Risposta attesa:** la segnalazione di Alessandro Peci e la proposta di Giuseppe Bonfanti («posso
 leggere dalle trascrizioni? sì/no») attribuite a **2026/09/16 15:39**
@@ -100,11 +101,11 @@ lette tutte in meno di un minuto. Circa 66k token, 35 tool call, 1 minuto e 52 s
 ### 3. Call lunga con il cliente (oc:8543, tag 678)
 
 **Domanda:** «Cosa è stato concordato sui campi soggetto rilevatore, soggetto gestore e soggetto
-manutentore dei sentieri?» — finestra dal 2026/09/12 a oggi, tag 678 «[CALL][FORESTAS][2026] excel
+manutentore dei sentieri?» — giorni del ticket di oc:8543 (`get_story_days` con `story_id: 8543`), tag 678 «[CALL][FORESTAS][2026] excel
 registro sentieri» con la fonte `1vWNI8Zn27Y1nMLsN7xZsBmNZBtxLm3G8buuS5ajGtIM` (call di 2h32m).
 La domanda si fa **come domanda diretta** («guarda anche il tag»), cioè con «crea se manca»: il tag
 678 non ha ancora un notebook, e in `reverse-interaction` un tag senza notebook si salta. Atteso
-anche: un notebook `scrum …` per ogni giorno della finestra con almeno una call, e il notebook
+anche: un notebook `scrum …` per ogni giorno dell'elenco con almeno una call, e il notebook
 `tag [CALL][FORESTAS][2026] excel registro sentieri` creato.
 
 **Risposta attesa:** `[deciso]` Alessio Saba, «la fonte di verità qui è su Drupal che c'ha già tre

@@ -68,8 +68,10 @@ CALL CON IL CLIENTE
 ~~~
 
 
-**Pulizia.** Guarda nell'elenco i notebook `scrum …` con una data più vecchia di 90 giorni e
-riportali nella risposta sotto `Notebook vecchi:`. Non li cancelli mai: decide il dev.
+**Pulizia.** Guarda nell'elenco i notebook `scrum …` **creati** più di 90 giorni fa (la data di
+creazione di `notebook_list`, non il giorno del nome) e riportali nella risposta sotto
+`Notebook vecchi:`. I notebook che hai interrogato in questa ricerca non li riporti mai: servono
+al ticket, anche se il loro giorno è vecchio. Non li cancelli mai: decide il dev.
 
 **Doppioni.** Due ricerche partite insieme possono creare lo stesso notebook due volte. Dopo aver
 creato un notebook, rileggi l'elenco: se ci sono più notebook con lo stesso nome, usa il più
@@ -81,12 +83,12 @@ Chi ti chiama ti passa una di queste richieste:
 
 - **prepara** — solo il notebook del giorno di oggi: crealo se manca, aggiungi le call di oggi che
   non ha, e rispondi con il link. Nessuna domanda.
-- **domande su una finestra di giorni** — di solito da qualche giorno prima della creazione del
-  ticket a oggi; più eventuali **tag** del ticket, da interrogare solo se il loro notebook esiste,
-  salvo «crea se manca».
+- **domande sui giorni del ticket** — un elenco di date, non un intervallo: i giorni in cui al
+  ticket è successo qualcosa, calcolati da chi ti chiama; più eventuali **tag** del ticket, da
+  interrogare solo se il loro notebook esiste, salvo «crea se manca».
 - **domande sul giorno di oggi** — per esempio prima di formulare un ticket nuovo.
 
-La finestra **comprende sempre oggi**. Senza indicazioni, è solo oggi.
+I giorni **comprendono sempre oggi**. Senza indicazioni, sono solo oggi.
 
 ## Le fonti
 
@@ -97,8 +99,8 @@ della data: mai il fuso, `CEST` diventa `CET`), con `excludeContentSnippets: tru
 `nextPageToken`, rifai la ricerca con `pageToken`. Una sola pagina non è l'elenco: nelle prove del
 23/09 la prima pagina aveva 6 call su 13, e la call con la risposta era fuori.
 
-Per una finestra di più giorni puoi elencare tutte le date in una ricerca (`title contains
-'2026/09/15' or title contains '2026/09/16' …`), seguendo le pagine: poi raggruppa le call per giorno.
+Per più giorni elenca tutte le date in una ricerca (`title contains '2026/09/15' or title contains
+'2026/09/22' …`), una clausola per data, seguendo le pagine: poi raggruppa le call per giorno.
 **Un giorno senza call non ha notebook**: saltalo.
 
 **Per ogni giorno con almeno una call** usa il notebook `scrum AAAA-MM-GG`: crealo se manca, e
@@ -193,7 +195,7 @@ Fonti:
 - <titolo> — <link> — id: <drive_doc_id>
 
 Copertura:
-- finestra: <data>–<data>; giorni con almeno una call: <elenco>
+- giorni del ticket: <elenco>; con almeno una call: <elenco>
 - per ogni notebook interrogato: <nome> — <T> call nell'elenco di Drive, <N> caricate (se N < T, il motivo)
 - citate: <titoli delle fonti da cui NotebookLM ha citato>
 - tag senza notebook: <nomi, o nessuno>

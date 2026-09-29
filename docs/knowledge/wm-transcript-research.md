@@ -18,9 +18,9 @@ dello scrum di quella giornata, e `tag <nome del tag>`, con le trascrizioni del 
 `**Fonte:**` e Google Doc linkati). All'avvio di `wm-plan` l'agente prepara in background il
 notebook del giorno, e le altre richieste aspettano che abbia finito (due richieste insieme creano
 lo stesso notebook due volte; se capita, l'agente usa il più vecchio e segnala gli altri); nel caso B (ticket nuovo) lo interroga prima di formulare la bozza; in
-`reverse-interaction` interroga i notebook dei giorni della finestra (da qualche giorno prima della
-creazione del ticket a oggi, solo i giorni con almeno una call; sui giorni in `progress` quando
-l'API li esporrà, oc:8636) e quelli dei tag del ticket **che esistono già**, in parallelo, con tutte
+`reverse-interaction` interroga i notebook dei **giorni del ticket** (cambi di stato, giorni in
+`progress`, giorni con un commit `(oc:<ID>)`, oggi: li calcola il tool `get_story_days` del server
+MCP, oc:8661; solo i giorni con almeno una call) e quelli dei tag del ticket **che esistono già**, in parallelo, con tutte
 le domande in una chiamata per notebook, e mette insieme le risposte in ordine di data. Il parallelo
 regge solo con `notebook_query_start` e `notebook_query_status`: Claude Code esegue una alla volta le
 chiamate allo stesso server MCP, e con `notebook_query`, che aspetta la risposta, dieci notebook
@@ -101,10 +101,20 @@ notebook, documenti non caricati) e i link dei notebook.
 - **Un notebook per giorno e uno per tag** (23/09/2026): la prima versione creava un notebook per
   lavoro e ricaricava le call ogni volta (29 fonti e 7 minuti e mezzo per oc:8543). Con notebook
   per giorno e per tag ogni call si carica una volta, i notebook sono piccoli, e la data di una
-  risposta è data dal notebook. La finestra andrà calcolata sui giorni in cui il ticket è stato in
-  `progress` quando l'API li esporrà (oc:8636).
+  risposta è data dal notebook.
+- **Giorni del ticket, non una finestra di date** (oc:8661, 29/09/2026): di un ticket si parla in
+  call quando gli succede qualcosa — si assegna, ci si lavora, torna da una review, si chiude — e i
+  giorni di attesa aggiungono notebook senza informazione. I giorni li dà l'endpoint
+  `status-history` di Orchestrator (oc:8636, fatto per questo) più i commit, perché lo stato lo
+  aggiorna una persona a mano. Il calcolo sta nel tool Go e non nella skill perché è meccanico: nel
+  codice è testato. Niente giorni prima della creazione: il dev li chiede con una domanda diretta.
+  I notebook vecchi si contano per data di creazione, perché un ticket ripreso usa giorni vecchi.
 
 ## Come ci siamo arrivati
+
+- **Finestra di date** (23/09/2026, superata con oc:8661): da qualche giorno prima della creazione
+  del ticket a oggi. Era provvisoria in attesa dell'endpoint oc:8636: comprendeva anche i giorni in
+  cui il ticket era fermo.
 
 - **Connettore Drive, non un MCP** (oc:8530, superata il 23/09/2026): la lettura ora passa da
   NotebookLM; Drive resta per l'elenco delle call e la verifica delle citazioni. La scelta di allora: l'ipotesi di partenza era di adottare un server

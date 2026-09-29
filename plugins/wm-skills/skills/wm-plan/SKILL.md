@@ -222,6 +222,7 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 | Operazione | Tool |
 |---|---|
 | Leggere un ticket | `get_story` |
+| Giorni in cui al ticket è successo qualcosa (stati, progress, commit, oggi) | `get_story_days` |
 | Creare un ticket | `create_story` |
 | Modificare un ticket | `update_story` |
 | Utente corrente | `me` |
@@ -388,6 +389,9 @@ Mostra l'elenco di tutti i ticket del gruppo:
 > Su quale vuoi continuare il workflow ora? (oppure "nessuno" per tornare al menu)
 
 - **Se l'utente sceglie un ticket:** prosegui il workflow in `Fase: init-context` usando i dati già noti di quel ticket (senza rifare la GET).
+  Se è uno dei ticket nuovi, in `reverse-interaction` aggiungi ai suoi giorni quelli del ticket
+  originale (`get_story_days` con l'id originale): il ticket nuovo nasce oggi e non ha storia,
+  mentre le sue richieste sono state discusse nei giorni del ticket da cui viene.
 - **Se l'utente risponde "nessuno":** torna al menu A/B/C di `Fase: ticket`.
 
 ### ticket: progress
@@ -729,10 +733,15 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   ricerca nel principale — vedi `## Revisione con l'agente` in
   `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
 
-- **Non chiedere ciò che il team ha già deciso in call.** Insieme alla ricerca sul codice,
-  interroga `wm-transcript-research` sulle call: passagli **numero e titolo del ticket**, la
-  **finestra di giorni** (da qualche giorno prima della creazione del ticket a oggi: l'agente usa il
-  notebook `scrum AAAA-MM-GG` di ogni giorno con almeno una call), le domande che stai per fare al
+- **Non chiedere ciò che il team ha già deciso in call.** Prima calcola i **giorni del ticket**:
+  chiama `get_story_days` con l'id del ticket, senza `repos` (vale il repository in cui lavori, con i
+  submodule). Restituisce i cambi di stato, i giorni in `progress`, i giorni con un commit
+  `(oc:<ID>)` e oggi. Mostra al dev i giorni e, **in modo evidente**, ogni riga di `warnings`: un
+  endpoint, un `git fetch` o un submodule non riusciti vogliono dire giorni mancanti.
+
+  Poi, insieme alla ricerca sul codice, interroga `wm-transcript-research` sulle call: passagli
+  **numero e titolo del ticket**, i **giorni del ticket** (l'agente usa il notebook
+  `scrum AAAA-MM-GG` di ogni giorno con almeno una call), le domande che stai per fare al
   dev e, per **ogni tag associato al ticket**, il nome del tag e gli **id dei documenti
   collegati**:
 
@@ -749,12 +758,12 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 
   L'id di un Google Doc è la parte dopo `/document/d/`. Fogli, siti web e GitHub non si passano.
 
-  **Senza ticket** la finestra è «oggi»: le call di oggi ci sono sempre, con o senza ticket.
+  **Senza ticket** i giorni sono solo oggi: le call di oggi ci sono sempre, con o senza ticket.
 
-  **Domande dirette** del dev sulle call («cosa si è deciso su questo ticket?», «guarda cosa si è
-  deciso in call»): richiama l'agente con i giorni o i tag indicati, anche fuori dalla finestra, e con
-  «crea se manca» per i notebook dei tag. Se la `Copertura` riporta tag senza notebook, dillo al dev:
-  può chiederti di crearli.
+  **Domande dirette** del dev sulle call di quel ticket («cosa si è deciso su questo ticket?»,
+  «guarda cosa si è deciso in call»): richiama `get_story_days` e passa all'agente i giorni del
+  ticket, più i giorni che il dev indica («guarda anche il 10/09»), e i tag con «crea se manca». Se
+  la `Copertura` riporta tag senza notebook, dillo al dev: può chiederti di crearli.
 
   Vale la stessa regola dell'altra ricerca: **una chiamata sola a inizio fase**, per non
   spezzare il dialogo.

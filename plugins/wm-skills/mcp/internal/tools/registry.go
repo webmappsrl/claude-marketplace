@@ -42,6 +42,7 @@ func ActiveGroups(env string) map[string]bool {
 func Register(server *mcp.Server, deps Deps, groups map[string]bool) {
 	if groups["stories"] {
 		registerStories(server, deps)
+		registerStoryDays(server, deps)
 	}
 	if groups["me"] {
 		registerMe(server, deps)
