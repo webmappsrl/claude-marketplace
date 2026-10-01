@@ -12,11 +12,12 @@ Da eseguire in quest'ordine.
 2. Allinea la riga `**Versione installata:** v<version>` in
    `plugins/wm-skills/skills/wm-plan/SKILL.md` → `### header: versione` allo stesso valore.
 3. Allinea la costante `Version` in `plugins/wm-skills/mcp/internal/version/version.go` e
-   ricompila con `plugins/wm-skills/mcp/build.sh`: il binario è versionato nel repo e viaggia nel
-   plugin, quindi va aggiornato ad ogni rilascio.
+   ricompila con `plugins/wm-skills/mcp/build.sh`: i binari `orchestrator-mcp` e
+   `geohub-import-check` sono versionati nel repo e viaggiano nel plugin, quindi vanno aggiornati
+   ad ogni rilascio.
 4. `claude plugin validate .` — deve passare prima di dichiarare il lavoro pronto.
 5. **(dev)** Commit dei file toccati su `main`.
 6. **(dev)** `git tag v<version> && git push origin v<version>`.
 
-Il binario compilato nel repo è per `darwin/arm64`: su Linux o Mac Intel va ricompilato
-cambiando `GOOS`/`GOARCH`, altrimenti il server MCP non parte.
+I binari compilati nel repo sono per `darwin/arm64`: su Linux o Mac Intel vanno ricompilati
+cambiando `GOOS`/`GOARCH`, altrimenti né il server MCP né `wm-geohub-import-check` partono.

@@ -2,21 +2,24 @@
 
 Espone l'API di Orchestrator come tool tipizzati, così le skill non costruiscono chiamate HTTP
 a mano. Il perché delle scelte di fondo sta in
-[docs/knowledge/mcp-orchestrator.md](../../../docs/knowledge/mcp-orchestrator.md); qui c'è ciò
+[docs/knowledge/orchestrator-integrazione.md](../../../docs/knowledge/orchestrator-integrazione.md); qui c'è ciò
 che serve per lavorarci dentro.
 
 ## Comandi
 
 ```bash
 go test ./...    # dalla root di mcp/
-./build.sh       # ricompila il binario in ../bin/orchestrator-mcp
+./build.sh       # ricompila i binari in ../bin/: orchestrator-mcp e geohub-import-check
 ```
 
-Il binario è **versionato nel repo** e va ricompilato ad ogni release, perché viaggia nel
+I binari sono **versionati nel repo** e vanno ricompilati ad ogni release, perché viaggiano nel
 plugin: chi installa non compila nulla.
 
+Nello stesso modulo, in `cmd/geohub-import-check/`, c'è il comando che usa la skill
+`wm-geohub-import-check`: non è un tool MCP, la skill lo lancia da bash.
+
 `build.sh` produce **solo `darwin/arm64`**. Su Linux o Mac Intel va cambiato `GOOS`/`GOARCH`,
-altrimenti il server non parte sulla macchina di chi lo installa.
+altrimenti né il server né il comando partono sulla macchina di chi li installa.
 
 ## Vincoli da conoscere prima di toccare il codice
 

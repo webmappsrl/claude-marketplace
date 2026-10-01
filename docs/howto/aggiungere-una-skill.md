@@ -25,6 +25,10 @@ all'agente commit e push.
    istruzioni. Sezioni `##` per separare fasi o categorie, elenchi puntati per passi atomici.
    La lunghezza va da poche decine di righe, per una checklist, a qualche centinaio per un
    workflow articolato.
+   **Niente `$1`, `$2`… nel testo, nemmeno nei blocchi di codice**: Claude Code li sostituisce con
+   gli argomenti con cui si lancia la skill. Uno script con parametri va in
+   `plugins/wm-skills/scripts/` e la skill lo chiama; `.github/scripts/verifica-segnaposto.sh`,
+   in CI, lo controlla.
 5. Verifica il coupling: se la skill nuova condivide un contratto con una esistente, aggiorna
    entrambe nello stesso lavoro e aggiungi la riga alla tabella in `CLAUDE.md` →
    `## Regole del repo`.
