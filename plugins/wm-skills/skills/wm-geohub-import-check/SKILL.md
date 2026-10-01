@@ -139,38 +139,22 @@ branch. Non si sceglie un branch: si prende **il commit fissato da chi pubblica 
 | `geohub` | `main` | è la produzione di Geohub |
 
 Il repo Laravel dello shard ha il nome dello shard senza `dev` (`maphubdev` → `webmappsrl/maphub`).
-Se non esiste su GitHub, o non contiene il submodule `wm-package`, fermati e chiedi al dev quale
-repo pubblica quello shard.
+Lo scaricamento lo fa uno script, con il nome dello shard di arrivo letto da `risolvi`:
 
 ```bash
-mkdir -p "$OUT/codice"; cd "$OUT/codice"
-commit_di() {  # repo, branch, percorso del submodule → commit fissato
-  git clone --quiet --depth 1 --branch "$2" "https://github.com/webmappsrl/$1.git" "_$1" &&
-  git -C "_$1" ls-tree HEAD "$3" | awk '{print $3}'
-}
-scarica_commit() {  # repo, commit, cartella
-  git init --quiet "$3" && git -C "$3" remote add origin "https://github.com/webmappsrl/$1.git" &&
-  git -C "$3" fetch --quiet --depth 1 origin "$2" && git -C "$3" checkout --quiet FETCH_HEAD
-}
-b_arrivo=<develop se lo shard di arrivo finisce con dev, altrimenti main>
-repo_arrivo=<nome dello shard di arrivo senza dev, per esempio maphub>
-c_core=$(commit_di wm-webapp main src/app/shared/wm-core)
-c_pkg=$(commit_di "$repo_arrivo" "$b_arrivo" wm-package)
-scarica_commit wm-core "$c_core" wm-core
-scarica_commit wm-package "$c_pkg" wm-package
-git clone --quiet --depth 1 --branch main https://github.com/webmappsrl/geohub.git geohub
-rm -rf _wm-webapp "_$repo_arrivo"
-{
-  printf 'wm-core %s (fissato da wm-webapp main) %s\n' "$(git -C wm-core rev-parse --short HEAD)" "$(git -C wm-core log -1 --format=%cs)"
-  printf 'wm-package %s (fissato da %s %s) %s\n' "$(git -C wm-package rev-parse --short HEAD)" "$repo_arrivo" "$b_arrivo" "$(git -C wm-package log -1 --format=%cs)"
-  printf 'geohub %s (main) %s\n' "$(git -C geohub rev-parse --short HEAD)" "$(git -C geohub log -1 --format=%cs)"
-} > "$OUT/codice.txt"
+"${CLAUDE_PLUGIN_ROOT}/scripts/geohub-codice-riferimento.sh" <shard di arrivo> "$OUT"
 ```
 
+Il codice finisce in `"$OUT/codice/"` (`wm-core`, `wm-package`, `geohub`) e i commit usati in
+`"$OUT/codice.txt"`.
+
+- Exit 5 → il repo dello shard non esiste, non ha il branch o non contiene il submodule `wm-package`: fermati e
+  chiedi al dev quale repo pubblica quello shard.
+- Exit 4 → un clone o un fetch è fallito (rete, permessi): fermati e dillo al dev, **non
+  ripiegare sulle copie locali**.
+- Non riscrivere lo script nel testo della risposta: se fallisce in un altro modo, dillo al dev.
 - È il codice fissato nei repo, non quello letto dal server: se un deploy è in ritardo i due
   possono non coincidere. Dillo al dev se una causa trovata non spiega ciò che si vede.
-- Se un clone o un fetch fallisce (rete, permessi), fermati e dillo al dev: **non ripiegare sulle
-  copie locali**.
 - Ogni chiamata a `wm-skills:wm-codebase-research`, qui e in `wm-tag`, riceve i percorsi di
   `"$OUT/codice/…"` come unici repo da leggere, e `codice.txt` va nel pacchetto per `wm-tag`: nel tag
   si scrive su quale commit valgono le cause.

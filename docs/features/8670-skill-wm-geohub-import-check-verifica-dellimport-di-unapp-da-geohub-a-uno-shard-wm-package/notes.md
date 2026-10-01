@@ -43,6 +43,8 @@ Vedi la sezione seguente, task per task.
 
 ## Bug trovati
 
+- Le funzioni bash della fase `codice-riferimento` usavano `$1`, `$2`, `$3` dentro il `SKILL.md`: Claude Code li sostituisce con gli argomenti con cui si lancia la skill, e le funzioni arrivavano al modello con gli indirizzi dell'app al posto di repo e branch (trovato da un agente in prova, il 01/10/2026, che le ha riscritte a mano). Lo scaricamento è passato in `scripts/geohub-codice-riferimento.sh`, che ricava da solo repo e branch dal nome dello shard; `.github/scripts/verifica-segnaposto.sh`, in CI, impedisce parametri posizionali in tutte le skill.
+
 ## Decisioni
 
 - Tag Orchestrator del ticket: nessuno proposto né associato, su scelta del dev («ignora i tag»).
