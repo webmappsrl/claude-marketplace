@@ -38,6 +38,9 @@ La skill si apre in due modi, e sono due lavori diversi.
 
 - **Testo in chat** — l'utente incolla direttamente la trascrizione o il brief. Fonte: `"Testo fornito in chat"`.
 - **Link Google Drive** — usa `mcp__claude_ai_Google_Drive__read_file_content` se disponibile, altrimenti WebFetch sull'URL. Fonte: l'URL completo del documento.
+- **Report di verifica dell'import** — arriva da `wm-skills:wm-geohub-import-check` con `materiale: report di
+  verifica dell'import` e il percorso di un `report.md`. Non è una trascrizione: segui
+  `## Materiale: report di verifica dell'import`, che dice cosa cambia in ogni fase.
 
 Se l'utente non ha ancora fornito il materiale, chiedi: "Incolla la trascrizione o fornisci il link Google Drive del documento."
 
@@ -84,11 +87,15 @@ find "$PARENT" -maxdepth 2 -name ".git" -type d | sed 's|/.git||'
    > |------|------|
    > | `<nome>` | `<path>` |
 
+   Con un report di verifica dell'import no: vedi `## Materiale: report di verifica dell'import`.
+
 Questa mappa è disponibile per tutto il flusso. Quando serve ispezionare codice in un repo specifico, leggi la path da `repos.json` e naviga lì.
 
 ---
 
 ## Fase: client-extraction
+
+Per un report di verifica dell'import vedi `## Materiale: report di verifica dell'import`.
 
 Analizza il testo e identifica il nome del cliente.
 
@@ -105,7 +112,8 @@ Analizza il testo e identifica il nome del cliente.
 **Il nome del tag lo decide il dev.** La convenzione qui sotto è un default da proporre, non una
 regola da imporre: se il dev ha in mente un altro nome, si usa il suo senza discutere.
 
-Convenzione di default: `[RDO][CLIENTE][ANNO]<N>` — es. `[RDO][CAMMINI][2026]1`.
+Convenzione di default: `[RDO][CLIENTE][ANNO]<N>` — es. `[RDO][CAMMINI][2026]1`. Per un report di
+verifica dell'import il prefisso è `[COLLAUDO]`: vedi `## Materiale: report di verifica dell'import`.
 
 **Calcolo di N:**
 
@@ -120,6 +128,9 @@ tu le alternative per quella parte sola e lascia scegliere.
 ---
 
 ## Fase: tag-description
+
+Per un report di verifica dell'import le macro aree nascono dai gruppi di differenze: vedi
+`## Materiale: report di verifica dell'import`.
 
 Analizza il testo del brief/trascrizione e produce la descrizione del tag in Markdown. **Non essere scarno: ogni macro area deve contenere abbastanza contesto da capire cosa vuole il cliente senza dover rileggere la trascrizione.**
 
@@ -211,6 +222,9 @@ Attendi approvazione esplicita prima di procedere alla creazione del tag.
 ---
 
 ## Fase: tag-creation
+
+Per un report di verifica dell'import verifica delle citazioni, notebook e scelta fra creare e aggiornare
+cambiano: vedi `## Materiale: report di verifica dell'import`.
 
 **Prima di creare il tag, verifica ogni citazione del «Cosa»** con la procedura di
 `${CLAUDE_PLUGIN_ROOT}/shared/verifica-citazioni.md`, usando come fonte la trascrizione della riga
@@ -416,6 +430,93 @@ al candidato successivo di `Fase: candidate-review`.
 
 Non annotare il ticket creato da nessuna parte: l'associazione al tag l'ha già fatta `wm-plan` con
 `attach_story_to_tag`, ed è quella la registrazione: Orchestrator la mostra nella pagina del tag.
+
+---
+
+## Materiale: report di verifica dell'import
+
+Il report arriva da `wm-skills:wm-geohub-import-check`: il confronto fra ciò che il frontend legge da
+un'app su Geohub e dalla stessa app importata su uno shard. Nella cartella di `report.md` ci sono
+anche `diff.json` (i gruppi di differenze), `manifest.json` (le due app e la data) e `interventi.md`
+(gli interventi manuali fatti prima di creare il tag, con il loro effetto). Insieme arriva
+la scelta del dev
+sul tag di verifica dell'import: `aggiorna <ID>`, `nuovo`, o nulla se non ne esisteva uno.
+
+**Ogni messaggio al dev e la descrizione del tag sono in italiano**, anche quando codice, file e
+risultati degli agenti sono in inglese; si cambia lingua solo se il dev lo chiede esplicitamente.
+
+**Il tag deve contenere da sé tutti i dati che servono**: la cartella del report sta nella sessione
+e sparisce con lei. Nella descrizione vanno i numeri, gli id e i valori, non il percorso dei file.
+
+**Non leggere `diff.json` intero nel context**: estrai con `jq` i campi che ti servono.
+
+Cosa cambia, fase per fase:
+
+- **`Fase: repo-map`** — aggiorna `repos.json` come sempre, ma **non mostrare la mappa al dev**: se
+  hai aggiunto repo nuovi, dillo in una riga con i loro nomi; se non ce n'erano, non dire nulla.
+- **`Fase: input`** — la riga `**Fonte:**` è `Verifica import Geohub <id> → <shard> <id> del
+  <data>`, dai campi `geohub.app_id`, `shard.shard`, `shard.app_id` e `scaricato_il` di
+  `manifest.json`.
+- **`Fase: client-extraction`** — il cliente è il nome dell'app, `APP.name` del config di Geohub nella
+  cartella del report (`geohub/config.json`), in MAIUSCOLO e con i trattini. Proponilo al dev.
+- **`Fase: tag-naming`** — il default è `[COLLAUDO][<APP>][<ANNO>]<N>`, con N contato fra i risultati di
+  `list_tags` con `search: "[COLLAUDO][<APP>]"` che hanno l'anno nel nome. Mai `search: "COLLAUDO"` da
+  solo: `list_tags` restituisce anche le descrizioni, e alcune contengono credenziali in chiaro. Il nome lo decide sempre il dev. Se ha scelto di
+  aggiornare un tag esistente, questa fase si salta.
+- **`Fase: tag-description`** — **una macro area per problema**. Gruppi diversi si uniscono solo se
+  la causa comune è provata nel codice (per esempio lo stesso campo, mancante su tracce e POI per la
+  stessa riga dell'import); con la causa non trovata, o con campi diversi, restano macro aree
+  separate: «manca l'excerpt» e «mancano partenza e arrivo» sono due problemi, anche se si somigliano. Chi legge il tag deve capire il problema senza conoscere i file:
+  - **il titolo della macro area dice l'effetto, in parole semplici**: «I file letti dall'app non
+    contengono temi e comuni di POI e tracce», non «Temi e where non generati per POI, tracce, Elastic
+    e config»;
+  - **il «Cosa» comincia con una frase semplice** su cosa non funziona per chi usa l'app («nell'app
+    non funzionano i filtri per tema e per comune»), poi i dati che lo provano;
+  - **il «Cosa» dice sempre la proporzione**, con `su_geohub` di `diff.json`: su quante feature il
+    dato manca rispetto a quelle che su Geohub ce l'hanno. «Partenza e arrivo mancano su 3 tracce su
+    3: tutte quelle che su Geohub li hanno» dice che l'import perde sempre il campo; «in 3 tracce
+    mancano partenza e arrivo» fa pensare a pochi record sbagliati;
+  - **ogni macro area dice come si risolve**, in una riga: «a mano da Nova, con l'action …» oppure
+    «serve una modifica al codice: possibile ticket».
+  - **Cosa**: risorsa, campo, tipo di differenza e numero di casi, con due esempi che riportano gli
+    id delle due parti e i due valori — *fonte:* l'esempio di `diff.json`, per esempio
+    «pois.geojson · name · assente: 209 casi — POI Geohub 2466 → shard 268: Geohub "Andora, Chiesa
+    dei Santi Giacomo e Filippo" / shard null». Se il gruppo ha una `possibile_causa`, riportala.
+  - **Come** ed **Esiste** come per ogni altro materiale; la causa si cerca con una sola chiamata a
+    `wm-skills:wm-codebase-research` per tutte le aree, passandogli come unici repo da leggere le
+    copie in `codice/` accanto al report (`wm-core` al commit fissato da `wm-webapp` `main`,
+    `wm-package` a quello fissato dal backend dello shard, `geohub` su `main`), **mai le copie
+    locali del dev**. Nella riga `**Fonte:**` aggiungi i commit di `codice.txt`: le cause valgono per
+    quel codice.
+  - **Interventi manuali**, sezione propria dopo le macro aree, con i due elenchi di
+    `interventi.md`: **fatti** (il problema, l'action o la modifica fatta in Nova, da quale pagina e
+    l'effetto misurato, anche quando non ha cambiato nulla) e **da fare** (il problema, l'intervento
+    proposto e la pagina di Nova). Un problema risolto con un intervento fatto non è una macro area:
+    compare solo qui.
+  - Le differenze «non visibili in questa app» (il frontend non legge il campo, o su Geohub la
+    funzione non si vede) **non sono macro aree**: vanno in una riga delle note trasversali, con la
+    funzione e la condizione. Lo stesso per quelle «da verificare», di cui non si è stabilito se
+    l'app mostri la funzione.
+  - **Note e vincoli trasversali**: le differenze ignorate per regola con i loro conteggi e la
+    versione delle regole, le differenze attese da segnalare (`segnalate` di `diff.json`) con i loro
+    esempi — non sono macro aree, ma chi legge il tag deve vederle — le chiavi presenti da una parte sola ancora da giudicare, le risorse non
+    scaricate e le verifiche da fare a mano, dalle sezioni omonime di `report.md`.
+- **`Fase: tag-creation`** —
+  - la verifica delle citazioni non passa da Drive: per ogni esempio citato, controlla con `jq` che
+    la coppia di id e il valore siano davvero in `diff.json`. Un esempio che non si trova si
+    corregge;
+  - **niente notebook NotebookLM** e niente riga `**Notebook:**`: non c'è una call;
+  - con la scelta `aggiorna <ID>`, al posto di `create_tag` usa `update_tag` sullo stesso tag. La
+    descrizione nuova segna come risolte, in una sezione `## Risolti dalla verifica precedente`, le
+    macro aree della verifica precedente che nel report nuovo non ci sono più. Anteprima senza
+    `confirm`, poi `confirm: true` dopo il sì, come sempre.
+- **`Fase: candidate-review`** — non si cercano ticket già esistenti che trattino lo stesso problema:
+  i doppioni li gestisce il dev, eliminandoli e lasciando che si ricreino dentro il tag.
+- **Alla fine**, dopo `Fase: tag-update` o quando il dev decide di fermarsi, cancella la copia del
+  codice accanto al report, come dice `Fase: pulizia` di `wm-geohub-import-check`
+  (`rm -rf <cartella del report>/codice`), e dillo al dev in una riga.
+- **`Fase: ticket-loop`** — la `customer_request` del ticket va scritta come descrizione del problema
+  per il team, come in oc:8663, non come risposta a qualcuno: scriverla fa partire una notifica.
 
 ---
 

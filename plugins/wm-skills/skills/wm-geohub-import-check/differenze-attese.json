@@ -1,0 +1,129 @@
+{
+  "versione": 4,
+  "nota": "Differenze che ogni import da Geohub a uno shard produce per costruzione. Una regola normalizza un valore o dichiara attesa una chiave: non toglie mai un campo dal confronto. Si amplia solo quando una verifica rivela una differenza nuova che il team ha giudicato innocua, e ogni ampliamento alza la versione.",
+  "regole": [
+    {
+      "codice": "id_nuovi",
+      "descrizione": "Sullo shard app, tracce, POI, media, layer e tassonomie hanno id nuovi; il legame passa da geohub_id. Il valore non si confronta, la presenza sì; per le liste di id si confronta il numero.",
+      "tipo": "valore_diverso_atteso",
+      "chiavi": [
+        "id",
+        "app_id",
+        "user_id",
+        "layers",
+        "layer",
+        "taxonomy.activity",
+        "taxonomy.theme",
+        "taxonomy.poi_type",
+        "taxonomy.poi_types",
+        "taxonomy.when"
+      ]
+    },
+    {
+      "codice": "app_geohubid",
+      "descrizione": "Nel config.json dello shard APP.geohubId contiene l'id dello shard (AppConfigService.php:127).",
+      "tipo": "valore_diverso_atteso",
+      "chiavi": [
+        "APP.geohubId"
+      ]
+    },
+    {
+      "codice": "prefissi_url",
+      "descrizione": "Immagini, file e icone stanno su un altro bucket con un'altra struttura di percorso: due URL http(s) si considerano uguali. Presenza e numero delle immagini si controllano a parte, gli originali a campione.",
+      "tipo": "url"
+    },
+    {
+      "codice": "date",
+      "descrizione": "created_at e updated_at sono le date della copia sullo shard.",
+      "tipo": "valore_diverso_atteso",
+      "chiavi": [
+        "created_at",
+        "updated_at"
+      ]
+    },
+    {
+      "codice": "chiavi_solo_shard",
+      "descrizione": "Chiavi che esistono solo sullo shard e non corrispondono a nulla su Geohub.",
+      "tipo": "chiave_solo_shard",
+      "chiavi": [
+        "geohub_id",
+        "geohub_synced_at",
+        "import_method",
+        "source",
+        "source_id",
+        "mbtiles",
+        "slope",
+        "taxonomy_wheres_show_first",
+        "code",
+        "icon",
+        "type",
+        "color",
+        "taxonomy_where",
+        "taxonomyWheres"
+      ]
+    },
+    {
+      "codice": "where_osmfeatures",
+      "descrizione": "Sullo shard le where OSMFeatures (regioni, province, comuni) si aggiungono a quelle di Geohub: le where si confrontano per nome, e i nomi in più sullo shard sono attesi.",
+      "tipo": "where"
+    },
+    {
+      "codice": "where_geometria",
+      "descrizione": "Sullo shard le where si calcolano dall'intersezione della geometria con OSMFeatures; su Geohub erano assegnate a mano. Una where di Geohub che la geometria non tocca (un comune vicino, un punto sul confine) manca sullo shard: è attesa, ma si segnala nel report e non passa a wm-tag. Vale solo se lo shard ha già where OSMFeatures su quella feature; altrimenti resta una differenza, con la sincronizzazione come possibile causa. Aggiunta dopo la verifica di app 28 → maphubdev 3 del 30/09/2026 (POI 2404, tracce 31688 e 31697).",
+      "tipo": "where",
+      "segnala": true
+    },
+    {
+      "codice": "elastic_nome_una_lingua",
+      "descrizione": "Solo in Elastic: un oggetto con una sola lingua da una parte e una stringa con lo stesso testo dall'altra sono uguali (su app 28 -> 3 il nome delle tracce).",
+      "tipo": "elastic_una_lingua"
+    },
+    {
+      "codice": "chiavi_non_usate",
+      "descrizione": "Chiavi che il frontend (wm-core) non legge: una differenza su di esse non ha effetto per chi usa l'app. gpx_url, kml_url, geojson_url e user_id compaiono in wm-core solo nella definizione dei tipi (types/model.ts:53-71); author_email, user_can_download, dem_data e manual_data non compaiono; in Elastic doc, name_keyword e searchable sono campi interni dell'indice. Verificato su wm-core il 30/09/2026: se il frontend comincia a usarne una, va tolta da qui.",
+      "tipo": "chiave_non_usata",
+      "chiavi": [
+        "gpx_url",
+        "kml_url",
+        "geojson_url",
+        "user_id",
+        "author_email",
+        "user_can_download",
+        "dem_data",
+        "manual_data",
+        "elastic:doc",
+        "elastic:name_keyword",
+        "elastic:searchable"
+      ]
+    },
+    {
+      "codice": "valori_solo_shard",
+      "descrizione": "Dati che lo shard calcola e Geohub non ha: un valore in più sullo shard non è un dato perso (slope, la pendenza della traccia).",
+      "tipo": "valore_solo_shard",
+      "chiavi": [
+        "slope"
+      ]
+    },
+    {
+      "codice": "numeri_come_testo",
+      "descrizione": "Lo stesso numero scritto come testo da una parte e come numero, o con decimali diversi, dall'altra (\"16\" e \"16.00\", \"318\" e 318).",
+      "tipo": "numero_testo"
+    },
+    {
+      "codice": "svg_spazi",
+      "descrizione": "Lo stesso SVG a meno di spazi e a capo.",
+      "tipo": "svg"
+    },
+    {
+      "codice": "chiavi_vuote",
+      "descrizione": "Chiavi presenti solo sullo shard ma vuote su tutte le feature: non portano dati.",
+      "tipo": "chiave_vuota"
+    },
+    {
+      "codice": "poi_type_generico",
+      "descrizione": "Un POI senza tipo su Geohub riceve sullo shard il tipo generico «Punto di interesse» (poi_type «poi», identificatore poi_type_poi: wm-package EcPoi.php:276-280), e nell'app compare quell'etichetta. È il comportamento dello shard: si segnala nel report e nelle note del tag, non è un problema da correggere. Aggiunta dopo la verifica di app 28 → maphubdev 3 del 01/10/2026 (7 POI).",
+      "tipo": "poi_type_generico",
+      "segnala": true
+    }
+  ]
+}
