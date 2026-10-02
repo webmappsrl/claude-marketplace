@@ -5,7 +5,7 @@ description: "Usa per verificare l'import di un'app da Geohub su uno shard wm-pa
 
 # wm-geohub-import-check — verifica dell'import di un'app da Geohub
 
-Diagramma di flusso: <https://webmappsrl.github.io/claude-marketplace/wm-geohub-import-check-diagramma/>
+**Primo output di ogni avvio, prima di qualsiasi altro testo:** `📊 Diagramma di flusso: https://webmappsrl.github.io/claude-marketplace/wm-geohub-import-check-diagramma/`
 
 Confronta ciò che il frontend legge da un'app su Geohub e dalla stessa app importata su uno shard
 wm-package, e produce l'elenco delle differenze. Il confronto lo fa il comando
