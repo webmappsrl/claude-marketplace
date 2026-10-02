@@ -1080,7 +1080,7 @@ Mostra all'utente il nome del branch creato e attendi conferma prima di proceder
 ### execution: implementation
 
 **Regola traduzioni (obbligatoria):** ogni testo traducibile introdotto dall'implementazione deve:
-- avere il testo base nella **lingua di default del repo** (rilevata in Fase: reverse-interaction — solitamente inglese, ma verifica)
+- avere la **chiave in inglese**, sempre, qualunque sia la lingua di default del repo: `APP_LOCALE` (o l'equivalente dello stack) decide solo quale traduzione compare, non la lingua della chiave. Per questo va sempre aggiunta anche la traduzione nella lingua di default: con `APP_LOCALE=it`, la voce in `it.json`
 - avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase: reverse-interaction)
 - non lasciare chiavi mancanti in nessun file di lingua esistente
 
