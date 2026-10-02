@@ -1,0 +1,23 @@
+name: Parametri posizionali nelle skill
+
+# Claude Code sostituisce $1, $2, … nei file delle skill con gli argomenti di avvio, anche dentro
+# i blocchi di codice: il comando arriva rotto al modello senza alcun errore visibile.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'plugins/*/skills/**'
+      - '.github/scripts/verifica-segnaposto.sh'
+  pull_request:
+    paths:
+      - 'plugins/*/skills/**'
+      - '.github/scripts/verifica-segnaposto.sh'
+  workflow_dispatch:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./.github/scripts/verifica-segnaposto.sh

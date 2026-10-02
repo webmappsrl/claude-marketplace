@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Diagramma di flusso della skill wm-geohub-import-check: le fasi della verifica dell'import di un'app da Geohub a uno shard wm-package, fino al passaggio del report a wm-tag.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500&family=Roboto:ital,wght@0,400;0,700;1,400&family=Roboto+Mono:wght@400;500&display=swap">
+<title>wm-geohub-import-check — Diagramma di flusso</title>
+<style>
+  :root {
+    --ink: #000000;
+    --ink-soft: #666666;
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --line: #dddddd;
+    --accent: #f59431;
+    --accent-soft: #e8e8e9;
+    --steel: #005485;
+    --good: #007284;
+    --violet: #b9586a;
+    --mono: "Roboto Mono", Menlo, Consolas, monospace;
+    --sans: Roboto, Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #000000;
+      --ink-soft: #666666;
+      --paper: #ffffff;
+      --panel: #ffffff;
+      --line: #dddddd;
+      --accent: #f59431;
+      --accent-soft: #e8e8e9;
+      --steel: #005485;
+      --good: #007284;
+      --violet: #b9586a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #000000;
+    --ink-soft: #666666;
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --line: #dddddd;
+    --accent: #f59431;
+    --accent-soft: #e8e8e9;
+    --steel: #005485;
+    --good: #007284;
+    --violet: #b9586a;
+  }
+  :root[data-theme="light"] {
+    --ink: #000000;
+    --ink-soft: #666666;
+    --paper: #ffffff;
+    --panel: #ffffff;
+    --line: #dddddd;
+    --accent: #f59431;
+    --accent-soft: #e8e8e9;
+    --steel: #005485;
+    --good: #007284;
+    --violet: #b9586a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 56px 28px 80px;
+  }
+
+  .intro {
+    max-width: 74ch;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 28px;
+    align-items: stretch;
+    margin-bottom: 40px;
+  }
+
+  .layout > .schematic,
+  .layout > .detail-panel {
+    height: 100%;
+  }
+
+  @media (max-width: 980px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .layout > .schematic,
+    .layout > .detail-panel {
+      height: auto;
+    }
+
+    .detail-panel {
+      max-height: 70vh;
+    }
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--steel);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    background: var(--steel);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.6rem, 3.6vw, 2.3rem);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 14px 0 6px;
+    text-wrap: balance;
+  }
+
+  .sub {
+    color: var(--ink-soft);
+    font-size: 1rem;
+    max-width: 62ch;
+    line-height: 1.55;
+    margin: 0 0 34px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+
+  .chip {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 5px 10px;
+    color: var(--ink-soft);
+    background: var(--panel);
+  }
+
+  .schematic {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 34px 22px 22px;
+  }
+
+  .schematic::before,
+  .schematic::after,
+  .corner-br,
+  .corner-bl {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--accent);
+    border-style: solid;
+  }
+  .schematic::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .schematic::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .schematic-label {
+    position: absolute;
+    top: -11px;
+    left: 20px;
+    background: var(--panel);
+    padding: 0 8px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .diagram-scroll {
+    overflow-x: auto;
+  }
+
+  pre.mermaid {
+    display: flex;
+    /* Il diagramma è più largo del riquadro che lo contiene: centrarlo ne farebbe
+       finire metà fuori dal bordo sinistro, irraggiungibile anche scorrendo.
+       Parte da sinistra e lo scorrimento orizzontale di .diagram-scroll fa il resto. */
+    justify-content: flex-start;
+    min-width: 560px;
+  }
+
+  /* L'SVG generato è largo circa 1600px: se lo si lascia adattare al contenitore viene
+     scalato per entrare in larghezza e poi centrato verticalmente nell'altezza dichiarata,
+     lasciando centinaia di pixel di vuoto sopra il disegno. Tenendo la larghezza naturale
+     il diagramma resta leggibile e lo scorrimento orizzontale di .diagram-scroll fa il
+     resto. */
+  pre.mermaid svg {
+    max-width: none;
+    height: auto;
+  }
+
+  section.legend {
+    margin-bottom: 40px;
+  }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px 24px;
+  }
+
+  .legend-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .swatch {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    margin-top: 6px;
+    border-radius: 2px;
+  }
+
+  .legend-item h3 {
+    margin: 0 0 3px;
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  .legend-item p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .swatch.phase { background: var(--steel); }
+  .swatch.gate { background: var(--accent); }
+  .swatch.branch { background: var(--good); }
+  .swatch.subagent { background: var(--violet); }
+  .swatch.external {
+    background: none;
+    border: 1.5px dashed var(--ink-soft);
+  }
+
+  .detail-panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 34px 22px 22px;
+    overflow-y: auto;
+  }
+
+  .detail-panel::before,
+  .detail-panel::after,
+  .detail-panel .corner-bl,
+  .detail-panel .corner-br {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-color: var(--steel);
+    border-style: solid;
+  }
+  .detail-panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .detail-panel::after { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .detail-panel .corner-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .detail-panel .corner-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+  .detail-panel .schematic-label {
+    color: var(--steel);
+  }
+
+  .detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .detail-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .detail-item h3 {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .detail-item .tag {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  .tag.phase { color: var(--steel); border: 1px solid var(--steel); }
+  .tag.gate { color: var(--accent); border: 1px solid var(--accent); }
+  .tag.subagent { color: var(--violet); border: 1px solid var(--violet); }
+  .tag.branch { color: var(--good); border: 1px solid var(--good); }
+
+  .detail-item p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 62ch;
+  }
+
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--ink-soft);
+  }
+
+  footer a {
+    color: var(--steel);
+  }
+
+  a { color: var(--steel); }
+
+  /* Design system Webmapp (tokens.json): un solo tema «Carta», titoli in Montserrat Medium
+     `petrolio`, testo in Roboto `testo`, spigoli vivi (`raggio-0`) e niente ombre. Gli accenti
+     sono i colori del logo; `logo-arancio` non regge come testo (2,3:1), quindi si usa solo
+     come campitura. */
+  :root { color-scheme: light; --titoli: "Montserrat Medium", Montserrat, Arial, sans-serif; }
+  h1, h2, h3 { font-family: var(--titoli); font-weight: 500; color: #005485; }
+  *, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; }
+  .schematic-label { color: #005485; }
+  .tag.gate { color: #000000; background: #f59431; border-color: #f59431; }
+</style>
+
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">wm-skills · claude-marketplace</div>
+  <h1>wm-geohub-import-check — diagramma di flusso</h1>
+  <p class="sub">
+    Mappa delle fasi eseguite da <code>wm-geohub-import-check</code>, la skill che verifica
+    l'import di un'app da Geohub a uno shard <code>wm-package</code> confrontando ciò che il
+    frontend legge dalle due parti, fino al passaggio del report a <code>wm-tag</code>. Ogni
+    modifica al repo <code>claude-marketplace</code> rigenera questo diagramma sullo stesso URL.
+  </p>
+
+  <div class="meta-row">
+    <span class="chip">skill: wm-geohub-import-check</span>
+    <span class="chip">repo: webmappsrl/claude-marketplace</span>
+    <span class="chip">rif: bin/geohub-import-check</span>
+    <span class="chip">rif: differenze-attese.json</span>
+  </div>
+
+  <div class="layout">
+  <div class="schematic">
+    <span class="schematic-label">workflow</span>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+    <div class="diagram-scroll">
+<pre class="mermaid">
+flowchart TD
+    ING["Fase: ingresso\nDue URL del frontend → shard, id e indirizzi letti da wm-types"] --> PRE["Fase: prerequisiti\nLegge la scaletta aggiornata; una domanda: i passi sono fatti?"]
+    ING -- "shard sconosciuto" --> STOP1[["stop\nnessun indirizzo indovinato"]]
+    PRE --> CONF["Fase: confronto\nscarica e confronta: file pubblici su disco, differenze campo per campo"]
+    CONF -- "geohub_id diverso" --> STOP2[["stop\nle due app non sono la stessa"]]
+    CONF -. applica .-> REG(["differenze-attese.json\nrumore e differenze attese, con i conteggi"])
+    CONF --> RIE["Fase: riepilogo\nUna riga: confronto fatto, dov'è il report"]
+    RIE --> COD["Fase: codice-riferimento\nCopia da GitHub al commit fissato da chi pubblica"]
+    COD --> COR{{"Fase: correzioni-manuali\nSolo interventi da Nova, lanciati dal dev"}}
+    COR -. delega la ricerca a .-> RES(["wm-codebase-research\ncause e action di Nova sul codice scaricato"])
+    COR -- "intervento fatto: nuovo giro" --> CONF
+    COR -- "restano solo i bug" --> TAGE["Fase: tag-esistente\nC'è già un tag [COLLAUDO] per l'app?"]
+    TAGE --> PASS["Fase: passaggio-wm-tag\nUna domanda; poi report, diff, interventi e codice a wm-tag"]
+    PASS -. passa il controllo a .-> WMTAG(["wm-skills:wm-tag\nmateriale: report di verifica dell'import"])
+    WMTAG -. alla fine .-> PUL["Fase: pulizia\nCancella la copia del codice, il report resta"]
+    PASS -- "il dev non passa a wm-tag" --> PUL
+
+    classDef phase fill:#005485,stroke:#005485,color:#fff;
+    classDef gate fill:#f59431,stroke:#f59431,color:#000,stroke-width:3px;
+    classDef subagent fill:#b9586a,stroke:#b9586a,color:#fff;
+    classDef external fill:none,stroke:#666666,color:#666666,stroke-dasharray: 4 3;
+    classDef branch fill:#007284,stroke:#007284,color:#fff;
+
+    class ING,PRE,CONF,RIE,COD,TAGE,PASS,PUL phase;
+    class COR,STOP1,STOP2 gate;
+    class RES subagent;
+    class REG,WMTAG external;
+</pre>
+    </div>
+  </div>
+
+  <div class="detail-panel">
+    <span class="schematic-label">dettaglio fasi</span>
+    <div class="corner-bl"></div>
+    <div class="corner-br"></div>
+    <div class="detail-list">
+      <div class="detail-item">
+        <h3>Fase: ingresso<span class="tag phase">fase</span></h3>
+        <p>Il dev indica i due indirizzi del frontend: l'app su Geohub e la stessa app sullo shard, per esempio <code>https://28.app.geohub.webmapp.it/</code> e <code>https://3.maphubdev.maphub.it/</code>. Da ciascuno il comando <code>geohub-import-check</code> ricava shard e id dell'app con la stessa regola del frontend, e prende gli indirizzi di S3, API ed Elastic dalla tabella degli shard di <code>wm-types</code>, letta ogni volta da GitHub. Se GitHub non risponde usa una copia locale e lo dice in evidenza; se lo shard non è nella tabella, si ferma: mai indirizzi indovinati.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: prerequisiti<span class="tag phase">fase</span></h3>
+        <p>Una sola domanda: sono stati fatti i passi della scaletta di migrazione che rigenerano ciò che il frontend legge? L'elenco non è scritto nella skill: si legge ogni volta dalla scaletta, così segue le sue modifiche. Se la scaletta non si legge, la skill usa l'ultimo elenco noto e lo dice. Senza questi passi, il report si riempie di falsi allarmi.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: confronto<span class="tag phase">fase</span></h3>
+        <p>Il comando scarica in sola lettura i file pubblici delle due app — config, icone, <code>pois.geojson</code>, elenco Elastic e il file di ogni traccia — in una cartella temporanea, mai nel repo. Prima controlla che l'app dello shard abbia <code>geohub_id</code> uguale all'id Geohub. Poi abbina POI e tracce tramite <code>geohub_id</code> e confronta campo per campo, compreso il tipo del valore: un oggetto salvato come testo è una differenza anche se il testo è identico. Le regole di <code>differenze-attese.json</code> tolgono il rumore — id nuovi, chiavi che il frontend non legge, numeri scritti come testo — e il report dice quanti casi ha ignorato ciascuna.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: riepilogo<span class="tag phase">fase</span></h3>
+        <p>Al dev non arrivano l'elenco delle differenze né i loro conteggi, che sono il materiale su cui lavora la skill: solo una riga che dice che il confronto è fatto e dove sta il report completo. Quello che interessa al dev sono gli interventi da fare, e arrivano nella fase successiva. Il dettaglio di un gruppo si chiede quando serve. Il report chiude con le verifiche che via HTTP non si fanno: coda e log dell'import, ruolo del proprietario, UGC, webapp aperta nel browser.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: codice-riferimento<span class="tag phase">fase</span></h3>
+        <p>Le cause e gli interventi si cercano nel codice che gira davvero, mai nelle copie locali del dev: la skill scarica da GitHub ogni repo al commit fissato da chi pubblica l'applicazione. <code>wm-core</code> al commit che usa il frontend, che è un solo bundle per tutti gli shard pubblicato da <code>wm-webapp</code> <code>main</code>; <code>wm-package</code> al commit fissato dal backend dello shard verificato, sul branch <code>develop</code> per uno shard di sviluppo e <code>main</code> per la produzione; <code>geohub</code> su <code>main</code>. I commit finiscono nel tag.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: correzioni-manuali<span class="tag gate">hard-gate</span></h3>
+        <p>Il tag si crea solo per i problemi che non si risolvono a mano: tutto il resto è bug. Prima si scarta ciò che nell'app su Geohub non si vede: se il frontend non legge quel campo, o lo legge una funzione che nel config di Geohub dell'app è spenta, per esempio un filtro non attivo, l'import non ha rotto nulla e la differenza resta solo nel report. Per ogni gruppo rimasto la skill cerca nel codice scaricato, tramite <code>wm-codebase-research</code>, un intervento che il dev possa fare dalla piattaforma Laravel dello shard — un'action di Nova o la modifica di pochi record dall'interfaccia, mai comandi da terminale — e lo propone con il nome dell'action e la pagina da cui lanciarla. Il dev sceglie se farlo subito — si rifà il confronto, e se il problema sparisce non entra nel tag — oppure lasciarlo da fare, e allora va nel tag fra gli interventi manuali da fare. Ogni intervento fatto si registra con il suo effetto misurato, anche quando non ha cambiato nulla.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: tag-esistente<span class="tag phase">fase</span></h3>
+        <p>Cerca un tag <code>[COLLAUDO][&lt;APP&gt;]</code> già esistente per la stessa app, con una ricerca ristretta a quel nome: la ricerca generica sui tag di collaudo porterebbe nel contesto descrizioni di altri clienti. Se c'è, il dev sceglie se aggiornarlo con il nuovo report, crearne uno nuovo o non crearne.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: passaggio-wm-tag<span class="tag phase">fase</span></h3>
+        <p>Una domanda, e solo dopo il sì il report passa a <code>wm-tag</code> come «report di verifica dell'import», insieme alle differenze, agli interventi fatti e al codice di riferimento. <code>wm-tag</code> crea il tag con una macro area per ogni gruppo di differenze rimasto e la sezione degli interventi manuali, poi vaglia i ticket uno per volta: tutto sull'Orchestrator di produzione, sempre con anteprima e conferma.</p>
+      </div>
+      <div class="detail-item">
+        <h3>Fase: pulizia<span class="tag phase">fase</span></h3>
+        <p>La copia del codice scaricata da GitHub serve solo a cercare cause e interventi, e pesa centinaia di MB. Quando <code>wm-tag</code> ha finito, oppure se il dev non gli passa il report, la skill la cancella e lo dice. Report, differenze, interventi e file scaricati delle due app restano nella cartella temporanea, per poterli consultare.</p>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <section class="legend">
+    <h2>Chiave di lettura</h2>
+    <div class="legend-grid">
+      <div class="legend-item">
+        <span class="swatch phase"></span>
+        <div>
+          <h3>Fase</h3>
+          <p>Uno step sequenziale della skill, eseguito nel contesto principale della conversazione.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch gate"></span>
+        <div>
+          <h3>Hard-gate</h3>
+          <p>Punto di blocco: la skill si ferma (shard sconosciuto, app diverse) oppure non passa al tag finché restano differenze risolvibili da Nova.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch subagent"></span>
+        <div>
+          <h3>Agente</h3>
+          <p><code>wm-codebase-research</code> legge il codice scaricato da GitHub nel proprio contesto e restituisce solo le conclusioni, ciascuna con una prova verificabile.</p>
+        </div>
+      </div>
+      <div class="legend-item">
+        <span class="swatch external"></span>
+        <div>
+          <h3>Esterno alla skill</h3>
+          <p>File di regole letto dal comando, oppure skill a cui passa il controllo: <code>wm-tag</code>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>wm-geohub-import-check · sola lettura sugli ambienti verificati · interventi solo da Nova, lanciati dal dev</span>
+    <span><a href="https://github.com/webmappsrl/claude-marketplace">webmappsrl/claude-marketplace</a></span>
+  </footer>
+</div>
+
+<script type="module">
+// Il diagramma è scritto come <pre class="mermaid">. Su GitHub Pages il runtime non lo
+// fornisce nessuno — a differenza dell'Artifact Claude da cui questa pagina proviene —
+// quindi va importato qui.
+//
+// Va importato come MODULO: dalla versione 11 Mermaid distribuisce solo build ESM, che non
+// definiscono alcun `mermaid` globale. Caricarlo con un <script src> classico non dà errore
+// e non disegna nulla: la pagina resta con il riquadro vuoto e sembra un problema di CSS.
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.esm.min.mjs';
+
+const scuro = window.matchMedia('(prefers-color-scheme: dark)');
+const sorgenti = new Map();
+document.querySelectorAll('pre.mermaid').forEach((el, i) => sorgenti.set(i, el.textContent));
+
+function configura() {
+  const buio = scuro.matches;
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+    theme: 'base',
+    flowchart: { useMaxWidth: false },
+    themeVariables: {
+      background: '#ffffff',
+      mainBkg: '#ffffff',
+      primaryColor: '#ffffff',
+      primaryTextColor: '#000000',
+      primaryBorderColor: '#005485',
+      lineColor: '#666666',
+      nodeBorder: '#005485',
+      edgeLabelBackground: '#ffffff',
+      titleColor: '#005485',
+      darkMode: false,
+      fontSize: '16px',
+      fontFamily: 'Roboto, Arial, sans-serif'
+    },
+    themeCSS: '.node rect, .node circle, .node polygon, .node path { stroke-width: 2px; }'
+  });
+}
+
+async function disegna() {
+  configura();
+  await mermaid.run({ querySelector: 'pre.mermaid' });
+}
+
+
+
+await disegna();
+
+// I colori dei nodi sono decisi al momento del render, non dal CSS: se l'utente cambia il
+// tema di sistema il diagramma va ridisegnato dalla sorgente originale.
+scuro.addEventListener('change', async () => {
+  document.querySelectorAll('pre.mermaid').forEach((el, i) => {
+    el.textContent = sorgenti.get(i);
+    el.removeAttribute('data-processed');
+    el.style.display = '';
+  });
+  await disegna();
+});
+</script>
+<script>
+// Il diagramma è scritto come <pre class="mermaid">. Su GitHub Pages il runtime non è
+// fornito dalla piattaforma — a differenza dell'Artifact Claude da cui questa pagina
+// proviene — quindi va caricato qui: senza, la pagina mostrerebbe il testo grezzo del
+// flowchart e sembrerebbe un problema di CSS.
+(function () {
+  if (typeof mermaid === 'undefined') return;
+
+  var scuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+  function stile() {
+    var buio = !!(scuro && scuro.matches);
+    return {
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      flowchart: { useMaxWidth: false },
+      themeVariables: {
+        background: '#ffffff',
+        mainBkg: '#ffffff',
+        primaryColor: '#ffffff',
+        primaryTextColor: '#000000',
+        primaryBorderColor: '#005485',
+        lineColor: '#666666',
+        nodeBorder: '#005485',
+        edgeLabelBackground: '#ffffff',
+        titleColor: '#005485',
+        darkMode: false,
+        fontSize: '16px',
+        fontFamily: 'Roboto, Arial, sans-serif'
+      },
+      themeCSS: '.node rect, .node circle, .node polygon, .node path { stroke-width: 2px; }'
+    };
+  }
+
+  function disegna() {
+    mermaid.initialize(stile());
+    mermaid.run({ querySelector: 'pre.mermaid' });
+  }
+
+  disegna();
+  // Ridisegna se l'utente cambia il tema di sistema: i colori dei nodi sono decisi
+  // al momento del render, non dal CSS della pagina.
+  if (scuro && scuro.addEventListener) {
+    scuro.addEventListener('change', function () {
+      document.querySelectorAll('pre.mermaid').forEach(function (el) {
+        if (el.dataset.originale) { el.textContent = el.dataset.originale; }
+        el.removeAttribute('data-processed');
+      });
+      disegna();
+    });
+  }
+  document.querySelectorAll('pre.mermaid').forEach(function (el) {
+    el.dataset.originale = el.textContent;
+  });
+})();
+</script>
+</body>
+</html>

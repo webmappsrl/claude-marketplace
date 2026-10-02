@@ -1,0 +1,272 @@
+{
+  "hits": [
+    {
+      "cai_scale": null,
+      "feature_image": "",
+      "taxonomyWheres": [
+        "Corsica",
+        "Francia"
+      ],
+      "distance": 2.2,
+      "start": [
+        9.423114596,
+        42.317318152
+      ],
+      "searchable": "\"{it:Boucle 1 \\\\u2013 Circuit de Santa Maria Assunta} {it:Questo piccolo percorso di meno di un'ora \\u00e8 ideale per le famiglie e gli appassionati di passeggiate bucoliche! Oltre a scoprire la cappella romanica di Santa Maria Assunta, questa escursione a piedi vi permetter\\u00e0 di apprezzare l'Alisgiani (Alesani), la montagna priservata e la calma delle alture. Alla fine del vostro percorso, fate un piccolo passo per avvicinarvi al fiume e concedervi una pausa fresca, prima di tornare sui vostri passi per concludere il vostro giro percorrendo i vicoli e i dintorni del borgo di L\\u2019Ortale.,en:This very small loop of less than an hour is ideal for families and lovers of bucolic walks! In addition to discovering the Romanesque chapel of Santa Maria Assunta (Assumption of the Virgin Mary), this hike will allow you to appreciate the Alisgiani (Alesani) region, the preserved mountain and the calm of the heights. At the end of your journey, make a short detour to get closer to the river and give yourself a cool break, before retracing your steps to complete your loop by walking through the alleys and surroundings of the village of L\\u2019Ortale.,fr:Cette toute petite boucle de moins d\\u2019une heure est id\\u00e9ale pour les familles et les adeptes de balades bucoliques ! En plus de d\\u00e9couvrir la chapelle romane Santa Maria Assunta (Assomption de la Vierge Marie), cette randonn\\u00e9e vous permettra d\\u2019appr\\u00e9cier l\\u2019Alisgiani (Alesani), la montagne pr\\u00e9serv\\u00e9e et le calme des hauteurs. A la fin de votre parcours, faites un petit crochet pour vous rapprocher de la rivi\\u00e8re et vous offrir une pause fraicheur, avant de revenir sur vos pas pour terminer votre boucle en arpentant les ruelles et alentours du village de L\\u2019Ortale.} []   {it:itinera-corsica} {it:Escursionismo,en:Hiking} \"",
+      "taxonomyIcons": {
+        "hiking": {
+          "label": {
+            "en": "Hiking",
+            "it": "Escursionismo"
+          },
+          "icon_name": "txn-hiking"
+        }
+      },
+      "duration_forward": 107,
+      "themes": [
+        "itinera-corsica"
+      ],
+      "ref": null,
+      "name_keyword": "Boucle 1 – Circuit de Santa Maria Assunta",
+      "ascent": 363,
+      "activities": [
+        "hiking"
+      ],
+      "name": {
+        "it": "Boucle 1 – Circuit de Santa Maria Assunta"
+      },
+      "layers": [
+        131,
+        134
+      ],
+      "doc": {
+        "name": {
+          "keyword": "Boucle 1 – Circuit de Santa Maria Assunta"
+        }
+      },
+      "end": [
+        9.423137298,
+        42.317315983
+      ],
+      "from": "",
+      "id": 31704,
+      "to": "",
+      "taxonomyThemes": [
+        "itinera-corsica"
+      ],
+      "strokeColor": "",
+      "taxonomyActivities": [
+        "hiking"
+      ]
+    },
+    {
+      "cai_scale": null,
+      "feature_image": "https://ecmedia.s3.eu-central-1.amazonaws.com/EcMedia/Resize/400x200/6069_400x200.jpg",
+      "taxonomyWheres": [
+        "Liguria",
+        "Riomaggiore",
+        "Arcola",
+        "La Spezia",
+        "Monterosso al Mare",
+        "Vernazza",
+        "Levanto"
+      ],
+      "distance": 74.6,
+      "start": [
+        9.913486,
+        44.120922
+      ],
+      "searchable": "\"{it:La Spezia \\\\u2013 Itinerario 2} {it:L\\u2019itinerario congiunge La Spezia (Chiesa di San Venerio, in localit\\u00e0 Migliarina) con Portovenere, ove sono ubicati le chiese di San Lorenzo e San Pietro. L\\u2019itinerario interessa le pendici collinari di La Spezia alle spalle della citt\\u00e0, passando per Biassa (SP 370, Via delle Cinque Terre) per poi scendere e collegarsi alla litoranea che da Fabiano conduce a Portovenere. La Chiesa di San Lorenzo \\u00e8 interna al centro storico, mentre San Pietro occupa il caposaldo estremo della penisola ove sorge l\\u2019antico nucleo ed \\u00e8 raggiungibile solo a piedi.,en:The itinerary connects La Spezia (Church of San Venerio, in the locality of Migliarina) with Portovenere, where the churches of San Lorenzo and San Pietro are located. The itinerary covers the hilly slopes of La Spezia behind the city, passing through Biassa (SP 370, Via delle Cinque Terre) and then descending and connecting to the coast road that leads from Fabiano to Portovenere. The Church of San Lorenzo is inside the historic center, while San Pietro occupies the extreme stronghold of the peninsula where the ancient nucleus stands and can only be reached on foot.,fr:L\\u2019itin\\u00e9raire consiste en un premier tron\\u00e7on c\\u00f4tier qui affecte le centre historique de Levanto. De l\\u00e0, pour atteindre les deux sites vallonn\\u00e9s de Montale Ligure (o\\u00f9 se trouve la Pieve di San Siro) et Celasco (site du ch\\u00e2teau du m\\u00eame nom, sur le Monte Bardellone), vous devez prendre le d\\u00e9tour de la route nationale 566 et suivre la route des cr\\u00eates, qui m\\u00e8ne ensuite le long de la SP 38 vers Monterosso (Sant\\u2019Antonio del Mesco, ancien ermitage, accessible par un chemin et une vue panoramique sur la mer) et le long de la SP 51 \\u00abStrada dei Santuari\\u00bb Vernazza (\\u00c9glise de Santa Margherita, donnant directement sur la mer). Avec une autre d\\u00e9viation de cette route de cr\\u00eate passant par Pignone et Padivarma (SP 36 et SP 38), vous pouvez traverser la cr\\u00eate c\\u00f4ti\\u00e8re et rejoindre le centre historique de Brugnato (Cath\\u00e9drale des Saints Pierre, Lorenzo et Colombano) \\u00e0 travers l\\u2019Aurelia sur la rive du fleuve Magra.} []   {it:itinera-liguria} {it:In macchina,en:By car} \"",
+      "taxonomyIcons": {
+        "by-car": {
+          "label": {
+            "en": "By car",
+            "it": "In macchina"
+          },
+          "icon_name": "txn-car"
+        }
+      },
+      "duration_forward": 2626,
+      "themes": [
+        "itinera-liguria"
+      ],
+      "ref": null,
+      "name_keyword": "La Spezia – Itinerario 2",
+      "ascent": 7205,
+      "activities": [
+        "by-car"
+      ],
+      "name": {
+        "it": "La Spezia – Itinerario 2"
+      },
+      "layers": [
+        137,
+        132
+      ],
+      "doc": {
+        "name": {
+          "keyword": "La Spezia – Itinerario 2"
+        }
+      },
+      "end": [
+        9.611162,
+        44.166335
+      ],
+      "from": "",
+      "id": 31696,
+      "to": "",
+      "taxonomyThemes": [
+        "itinera-liguria"
+      ],
+      "strokeColor": "",
+      "taxonomyActivities": [
+        "by-car"
+      ]
+    },
+    {
+      "cai_scale": null,
+      "feature_image": "https://ecmedia.s3.eu-central-1.amazonaws.com/EcMedia/Resize/400x200/6269_400x200.jpg",
+      "taxonomyWheres": [
+        "Toscana",
+        "Lucca"
+      ],
+      "distance": 10.5,
+      "start": [
+        10.433127,
+        43.828341
+      ],
+      "searchable": "\"{it:T3 \\\\u2013 da Cerasomma a San Lorenzo a Vaccoli,en:T3 - da Cerasomma a San Lorenzo a Vaccoli} {it:Inizialmente si cammina su asfalto, attraversando i borghi ben curati di Cerasomma e Meati. Le pievi sono perfettamente inserite a margine degli abitati. Lasciata Gattaiola, si passa vicino a un\\u2019antica cava e il sentiero attraversa una zona di ulivi. Si pu\\u00f2 ammirare una splendida vista sulla citt\\u00e0 di Lucca e non solo. Inizia la parte con maggior dislivello e il sentiero ci porta a raggiungere San Lorenzo a Vaccoli, che si trova su un versante diverso del Monte Pisano dopo un tratto di bosco di lecci.,en:Initially you walk on asphalt, crossing the well-kept villages of Cerasomma and Meati. The parish churches are perfectly inserted on the edge of the inhabited areas. Leaving Gattaiola, you pass near an ancient quarry and the path crosses an area of olive trees. You can admire a splendid view over the city of Lucca and beyond. The part with the greatest difference in altitude begins and the path leads us to reach San Lorenzo a Vaccoli, which is located on a different side of Monte Pisano after a stretch of holm oak wood.,fr:Au d\\u00e9part, vous marchez sur l'asphalte en traversant les villages bien entretenus de Cerasomma et Meati. Les \\u00e9glises paroissiales sont parfaitement ins\\u00e9r\\u00e9es en bordure des zones habit\\u00e9es. En quittant Gattaiola, vous passez pr\\u00e8s d'une ancienne carri\\u00e8re et le chemin traverse une zone d'oliviers. Vous pourrez admirer une vue splendide sur la ville de Lucca et au-del\\u00e0. La partie avec le plus grand d\\u00e9nivel\\u00e9 commence et le chemin nous am\\u00e8ne \\u00e0 San Lorenzo a Vaccoli, qui se trouve sur un autre versant du Monte Pisano apr\\u00e8s une \\u00e9tendue de bois de ch\\u00eanes verts.} []   {it:itinera-toscana} {it:Escursionismo,en:Hiking} \"",
+      "taxonomyIcons": {
+        "hiking": {
+          "label": {
+            "en": "Hiking",
+            "it": "Escursionismo"
+          },
+          "icon_name": "txn-hiking"
+        }
+      },
+      "duration_forward": 279,
+      "themes": [
+        "itinera-toscana"
+      ],
+      "ref": null,
+      "name_keyword": "T3 – da Cerasomma a San Lorenzo a Vaccoli",
+      "ascent": 545,
+      "activities": [
+        "hiking"
+      ],
+      "name": {
+        "en": "T3 - da Cerasomma a San Lorenzo a Vaccoli",
+        "it": "T3 – da Cerasomma a San Lorenzo a Vaccoli"
+      },
+      "layers": [
+        131,
+        133
+      ],
+      "doc": {
+        "name": {
+          "keyword": "T3 – da Cerasomma a San Lorenzo a Vaccoli"
+        }
+      },
+      "end": [
+        10.482628,
+        43.799543
+      ],
+      "from": "Cerasomma",
+      "id": 31723,
+      "to": "San Lorenzo a Vaccoli",
+      "taxonomyThemes": [
+        "itinera-toscana"
+      ],
+      "strokeColor": "",
+      "taxonomyActivities": [
+        "hiking"
+      ]
+    }
+  ],
+  "aggregations": {
+    "themes": {
+      "doc_count": 57,
+      "count": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": "itinera-liguria",
+            "doc_count": 18
+          },
+          {
+            "key": "itinera-corsica",
+            "doc_count": 16
+          },
+          {
+            "key": "itinera-toscana",
+            "doc_count": 12
+          },
+          {
+            "key": "itinera-paca",
+            "doc_count": 6
+          },
+          {
+            "key": "itinera-sardegna",
+            "doc_count": 5
+          }
+        ]
+      }
+    },
+    "activities": {
+      "doc_count": 57,
+      "count": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": "by-car",
+            "doc_count": 37
+          },
+          {
+            "key": "hiking",
+            "doc_count": 20
+          }
+        ]
+      }
+    },
+    "layers": {
+      "doc_count": 57,
+      "count": {
+        "doc_count_error_upper_bound": 0,
+        "sum_other_doc_count": 0,
+        "buckets": [
+          {
+            "key": 132,
+            "doc_count": 37
+          },
+          {
+            "key": 131,
+            "doc_count": 20
+          },
+          {
+            "key": 137,
+            "doc_count": 18
+          },
+          {
+            "key": 134,
+            "doc_count": 16
+          },
+          {
+            "key": 133,
+            "doc_count": 12
+          },
+          {
+            "key": 135,
+            "doc_count": 6
+          },
+          {
+            "key": 136,
+            "doc_count": 5
+          }
+        ]
+      }
+    }
+  }
+}
