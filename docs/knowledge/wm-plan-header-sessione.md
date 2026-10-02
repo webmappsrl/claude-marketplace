@@ -22,7 +22,7 @@ il check è sostituito da `🔧 modalità sviluppo locale`: mai disattivato in s
 (`https://webmappsrl.github.io/claude-marketplace/wm-plan-diagramma/`). Non c'è nessun fetch da
 fare per leggerlo, nessun redeploy da eseguire e nessun URL da riscrivere: la pagina si
 ripubblica dal push che ne modifica il sorgente. I vincoli sul sorgente stanno in
-`.claude/rules/wm-plan-diagramma.md`.
+`.claude/rules/diagrammi-skill.md`.
 
 ## Come ci siamo arrivati
 

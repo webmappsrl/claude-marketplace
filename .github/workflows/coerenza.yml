@@ -1,6 +1,6 @@
 name: Coerenza fra skill e diagramma
 
-# Il diagramma del workflow è scritto a mano leggendo wm-plan/SKILL.md. Senza questo
+# I diagrammi delle skill (wm-plan, wm-geohub-import-check) sono scritti a mano leggendo il loro SKILL.md. Senza questo
 # controllo, aggiungere o rinominare una fase e dimenticare la pagina non produce alcun
 # errore: il diagramma mostra un workflow che non esiste più e nessuno se ne accorge.
 
@@ -9,12 +9,16 @@ on:
     branches: [main, develop]
     paths:
       - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'plugins/wm-skills/skills/wm-geohub-import-check/SKILL.md'
       - 'docs/guide/wm-plan-diagramma/**'
+      - 'docs/guide/wm-geohub-import-check-diagramma/**'
       - '.github/scripts/verifica-diagramma.sh'
   pull_request:
     paths:
       - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'plugins/wm-skills/skills/wm-geohub-import-check/SKILL.md'
       - 'docs/guide/wm-plan-diagramma/**'
+      - 'docs/guide/wm-geohub-import-check-diagramma/**'
       - '.github/scripts/verifica-diagramma.sh'
   workflow_dispatch:
 

@@ -83,7 +83,7 @@ Marketplace di plugin Claude Code del team Webmapp, pubblicato su GitHub come
   referenziato direttamente dall'upstream con `ref: main`
 - **`wm-skills`** — skill interne Webmapp, mantenute in questo repo sotto `plugins/wm-skills/`
 
-Le skill sono `wm-plan`, `wm-review-ticket`, `wm-tag`. **Quando si attiva ciascuna lo dice il
+Le skill sono `wm-plan`, `wm-review-ticket`, `wm-tag`, `wm-geohub-import-check`. **Quando si attiva ciascuna lo dice il
 campo `description` del suo `SKILL.md`**, che è la fonte autoritativa: non ripeterlo qui, o le
 due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, installato a parte.
 
@@ -107,10 +107,12 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 
 ### File da non modificare a mano
 
-- `plugins/wm-skills/bin/orchestrator-mcp` — binario generato: si rigenera con `build.sh`.
-- `docs/guide/wm-plan-diagramma/index.html` — il template grafico è congelato nella struttura e
-  si aggiorna solo nel contenuto, quando cambiano le fasi di `wm-plan`: i vincoli stanno in
-  `.claude/rules/wm-plan-diagramma.md`, che si carica quando tocchi quei file.
+- `plugins/wm-skills/bin/orchestrator-mcp` e `plugins/wm-skills/bin/geohub-import-check` — binari
+  generati: si rigenerano insieme con `build.sh`.
+- `docs/guide/wm-plan-diagramma/index.html` e `docs/guide/wm-geohub-import-check-diagramma/index.html`
+  — i diagrammi delle skill sono congelati nella struttura e si aggiornano solo nel contenuto,
+  quando cambiano le fasi della skill: i vincoli stanno in `.claude/rules/diagrammi-skill.md`, che
+  si carica quando tocchi quei file.
 
 ### Coupling tra skill
 
@@ -121,20 +123,25 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
 | `wm-plan` (proposta tag) | `wm-tag` | `wm-tag` crea tag dossier, con descrizione; `wm-plan` propone e crea solo etichette, cioè tag con `description` nulla. Il confine è il filtro sulla descrizione: se cambia in una delle due, verifica l'altra. |
 | `wm-plan` ↔ `wm-tag` | NotebookLM | Entrambe usano `wm-transcript-research` (che contiene il template dei notebook), la verifica `shared/verifica-citazioni.md` e i nomi dei notebook (`scrum AAAA-MM-GG`, `tag <nome del tag>`). Se cambia uno di questi, verifica l'altra skill. |
+| `wm-geohub-import-check` | `wm-tag` | `wm-tag` ha il materiale «report di verifica dell'import», con regole proprie in ogni fase. Il contratto sono i file della cartella del report, elencati in `wm-tag/SKILL.md` → `## Materiale: report di verifica dell'import`: se cambia la forma di uno di questi, verifica l'altra skill. |
 
 ## Convenzioni per le skill
 
 - **Prefisso `wm-` obbligatorio**, in kebab-case, sia sul nome della cartella sia sul campo
   `name` del frontmatter.
 - **Frontmatter**: solo `name` e `description`; niente campi extra.
+- **Niente `$1`, `$2`… nei file `.md` delle skill**, nemmeno nei blocchi di codice: Claude Code li
+  sostituisce con gli argomenti con cui si lancia la skill e il comando arriva rotto al modello.
+  Uno script con parametri va in `plugins/<plugin>/scripts/` e la skill lo chiama.
 - **Tono** imperativo e diretto, rivolto a Claude come agente che esegue istruzioni; sezioni
   `##` per le fasi, elenchi puntati per i passi atomici.
 
 ## Ambiente
 
-- **Go 1.27.1** per il server MCP (`plugins/wm-skills/mcp/go.mod`).
-- **Il binario versionato è compilato solo per `darwin/arm64`** (`build.sh`): su Linux o Mac
-  Intel va ricompilato cambiando `GOOS`/`GOARCH`, altrimenti il server MCP non parte.
+- **Go 1.27.1** per il server MCP e per il comando `geohub-import-check` (`plugins/wm-skills/mcp/go.mod`).
+- **I binari versionati sono compilati solo per `darwin/arm64`** (`build.sh`): su Linux o Mac
+  Intel vanno ricompilati cambiando `GOOS`/`GOARCH`, altrimenti né il server MCP né
+  `wm-geohub-import-check` partono.
 - Il server MCP non ascolta su alcuna porta: comunica su stdio, e il file delle credenziali si
   passa con `--auth-file`.
 
@@ -143,11 +150,14 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | Cosa | Comando |
 |---|---|
 | Validare marketplace, plugin e skill | `claude plugin validate .` |
-| Test del server MCP (quando tocchi `mcp/`) | `cd plugins/wm-skills/mcp && go test ./...` |
+| Test del codice Go, server MCP e `geohub-import-check` (quando tocchi `mcp/`) | `cd plugins/wm-skills/mcp && go test ./...` |
+| Test di `wm-geohub-import-check` (dopo `build.sh`) | `plugins/wm-skills/scripts/tests/geohub-import-check.test.sh` e `plugins/wm-skills/scripts/tests/geohub-codice-riferimento.test.sh` |
 | Ricompilare il binario MCP (versionato nel repo) | `plugins/wm-skills/mcp/build.sh` |
 | Verificare che diagramma e skill siano allineati | `./.github/scripts/verifica-diagramma.sh` |
+| Verificare che nessuna skill contenga parametri posizionali | `./.github/scripts/verifica-segnaposto.sh` |
 
-In CI girano il controllo di coerenza fra skill e diagramma e la pubblicazione delle guide.
+In CI girano il controllo di coerenza fra skill e diagramma, quello sui parametri posizionali
+nelle skill e la pubblicazione delle guide.
 
 ## Procedure
 
@@ -155,6 +165,7 @@ In CI girano il controllo di coerenza fra skill e diagramma e la pubblicazione d
 |---|---|
 | Rilasciare una versione di `wm-skills` | [docs/howto/rilascio-wm-skills.md](docs/howto/rilascio-wm-skills.md) |
 | Aggiungere una skill al plugin | [docs/howto/aggiungere-una-skill.md](docs/howto/aggiungere-una-skill.md) |
+| Verificare l'import di un'app da Geohub a uno shard | [docs/howto/verificare-un-import-geohub.md](docs/howto/verificare-un-import-geohub.md) |
 | Provare una skill in locale senza pushare | [docs/howto/test-in-locale.md](docs/howto/test-in-locale.md) |
 | Aggiornare o pinnare `superpowers` | [docs/howto/aggiornare-superpowers.md](docs/howto/aggiornare-superpowers.md) |
 | Provare `wm-transcript-research` dopo averne toccato il prompt | [docs/howto/provare-wm-transcript-research.md](docs/howto/provare-wm-transcript-research.md) |
@@ -177,8 +188,8 @@ Il resto — formato dei campi, specifica OpenAPI, ripiego se il server MCP non 
 ## Trappole
 
 Stanno in `.claude/rules/`, con il frontmatter `paths:` che le carica quando si toccano i file
-corrispondenti: `wm-plan-diagramma` tiene i vincoli del template grafico pubblicato su GitHub
-Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
+corrispondenti: `diagrammi-skill` tiene i vincoli dei diagrammi delle skill pubblicati su GitHub
+Pages, congelati nella struttura e aggiornati solo nel contenuto.
 
 ## Conoscenza
 
@@ -195,3 +206,4 @@ Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
 | `wm-review-ticket` | Contratto artefatti letto a runtime, stash pre-checkout | [docs/knowledge/wm-review-ticket.md](docs/knowledge/wm-review-ticket.md) |
 | Le trascrizioni come fonte | NotebookLM che legge le call, notebook per giorno e per tag, attribuzioni e verifica delle citazioni | [docs/knowledge/wm-transcript-research.md](docs/knowledge/wm-transcript-research.md) |
 | Proposta dei tag in `wm-plan` | I due momenti, filtro sulle descrizioni, conferma per singolo tag | [docs/knowledge/wm-plan-proposta-tag.md](docs/knowledge/wm-plan-proposta-tag.md) |
+| `wm-geohub-import-check` | Perché il confronto via HTTP, il comando Go, il codice al commit fissato, gli interventi da Nova | [docs/knowledge/wm-geohub-import-check.md](docs/knowledge/wm-geohub-import-check.md) |
