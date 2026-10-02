@@ -41,8 +41,9 @@ Il sorgente è `docs/guide/wm-plan-diagramma/index.html`, pubblicato dal workflo
 La pagina si ripubblica da sola al push su `main`: nessun redeploy manuale, nessun URL da
 riscrivere. Prima viveva come Artifact Claude e ogni aggiornamento era un gesto a mano.
 
-**Il template grafico è congelato** (oc:8283): due colonne di pari altezza, legenda a piena
-larghezza sotto, palette e tipografia date. Si aggiorna il **contenuto** — nodi e paragrafi,
+**Il template grafico è congelato** in entrambe le pagine: due colonne di pari altezza, legenda
+a piena larghezza sotto, e lo stile di ciascuna — la palette di oc:8283 per `wm-plan`, il design
+system Webmapp per `wm-geohub-import-check`. Si aggiorna il **contenuto** — nodi e paragrafi,
 quando una fase viene aggiunta, rinominata o rimossa — mai struttura, CSS o stile.
 
 ## Due cose che si rompono in silenzio

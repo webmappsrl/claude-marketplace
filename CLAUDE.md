@@ -109,9 +109,10 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 
 - `plugins/wm-skills/bin/orchestrator-mcp` e `plugins/wm-skills/bin/geohub-import-check` — binari
   generati: si rigenerano insieme con `build.sh`.
-- `docs/guide/wm-plan-diagramma/index.html` — il template grafico è congelato nella struttura e
-  si aggiorna solo nel contenuto, quando cambiano le fasi di `wm-plan`: i vincoli stanno in
-  `.claude/rules/wm-plan-diagramma.md`, che si carica quando tocchi quei file.
+- `docs/guide/wm-plan-diagramma/index.html` e `docs/guide/wm-geohub-import-check-diagramma/index.html`
+  — i diagrammi delle skill sono congelati nella struttura e si aggiornano solo nel contenuto,
+  quando cambiano le fasi della skill: i vincoli stanno in `.claude/rules/diagrammi-skill.md`, che
+  si carica quando tocchi quei file.
 
 ### Coupling tra skill
 
@@ -187,8 +188,8 @@ Il resto — formato dei campi, specifica OpenAPI, ripiego se il server MCP non 
 ## Trappole
 
 Stanno in `.claude/rules/`, con il frontmatter `paths:` che le carica quando si toccano i file
-corrispondenti: `wm-plan-diagramma` tiene i vincoli del template grafico pubblicato su GitHub
-Pages, che è congelato nella struttura e si aggiorna solo nel contenuto.
+corrispondenti: `diagrammi-skill` tiene i vincoli dei diagrammi delle skill pubblicati su GitHub
+Pages, congelati nella struttura e aggiornati solo nel contenuto.
 
 ## Conoscenza
 
