@@ -302,7 +302,9 @@ aspettarne la risposta: prosegui con il menu, così il notebook è pronto quando
 **Prima di ogni altra richiesta a `wm-transcript-research`, aspetta che «prepara» abbia risposto**:
 due richieste partite insieme creano lo stesso notebook due volte. Se
 risponde `RICERCA FALLITA`, dillo al dev in modo evidente, riportando il comando se c'è
-(`! nlm login`).
+(`! nlm login`). Se il motivo sono le credenziali, guida il dev con
+`${CLAUDE_PLUGIN_ROOT}/shared/notebooklm-login.md`: `nlm login` può dichiarare valide credenziali
+che Google rifiuta, e il solo `! nlm login` spesso non basta.
 
 All'inizio del workflow, presenta sempre questo menu all'utente:
 
@@ -801,7 +803,8 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
 
   Se l'agente restituisce `RICERCA FALLITA`, dillo al dev **in modo evidente**, riportando il comando
   se c'è (`! nlm login`), e prosegui il dialogo senza le trascrizioni: la fonte non era
-  raggiungibile, non è che non ci fosse nulla.
+  raggiungibile, non è che non ci fosse nulla. Per le credenziali scadute vale la procedura di
+  `${CLAUDE_PLUGIN_ROOT}/shared/notebooklm-login.md`.
 
 - **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
   Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
