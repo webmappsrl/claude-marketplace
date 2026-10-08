@@ -132,6 +132,16 @@ Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per featu
 
 **Un'azione negata si chiede, non si aggira.** Se una chiamata necessaria viene bloccata — dal classificatore dell'auto mode, da un hook, da una regola di permesso — non dichiarare «non si può» e non proseguire con un ripiego: fermati, di' al dev quale azione serve, cosa l'ha bloccata e come può sbloccarla (cambiare modalità, aggiungere una regola di permesso), e aspetta. Un rifiuto del classificatore non diventa da solo una richiesta di permesso: l'unica strada è chiederlo a parole.
 
+**Un fatto si verifica, una supposizione si dichiara.** Un numero («migliaia di tracce»), il
+comportamento di un sistema esterno («Strava fa così»), l'origine di un dato («sono GPX
+importati»): se si può verificare con una query, il codice o una documentazione, **verificalo prima
+di scriverlo**, e riporta il dato con la sua fonte. Se non si può, o la verifica costa più di quanto
+vale la risposta, scrivilo come supposizione — «suppongo che…, non l'ho verificato, lo deduco da…»
+— mai con il tono di un fatto. Vale anche per la riga «💡 Best practice»: una pratica attribuita a
+un prodotto o a uno standard esterno porta la fonte, altrimenti è un'opinione e va detta come tale.
+Una supposizione non dichiarata, presentata a un dev che si fida, diventa una decisione presa su un
+dato che non esiste: un rischio gonfiato porta a progettare per un problema che non c'è.
+
 <HARD-GATE>
 Nessun codice può essere scritto prima che `overview.md` e `plan.md` esistano nel filesystem e siano stati esplicitamente approvati dall'utente. Questo vale sempre, indipendentemente dalla semplicità percepita del task.
 </HARD-GATE>
