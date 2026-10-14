@@ -245,7 +245,7 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 | Tag: elenco, lettura, creazione, modifica | `list_tags`, `get_tag`, `create_tag`, `update_tag` |
 | Associare o togliere un ticket da un tag | `attach_story_to_tag`, `detach_story_from_tag` |
 
-**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. **Se il dev ha già approvato quell'azione precisa** («associalo», «crealo così») **e l'anteprima mostra esattamente quella**, applica senza chiedere di nuovo; chiedi solo se l'anteprima contiene qualcosa di diverso o in più. `customer_request` si chiede sempre: scriverlo notifica il cliente, e una email inviata non si annulla. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
+**Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. **Se il dev ha già approvato quell'azione precisa** («associalo», «crealo così») **e l'anteprima mostra esattamente quella**, applica senza chiedere di nuovo; chiedi solo se l'anteprima contiene qualcosa di diverso o in più. `customer_request` si chiede sempre quando il creatore del ticket è un cliente: scriverlo lo notifica, e una email inviata non si annulla. **Se invece l'anteprima del tool dice «Creatore del ticket: … (dev del team)»**, la notifica arriva a quel dev: non avvisare dell'email e, se il dev ha già approvato il testo, applica senza chiedere di nuovo, come per gli altri campi. L'elenco dei dev sta nel server, in `mcp/internal/tools/developers.go`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
 
 **Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata.
 
@@ -1586,7 +1586,8 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
   **I due campi si comportano in modo diverso:**
   - `customer_request`: manda solo il testo pulito. Il backend chiama `addResponse()`, che aggiunge
-    in testa la risposta con autore e data e notifica il cliente.
+    in testa la risposta con autore e data e notifica il creatore del ticket (un cliente, o un dev
+    del team: vedi «Regola sulle scritture»).
   - `description`: la PATCH la sostituisce per intero (Orchestrator oc:8549). Per questo le note
     dev vanno in `prepend`: il tool le mette in testa e lascia identici l'overview scritta in
     `Fase: ticket` e le review precedenti.
