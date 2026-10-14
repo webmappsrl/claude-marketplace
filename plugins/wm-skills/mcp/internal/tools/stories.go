@@ -62,7 +62,8 @@ func registerStories(server *mcp.Server, deps Deps) {
 			"cosa cambierebbe, senza scrivere nulla. Per AGGIUNGERE alla description usa prepend (in testa) " +
 			"e annotations (dopo frasi esatte): il testo esistente resta identico. description invece " +
 			"SOSTITUISCE tutto il campo: usala solo per riformattare o invalidare. " +
-			"Scrivere customer_request invia una notifica al cliente: non va mai autorizzato in automatico.",
+			"Scrivere customer_request invia una notifica al creatore del ticket: se è un cliente non va mai " +
+			"autorizzato in automatico; se l'anteprima dice che il creatore è un dev del team, la notifica arriva a lui.",
 		InputSchema: storyFieldsInputSchema(deps.Enums, true),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in storyFieldsInput) (*mcp.CallToolResult, any, error) {
 		appending := in.Prepend != "" || len(in.Annotations) > 0
@@ -108,8 +109,8 @@ func registerStories(server *mcp.Server, deps Deps) {
 		}
 
 		diff := preview.Diff(current, fields, storyHTMLFields...)
-		diff = withCustomerRequestNotice(diff, fields)
-		summary := previewNotice(fields) + appendSummary(appending, composed) + diff
+		diff = withCustomerRequestNotice(diff, fields, current)
+		summary := previewNotice(fields, current) + appendSummary(appending, composed) + diff
 		if !in.Confirm {
 			return plainText(summary), nil, nil
 		}
@@ -154,12 +155,17 @@ func registerStories(server *mcp.Server, deps Deps) {
 // previewNotice restituisce l'avviso da anteporre all'anteprima quando la
 // scrittura ha effetti fuori dal team. Serve a rendere informata la decisione
 // umana, non a impedire la chiamata: nessun controllo interno al server
-// potrebbe farlo.
-func previewNotice(fields map[string]any) string {
-	if text, ok := fields["customer_request"].(string); ok && text != "" {
-		return "⚠️  Scrivendo customer_request parte una notifica al cliente. Una email inviata non si annulla.\n"
+// potrebbe farlo. Se il ticket l'ha creato un dev del team (developerIDs), la
+// notifica arriva a lui: niente avviso, solo chi è il creatore.
+func previewNotice(fields map[string]any, current map[string]any) string {
+	text, ok := fields["customer_request"].(string)
+	if !ok || text == "" {
+		return ""
 	}
-	return ""
+	if name := developerCreator(current); name != "" {
+		return "Creatore del ticket: " + name + " (dev del team).\n"
+	}
+	return "⚠️  Scrivendo customer_request parte una notifica al cliente. Una email inviata non si annulla.\n"
 }
 
 // appendSummary elenca cosa l'aggiunta mette nella description, prima della
@@ -212,8 +218,9 @@ func writeSummary(current, fields map[string]any) string {
 
 // withCustomerRequestNotice aggiunge, subito sotto il blocco di
 // customer_request nell'anteprima, l'avviso su cosa fa Orchestrator con quel
-// testo: non tocca il diff se il campo non cambia.
-func withCustomerRequestNotice(diff string, fields map[string]any) string {
+// testo: non tocca il diff se il campo non cambia. Con un dev come creatore
+// non parla di notifica al cliente.
+func withCustomerRequestNotice(diff string, fields map[string]any, current map[string]any) string {
 	if _, changed := fields["customer_request"]; !changed {
 		return diff
 	}
@@ -228,6 +235,9 @@ func withCustomerRequestNotice(diff string, fields map[string]any) string {
 	}
 	insertAt := idx + end
 	notice := "\n  Orchestrator mette questo testo in testa alla richiesta, con autore e data, e notifica il cliente."
+	if developerCreator(current) != "" {
+		notice = "\n  Orchestrator mette questo testo in testa alla richiesta, con autore e data."
+	}
 	return diff[:insertAt] + notice + diff[insertAt:]
 }
 
