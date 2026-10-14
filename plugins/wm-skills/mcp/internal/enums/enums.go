@@ -19,12 +19,14 @@ import (
 var (
 	storyTypeURL   = "https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryType.php"
 	storyStatusURL = "https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/StoryStatus.php"
+	quoteStatusURL = "https://raw.githubusercontent.com/webmappsrl/orchestrator/main/app/Enums/QuoteStatus.php"
 )
 
 // Values raccoglie gli elenchi letti.
 type Values struct {
 	StoryType   []string `json:"story_type"`
 	StoryStatus []string `json:"story_status"`
+	QuoteStatus []string `json:"quote_status"`
 }
 
 // caseDecl riconosce qualunque riga dichiarativa di un case, indipendentemente
@@ -89,7 +91,7 @@ func CachePath() string {
 // sincrono (comportamento invariato): è l'unico caso in cui LoadOrFetch può
 // bloccare l'avvio in attesa della rete.
 func LoadOrFetch(ctx context.Context, cachePath string) (*Values, error) {
-	if cached, err := readCache(cachePath); err == nil && (len(cached.StoryType) > 0 || len(cached.StoryStatus) > 0) {
+	if cached, err := readCache(cachePath); err == nil && cached.usable() {
 		go refreshCacheInBackground(cachePath)
 		return cached, nil
 	}
@@ -107,16 +109,23 @@ func refreshCacheInBackground(cachePath string) {
 	_, _ = fetchFresh(ctx, cachePath)
 }
 
-// fetchFresh scarica i due enum; se uno dei due scarichi (o l'interpretazione
+// usable dice se almeno un elenco è valorizzato. Una copia locale salvata da
+// una versione precedente, senza quote_status, resta utilizzabile: l'elenco
+// mancante arriva con l'aggiornamento in background, dalla sessione successiva.
+func (v *Values) usable() bool {
+	return len(v.StoryType) > 0 || len(v.StoryStatus) > 0 || len(v.QuoteStatus) > 0
+}
+
+// fetchFresh scarica gli enum; se uno degli scarichi (o l'interpretazione
 // del relativo sorgente) fallisce, usa per quel solo campo l'ultima copia
-// locale salvata — il dato fresco ottenuto per l'altro campo non viene
+// locale salvata — il dato fresco ottenuto per gli altri campi non viene
 // buttato via. La copia locale viene poi riscritta con la combinazione
 // risultante. Restituisce errore solo se, alla fine, non resta alcun valore
-// né per StoryType né per StoryStatus (niente di fresco e nessuna copia
-// locale utilizzabile).
+// in nessun campo (niente di fresco e nessuna copia locale utilizzabile).
 func fetchFresh(ctx context.Context, cachePath string) (*Values, error) {
 	freshType, typeErr := fetchAndParse(ctx, storyTypeURL)
 	freshStatus, statusErr := fetchAndParse(ctx, storyStatusURL)
+	freshQuoteStatus, quoteStatusErr := fetchAndParse(ctx, quoteStatusURL)
 
 	cached, cacheErr := readCache(cachePath)
 
@@ -131,11 +140,16 @@ func fetchFresh(ctx context.Context, cachePath string) (*Values, error) {
 	} else if cached != nil {
 		v.StoryStatus = cached.StoryStatus
 	}
+	if len(freshQuoteStatus) > 0 {
+		v.QuoteStatus = freshQuoteStatus
+	} else if cached != nil {
+		v.QuoteStatus = cached.QuoteStatus
+	}
 
-	if len(v.StoryType) == 0 && len(v.StoryStatus) == 0 {
+	if !v.usable() {
 		return nil, fmt.Errorf(
-			"elenchi non scaricabili (type: %v; status: %v) e nessuna copia locale utilizzabile in %s (%v)",
-			typeErr, statusErr, cachePath, cacheErr,
+			"elenchi non scaricabili (type: %v; status: %v; stato preventivo: %v) e nessuna copia locale utilizzabile in %s (%v)",
+			typeErr, statusErr, quoteStatusErr, cachePath, cacheErr,
 		)
 	}
 
