@@ -97,9 +97,13 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "create_quote",
 		Description: "Crea un preventivo. Richiede titolo e cliente. Senza confirm mostra i campi senza creare nulla.",
+		InputSchema: quoteFieldsInputSchema(deps.Enums),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in quoteFieldsInput) (*mcp.CallToolResult, any, error) {
 		if in.Title == "" || in.CustomerID == 0 {
 			return nil, nil, fmt.Errorf("title e customer_id sono obbligatori per creare un preventivo")
+		}
+		if err := validateQuoteStatus(deps.Enums, in.Status); err != nil {
+			return nil, nil, err
 		}
 		fields := fieldsOf(in, "quote_id", "confirm")
 		if !in.Confirm {
@@ -116,7 +120,11 @@ func registerCRMWrites(server *mcp.Server, deps Deps) {
 		Name: "update_quote",
 		Description: "Modifica un preventivo. Senza confirm mostra la differenza senza scrivere. " +
 			"A preventivo chiuso Orchestrator rifiuta ogni modifica.",
+		InputSchema: quoteFieldsInputSchema(deps.Enums),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in quoteFieldsInput) (*mcp.CallToolResult, any, error) {
+		if err := validateQuoteStatus(deps.Enums, in.Status); err != nil {
+			return nil, nil, err
+		}
 		fields := fieldsOf(in, "quote_id", "confirm")
 		path := fmt.Sprintf("/api/quotes/%d", in.QuoteID)
 
