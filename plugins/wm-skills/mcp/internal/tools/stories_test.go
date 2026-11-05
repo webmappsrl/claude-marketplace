@@ -142,3 +142,76 @@ func TestCreatorIsDeveloperReadsCreatorID(t *testing.T) {
 		}
 	}
 }
+
+// Il caso vero: il 5 novembre 2026 un ticket è stato creato con la description
+// scritta in entità (&lt;h2&gt; invece di <h2>) e Orchestrator ha mostrato i tag
+// come testo. L'anteprima non lo faceva notare, perché a colpo d'occhio un
+// campo pieno di entità somiglia a un campo pieno di markup.
+func TestRejectEscapedHTML(t *testing.T) {
+	cases := []struct {
+		nome    string
+		fields  map[string]any
+		rifiuta bool
+	}{
+		{
+			nome:    "il caso di oc:8939: description tutta in entità",
+			fields:  map[string]any{"description": "&lt;h2&gt;Il problema&lt;/h2&gt;\n&lt;p&gt;Oggi chi cambia i filtri&lt;/p&gt;"},
+			rifiuta: true,
+		},
+		{
+			nome:    "anche customer_request",
+			fields:  map[string]any{"customer_request": "&lt;p&gt;Un utente non tecnico fa un'azione.&lt;/p&gt;"},
+			rifiuta: true,
+		},
+		{
+			nome:    "HTML vero: passa",
+			fields:  map[string]any{"description": "<h2>Il problema</h2>\n<p>Oggi chi cambia i filtri</p>"},
+			rifiuta: false,
+		},
+		{
+			nome:    "entità dentro markup vero: è un frammento di codice, passa",
+			fields:  map[string]any{"description": "<p>Scrivi <code>&lt;p&gt;</code> per un paragrafo.</p>"},
+			rifiuta: false,
+		},
+		{
+			nome:    "testo semplice senza tag: passa, non tutti i ticket hanno markup",
+			fields:  map[string]any{"description": "Il filtro del layer non si aggiorna."},
+			rifiuta: false,
+		},
+		{
+			nome:    "entità che non sono tag: &amp; e &gt; da soli non bastano",
+			fields:  map[string]any{"description": "Il confronto a &gt; b vale solo se a &amp; b esistono."},
+			rifiuta: false,
+		},
+		{
+			nome:    "campo assente",
+			fields:  map[string]any{"name": "Un titolo"},
+			rifiuta: false,
+		},
+		{
+			nome:    "campo vuoto",
+			fields:  map[string]any{"description": ""},
+			rifiuta: false,
+		},
+	}
+	for _, c := range cases {
+		err := rejectEscapedHTML(c.fields)
+		if c.rifiuta && err == nil {
+			t.Errorf("%s: doveva essere rifiutato, è passato", c.nome)
+		}
+		if !c.rifiuta && err != nil {
+			t.Errorf("%s: doveva passare, rifiutato con %q", c.nome, err)
+		}
+	}
+}
+
+// Il controllo gira prima di ogni scrittura, non solo se chiamato a mano.
+func TestValidateStoryFieldsRejectsEscapedHTML(t *testing.T) {
+	err := validateStoryFields(nil, map[string]any{"description": "&lt;p&gt;Testo&lt;/p&gt;"})
+	if err == nil {
+		t.Fatal("validateStoryFields doveva rifiutare il markup in entità")
+	}
+	if !strings.Contains(err.Error(), "entità già codificate") {
+		t.Errorf("il messaggio non dice qual è il problema: %q", err)
+	}
+}

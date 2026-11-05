@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -352,6 +353,11 @@ func storyFieldsInputSchema(e *enums.Values, forUpdate bool) map[string]any {
 // PHP, prima che la chiamata parta. È una rete di sicurezza: la difesa
 // principale è l'elenco scritto nello schema del tool.
 func validateStoryFields(e *enums.Values, fields map[string]any) error {
+	// Prima degli enum: questo controllo non dipende da loro, e con gli enum
+	// non caricati il markup sbagliato passerebbe lo stesso.
+	if err := rejectEscapedHTML(fields); err != nil {
+		return err
+	}
 	if e == nil {
 		return nil
 	}
@@ -385,6 +391,37 @@ func validateStoryFields(e *enums.Values, fields map[string]any) error {
 	}
 	return nil
 }
+
+// rejectEscapedHTML ferma il markup passato con le entità già codificate.
+//
+// description e customer_request sono resi da un editor visuale e vogliono
+// HTML vero. Chi li scrive a volte applica un escape che qui non serve, e il
+// ticket finisce per mostrare la scritta "<p>" invece di un paragrafo: è già
+// successo, e dall'anteprima non si nota, perché un campo pieno di &lt;p&gt;
+// a colpo d'occhio somiglia a un campo pieno di <p>.
+//
+// Un valore che contiene entità di tag e nessun tag vero è doppio escape e
+// basta: non esiste un ticket in cui si voglia leggere la scritta "<p>".
+// Le entità in un testo che contiene anche markup vero restano ammesse —
+// servono a mostrare un frammento di codice dentro un <code>.
+func rejectEscapedHTML(fields map[string]any) error {
+	for _, field := range storyHTMLFields {
+		text, ok := fields[field].(string)
+		if !ok || text == "" {
+			continue
+		}
+		if !escapedTag.MatchString(text) || strings.Contains(text, "<") {
+			continue
+		}
+		return fmt.Errorf("%s: il markup è arrivato con le entità già codificate (&lt;p&gt; invece di <p>), "+
+			"e il ticket mostrerebbe i tag come testo. Il campo è reso da un editor visuale: passa l'HTML così com'è", field)
+	}
+	return nil
+}
+
+// escapedTag riconosce l'apertura o la chiusura di un tag scritta con le
+// entità: &lt;p&gt;, &lt;/h2&gt;, &lt;strong&gt;.
+var escapedTag = regexp.MustCompile(`&lt;/?[a-zA-Z][a-zA-Z0-9]*[^&]*&gt;`)
 
 // nonEmptyFields converte l'ingresso in una mappa contenente solo i campi
 // effettivamente valorizzati, così una modifica non azzera ciò che non tocca.
