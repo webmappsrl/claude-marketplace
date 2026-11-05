@@ -19,9 +19,11 @@ a dirmi cosa lanciare quando serve una mia azione. In ordine:
 3. Controlla con `claude mcp list` se c'è un server NotebookLM configurato a mano (per esempio
    `notebooklm-mcp`). Se c'è, toglilo con `claude mcp remove <nome> -s user`: il plugin wm-skills
    dichiara il suo, e quello manuale lo nasconde.
-4. Dimmi di lanciare io `! nlm login`, e di scegliere nel browser l'account @webmapp.it. Quando ho
-   finito, controlla nell'uscita che l'account sia @webmapp.it; se è un account personale, fammi
-   rifare l'accesso.
+4. Dimmi di lanciare io `nlm login` da un terminale normale, fuori da Claude Code (con `!` la
+   domanda su dove salvare le credenziali non riceve risposta): scelgo 1 (Protected) e accedo con
+   l'account @webmapp.it nella finestra di Chrome che si apre. Quando ho finito, verifica con
+   `nlm notebook list` che l'accesso funzioni davvero e con `nlm login --check` che l'account sia
+   @webmapp.it; se è un account personale, fammi rifare l'accesso.
 5. Dimmi di aggiornare il plugin con `/plugin marketplace update`, di riavviare Claude Code e di
    controllare con `/mcp` che `plugin:wm-skills:notebooklm` risulti collegato.
 
@@ -39,13 +41,16 @@ Non toccare nient'altro della configurazione di Claude Code.
 
    Verifica che sia nel `PATH` con cui parte Claude Code: `which notebooklm-mcp`.
 
-2. Accedi con l'account **`@webmapp.it`** (le call stanno nel Drive di lavoro):
+2. Accedi con l'account **`@webmapp.it`** (le call stanno nel Drive di lavoro), da un terminale
+   normale e non con `!`: il login fa una domanda a cui con `!` non si può rispondere.
 
-   ```
-   ! nlm login
+   ```bash
+   nlm login
    ```
 
-   L'uscita deve riportare `Account: <nome>@webmapp.it`. Se riporta un account personale, rifai
+   Alla domanda su dove salvare le credenziali scegli **1 (Protected)**, e accedi nella finestra di
+   Chrome che si apre: è un profilo separato dal tuo browser. L'uscita deve riportare
+   `Account: <nome>@webmapp.it`, e `nlm notebook list` deve restituire l'elenco dei notebook. Se riporta un account personale, rifai
    l'accesso scegliendo quello di lavoro nel browser.
 
 3. Se avevi già configurato NotebookLM a mano (per esempio un server `notebooklm-mcp` in
@@ -66,3 +71,8 @@ riavvia Claude Code.
 **Quando manca l'installazione o le credenziali scadono** l'agente risponde `RICERCA FALLITA` e
 `wm-plan` te lo mostra in modo evidente, con il comando da lanciare (`! nlm login`): rifai
 l'accesso, non ignorare l'avviso. Nel frattempo `wm-plan` prosegue senza le call.
+
+**Se `nlm login` dice che l'accesso è valido ma le ricerche falliscono ancora**, segui la
+procedura in `plugins/wm-skills/shared/notebooklm-login.md`: è la stessa che `wm-plan` usa per
+guidarti. In breve: aggiorna `notebooklm-mcp-cli`, cancella il profilo, rifai il login da un
+terminale normale e ricollega il server con `/mcp`.

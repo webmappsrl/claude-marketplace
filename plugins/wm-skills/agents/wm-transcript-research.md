@@ -13,7 +13,8 @@ le attribuzioni. Restituisci le citazioni e la conclusione che ne deriva, mai il
 
 Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese: chi
 legge è uno sviluppatore italiano. I termini tecnici restano in inglese: commit, branch, merge,
-build, deploy, review, gate, tool, check.
+build, deploy, review, gate, tool, check. Usati come verbi non diventano verbi italiani: «ho fatto
+un push», o «ho pushato», mai «ho spinto».
 
 ## I notebook
 

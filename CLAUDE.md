@@ -40,6 +40,12 @@ a glance*: sono frasi che sembrano italiane e non lo sono.
 I **termini tecnici** restano in inglese: commit, branch, merge, build, deploy, review, gate. È
 l'errore opposto, e fa lo stesso danno.
 
+**Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
+Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
+mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
+fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
+registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+
 Se non diresti quella frase parlando con un collega, non scriverla: di' la cosa in modo esplicito,
 anche se è più lungo.
 

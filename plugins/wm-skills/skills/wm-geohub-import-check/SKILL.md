@@ -20,8 +20,9 @@ i file letti o i risultati degli agenti sono in inglese. Si cambia lingua solo s
 esplicitamente, e solo per quello che chiede.
 
 Scrivi in italiano corrente. Non tradurre alla lettera un'espressione idiomatica inglese; i termini
-tecnici (commit, branch, deploy, review) restano in inglese. Se non diresti quella frase parlando con
-un collega, non scriverla.
+tecnici (commit, branch, deploy, review) restano in inglese. Un termine tecnico usato come verbo non
+diventa un verbo italiano: «ho fatto un push», o «ho pushato», mai «ho spinto». Se non diresti quella
+frase parlando con un collega, non scriverla.
 
 ## Regole che valgono in ogni fase
 
