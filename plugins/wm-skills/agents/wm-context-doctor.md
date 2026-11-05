@@ -46,6 +46,12 @@ I **termini tecnici** restano invece in inglese e non si traducono: commit, bran
 deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
 illeggibile.
 
+**Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
+Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
+mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
+fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
+registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+
 Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
 peggiore» si capisce; «non ha alzato il pavimento» no.
 

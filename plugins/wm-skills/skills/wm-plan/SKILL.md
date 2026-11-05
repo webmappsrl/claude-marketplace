@@ -15,8 +15,54 @@ I **termini tecnici** restano invece in inglese e non si traducono: commit, bran
 deploy, review, gate, tool, check. Tradurli è l'errore opposto e rende il testo altrettanto
 illeggibile.
 
+**Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
+Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
+mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
+fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
+registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+
 Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
 peggiore» si capisce; «non ha alzato il pavimento» no.
+
+## Lingua: le cose si chiamano con il nome che hanno nel codice
+
+**Un elemento che ha un nome nel codice o nel framework si chiama con quel nome, anche se la
+frase diventa meno scorrevole.** `detail view`, `index`, `Resource`, `Field`, `Panel`, `Tab`,
+`MenuItem`, `select`, `pivot`. Non «la scheda del sentiero» ma «la detail view della Resource
+EcTrack»: chi legge è uno sviluppatore, e il nome esatto gli dice quale oggetto aprire, mentre
+la resa italiana lo obbliga a indovinare di cosa stai parlando.
+
+**La fluidità del periodo non è un motivo valido per rinominare qualcosa.** È da qui che nascono
+i termini inventati: non per ignoranza del nome giusto, ma perché l'inglese spezza il ritmo della
+frase e si sceglie una parola che scorre meglio. Quella sostituzione sembra una scelta di stile e
+invece è una scelta terminologica, e non passa da nessun controllo proprio perché non sembra una
+decisione. L'italiano serve per i verbi e per la sintassi, non per i sostantivi che nominano le
+parti del sistema.
+
+**Un termine coniato oggi è una fonte autorevole domani.** Una parola inventata finisce in un
+`overview.md`, e alla sessione dopo viene riletta come «gergo del repository» e riusata con la
+sicurezza di chi cita una fonte. Che un termine sia già nei documenti **non prova che vada bene**:
+può solo voler dire che l'errore è più vecchio e si è propagato. Prima di riusare una parola che
+nel codice non trovi, chiediti chi l'ha scritta.
+
+**Un concetto che un nome nel codice non ce l'ha davvero si chiede al dev**, una volta sola, in
+un messaggio prima di scrivere il documento — non durante, perché a quel punto è già sparso in
+trenta righe. Se non ce ne sono, nessuna domanda.
+
+### Il controllo prima di consegnare
+
+Una regola sulla lingua non si rispetta da sé: va verificata, come si verifica un test. Prima di
+consegnare `overview.md` e `plan.md`, cerca nel documento queste parole e, per ognuna che trovi,
+o la sostituisci con il nome del codice o la porti al dev:
+
+```bash
+grep -noiE "\b(scheda|schede|pannello|pannelli|riquadro|tendina|casella|elenco|lista|vista|voce|voci|etichetta|etichette|blocco|sezione)\b" docs/features/<slug>/*.md
+```
+
+Non sono parole vietate in assoluto — «sezione» può essere la sezione di un documento, «elenco»
+un elenco di cose — ma ognuna va guardata: se nomina un elemento dell'interfaccia o del modello
+dati, quell'elemento ha un nome proprio e va usato quello. La lista cresce ogni volta che ne
+salta fuori una nuova.
 
 ## Header di sessione
 
@@ -36,11 +82,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.5.0
+**Versione installata:** v1.6.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.5.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.6.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -1092,6 +1138,12 @@ Mostra all'utente il nome del branch creato e attendi conferma prima di proceder
 
 ### execution: implementation
 
+**Regola identificatori (obbligatoria):** nel codice gli identificatori sono **sempre in inglese**, mai in italiano — nomi di variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi di file e di branch. Vale anche quando il dominio è italiano: si scrive `$quote`, non `$preventivo`; `getUserTracks()`, non `getTracceUtente()`.
+
+L'italiano resta nei testi destinati a persone: commenti, docblock, documentazione, messaggi di commit, descrizioni delle PR, output rivolto al dev. Le stringhe traducibili seguono la regola traduzioni qui sotto.
+
+Se incontri un identificatore italiano già presente nel codice, **non rinominarlo di tua iniziativa**: è un refactor fuori dallo scope del ticket. Registralo in `Fase: notes` (sezione "Follow-up").
+
 **Regola traduzioni (obbligatoria):** ogni testo traducibile introdotto dall'implementazione deve:
 - avere il testo base nella **lingua di default del repo** (rilevata in Fase: reverse-interaction — solitamente inglese, ma verifica)
 - avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase: reverse-interaction)
@@ -1113,7 +1165,7 @@ Esempio di dichiarazione: *"Invoco `superpowers:subagent-driven-development` per
 
 Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse parte del tuo contesto di esecuzione:
 
-> "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. La fase di commit è gestita separatamente in 6c dopo approvazione del developer."
+> "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. La fase di commit è gestita separatamente in 6c dopo approvazione del developer. Gli identificatori nel codice — variabili, funzioni, classi, campi, chiavi — vanno scritti sempre in inglese, mai in italiano, anche quando il dominio è italiano; l'italiano è ammesso solo nei commenti e nei testi rivolti a persone."
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
