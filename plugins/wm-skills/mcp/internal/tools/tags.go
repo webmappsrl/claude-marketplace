@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/webmappsrl/claude-marketplace/plugins/wm-skills/mcp/internal/compose"
 	"github.com/webmappsrl/claude-marketplace/plugins/wm-skills/mcp/internal/preview"
 )
 
@@ -21,10 +22,12 @@ type getTagInput struct {
 }
 
 type tagFieldsInput struct {
-	TagID       int    `json:"tag_id,omitempty" jsonschema:"identificatore del tag da modificare"`
-	Name        string `json:"name,omitempty" jsonschema:"nome del tag"`
-	Description string `json:"description,omitempty" jsonschema:"descrizione del tag, in Markdown"`
-	Confirm     bool   `json:"confirm,omitempty" jsonschema:"false o assente mostra l'anteprima senza scrivere; true esegue la scrittura"`
+	TagID       int                  `json:"tag_id,omitempty" jsonschema:"identificatore del tag da modificare"`
+	Name        string               `json:"name,omitempty" jsonschema:"nome del tag"`
+	Description string               `json:"description,omitempty" jsonschema:"descrizione del tag, in Markdown. SOSTITUISCE il campo per intero: per aggiungere usa prepend e annotations"`
+	Prepend     string               `json:"prepend,omitempty" jsonschema:"Markdown da mettere in testa alla description attuale, che resta identica"`
+	Annotations []compose.Annotation `json:"annotations,omitempty" jsonschema:"testi da inserire dopo frasi esatte della description attuale"`
+	Confirm     bool                 `json:"confirm,omitempty" jsonschema:"false o assente mostra l'anteprima senza scrivere; true esegue la scrittura"`
 }
 
 type tagStoryInput struct {
@@ -101,9 +104,17 @@ func registerTags(server *mcp.Server, deps Deps) {
 	})
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "update_tag",
-		Description: "Modifica un tag Orchestrator. Senza confirm mostra la differenza senza scrivere. " + tagDescriptionHint + ".",
+		Name: "update_tag",
+		Description: "Modifica un tag Orchestrator. Senza confirm mostra la differenza senza scrivere. " +
+			"Per AGGIUNGERE alla description usa prepend (in testa) e annotations (dopo frasi esatte): " +
+			"il testo esistente resta identico e non va ricopiato. description invece SOSTITUISCE tutto " +
+			"il campo: usala solo per riformattare o invalidare. " + tagDescriptionHint + ".",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in tagFieldsInput) (*mcp.CallToolResult, any, error) {
+		appending := in.Prepend != "" || len(in.Annotations) > 0
+		if appending && in.Description != "" {
+			return nil, nil, fmt.Errorf("description sostituisce tutto il campo, prepend e annotations aggiungono: usa l'una o gli altri, non insieme")
+		}
+
 		fields := map[string]any{}
 		if in.Name != "" {
 			fields["name"] = in.Name
@@ -119,8 +130,28 @@ func registerTags(server *mcp.Server, deps Deps) {
 		}
 		current := decodeMap(currentRaw)
 
+		// La composizione si rifà a ogni chiamata, anche a quella con confirm:
+		// parte sempre dalla description letta adesso, non da quella vista
+		// nell'anteprima.
+		var composed compose.Result
+		if appending {
+			currentText, _ := current["description"].(string)
+			composed, err = compose.Apply(currentText, in.Prepend, in.Annotations)
+			if err != nil {
+				return nil, nil, err
+			}
+			if composed.Changed {
+				fields["description"] = composed.Text
+			}
+			if len(fields) == 0 {
+				return plainText("Nessuna scrittura: il contenuto richiesto è già presente nella description."), nil, nil
+			}
+		}
+
+		summary := appendSummary(appending, composed) + preview.Diff(current, fields)
+
 		if !in.Confirm {
-			return plainText(preview.Diff(current, fields)), nil, nil
+			return plainText(summary), nil, nil
 		}
 		raw, err := deps.Client.Do(ctx, "PATCH", path, fields)
 		if err != nil {
