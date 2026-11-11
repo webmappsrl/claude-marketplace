@@ -37,8 +37,8 @@ altrimenti né il server né il comando partono sulla macchina di chi li install
   così che `wm-plan` ha cancellato la `description` di 11 ticket senza che nessuno se ne
   accorgesse.
 - **Aggiungere alla `description` si fa nel codice** (`internal/compose`), non chiedendo al
-  modello di ricopiare il testo esistente: `update_story` con `prepend`/`annotations` legge,
-  compone e manda una sola PATCH.
+  modello di ricopiare il testo esistente: `update_story` e `update_tag` con
+  `prepend`/`annotations` leggono, compongono e mandano una sola PATCH.
 - **Comunicazione su stdio, nessuna porta in ascolto**: esclude per costruzione i conflitti con
   i container Docker del team. Non introdurre un trasporto HTTP.
 - **Il file delle credenziali è un parametro** (`--auth-file`), non un percorso fisso: serve a

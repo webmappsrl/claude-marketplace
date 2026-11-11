@@ -46,6 +46,12 @@ lascia identico il resto e manda una sola PATCH insieme agli altri campi. Il tes
 passa mai dal modello: una copia fatta dal modello su testi lunghi può saltarne dei pezzi, e
 l'anteprima troncata di allora non lo mostrava.
 
+**`update_tag` ha gli stessi due parametri**, per la stessa ragione moltiplicata: la descrizione
+di un tag di call raccoglie macro aree, fonti e citazioni e arriva a decine di migliaia di
+caratteri, mentre ciò che si aggiunge è di solito una riga. Prima di averli, aggiungere una voce
+significava rigenerare l'intero documento parola per parola — minuti di attesa e la possibilità
+di alterare punti che nessuno stava toccando.
+
 ## Come ci siamo arrivati
 
 - **Chiedere all'agente di ricopiare la `description`** (PR #20, superata): funzionava su testi
