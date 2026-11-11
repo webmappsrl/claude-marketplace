@@ -82,11 +82,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.6.1
+**Versione installata:** v1.6.2
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.6.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.6.2` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -1306,7 +1306,13 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
 4. Completa la Fase: notes e la Fase: update-context, così tutti i file entrano nello stesso commit.
 5. **Solo ora, quando non resta altro da fare**, chiedi il commit con una domanda singola ed esplicita, senza nient'altro nel messaggio: «Faccio il commit?». Il commit non si mette mai dentro un'altra proposta («aggiungo X e poi committo»): un sì alla proposta non è un sì al commit. Un silenzio o un «ok» generico non basta.
 6. Dopo il sì, esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-7. Dopo i commit, apri la PR verso **`develop`** (non `main`) — è il branch di integrazione Webmapp.
+7. Dopo i commit, apri la PR verso **`develop`** (non `main`), il branch di integrazione Webmapp. **Una sola PR per ticket in ogni repo**, e si mergia una volta sola. Il puntatore di un submodule va in un commit suo, separato da quelli di lavoro, ma nella stessa PR: mai in una PR a parte.
+
+**Un ticket entra in `develop` con un solo merge per repo.** Ogni merge in più dello stesso ticket appare come un ticket diverso nella storia di `develop`, e il team lo considera un errore. Per questo:
+
+- documenti, note, puntatori e correzioni si raccolgono nel branch del ticket prima del merge, mai dopo;
+- se il dev vuole provare il lavoro su un ambiente che legge `develop` (per esempio il server dev) prima che il ticket sia finito, chiedi come provarlo senza mergiare, invece di passare da `develop`;
+- se dopo il merge arriva altro lavoro sullo stesso ticket, prima di cominciare di' al dev che produrrà un secondo merge dello stesso ticket, e aspetta la sua risposta.
 
 **Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
 
