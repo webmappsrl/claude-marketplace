@@ -160,9 +160,16 @@ ls docs/features/<ID>-* 2>/dev/null
 ```
 
 **Se trovati** (`overview.md`, `plan.md`, `notes.md`):
-- Leggi `overview.md` — sezioni "Cosa cambia", "Requisiti", "Out of scope": definiscono cosa il codice DEVE fare
-- Leggi `plan.md` — lista task implementativi: verifica che tutti siano stati eseguiti
-- Leggi `notes.md` — deviazioni dal piano: sono contestualmente approvate dall'autore, ma rimani libero di sollevare dubbi su deviazioni rischiose
+- Leggi `overview.md` — riga di stato, "Cosa cambia", "Requisiti", "Out of scope": definiscono cosa il codice DEVE fare. Se la riga dice `> Stato: chiusa il …`, ogni requisito ha la sua `Verifica`; se dice `approvata` o manca, l'overview non è stata chiusa e va letta insieme a «Modifiche ai requisiti» di `notes.md`.
+- Leggi `plan.md` — è il contesto di come si è arrivati al codice, non il metro: un task fatto in modo diverso conta solo se lascia scoperto un requisito.
+- Leggi `notes.md` — **le voci di «Modifiche ai requisiti» non sono approvate in anticipo**: ognuna cambia il metro con cui si giudica il codice, ed è un finding da esaminare. Un requisito tolto o indebolito, o deciso dall'agente invece che dal dev, va riportato.
+- Confronta l'overview con la versione approvata, cioè quella del primo commit del dev:
+  ```bash
+  BASE=$(git log --diff-filter=A --format=%H -1 -- docs/features/<slug>/overview.md)
+  git diff "$BASE" HEAD -- docs/features/<slug>/overview.md
+  ```
+  Ogni requisito cambiato deve avere la sua voce in `notes.md`. Il controllo meccanico è
+  `${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<slug> chiusura`: lancialo e riporta gli `error` come finding.
 
 Mostra all'utente quali docs hai trovato prima di procedere alla review.
 
@@ -176,27 +183,31 @@ Mostra all'utente quali docs hai trovato prima di procedere alla review.
 ### 5a — Ottieni il diff
 
 ```bash
-# Se hai il branch in checkout:
-git diff main...<branch-name> --stat
-git diff main...<branch-name>
+# Se hai il branch in checkout — la base è develop, il branch su cui va la PR:
+git diff develop...<branch-name> --stat
+git diff develop...<branch-name>
 
 # Se hai solo un commit di merge:
 git show <hash> --stat
 git show <hash>
 ```
 
+Con il solo commit di merge, in squash, la versione approvata dell'overview non è più nella
+storia di `develop`: il confronto della Fase 4 si fa sui commit della PR, che GitHub conserva in
+`refs/pull/<numero>/head` (`git fetch origin pull/<numero>/head`).
+
 ### 5b — Finder paralleli
 
 Lancia **5 finder paralleli** sul diff. Ogni finder legge il diff con `git diff` e i file completi leggendo direttamente dal filesystem dopo il checkout.
 
 **Finder 1 — Correctness vs richiesta ticket:**
-Confronta il diff con `customer_request` e i Requisiti di `overview.md`. Il codice risponde a quello che il cliente ha chiesto? Ci sono requisiti non implementati o implementati parzialmente?
+Confronta il diff con `customer_request` e i Requisiti di `overview.md`. Il codice risponde a quello che il cliente ha chiesto? Ci sono requisiti non implementati o implementati parzialmente? Per ogni requisito apri ciò che la sua riga `Verifica` cita: il test lo dimostra davvero, o esiste soltanto? Una verifica a mano dice chi, quando e come?
 
 **Finder 2 — Side effect e bug:**
 Cerca comportamenti non intenzionali: race condition, null pointer, edge case non gestiti, regressioni su funzionalità esistenti, modifiche a file non dichiarati nei "Moduli toccati" dell'overview.
 
 **Finder 3 — Deviazioni non documentate:**
-Confronta l'implementazione con `plan.md`. Ci sono task saltati o approcciati diversamente non registrati in `notes.md`? Le deviazioni in `notes.md` sono giustificate o rischiose?
+Confronta l'implementazione con `plan.md`. Ci sono task saltati o approcciati diversamente non registrati in `notes.md`? Le voci di «Modifiche ai requisiti» sono giustificate, e chi le ha decise?
 
 **Finder 4 — Cleanup:**
 Codice duplicato, naming incoerente, funzioni troppo lunghe, import non usati, magic number. Non bloccanti ma da segnalare.

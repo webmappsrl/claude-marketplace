@@ -158,6 +158,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | Validare marketplace, plugin e skill | `claude plugin validate .` |
 | Test del codice Go, server MCP e `geohub-import-check` (quando tocchi `mcp/`) | `cd plugins/wm-skills/mcp && go test ./...` |
 | Test di `wm-geohub-import-check` (dopo `build.sh`) | `plugins/wm-skills/scripts/tests/geohub-import-check.test.sh` e `plugins/wm-skills/scripts/tests/geohub-codice-riferimento.test.sh` |
+| Test dello script di controllo dei documenti di una feature (`feature-docs-check.sh`, usato da `wm-plan` e `wm-review-ticket`) | `plugins/wm-skills/scripts/tests/feature-docs-check.test.sh` |
 | Ricompilare il binario MCP (versionato nel repo) | `plugins/wm-skills/mcp/build.sh` |
 | Verificare che diagramma e skill siano allineati | `./.github/scripts/verifica-diagramma.sh` |
 | Verificare che nessuna skill contenga parametri posizionali | `./.github/scripts/verifica-segnaposto.sh` |

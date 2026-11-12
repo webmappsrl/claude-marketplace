@@ -233,7 +233,7 @@ senza sapere cosa sia il repo e come si lanciano i test.
 
   | Dove | Domanda | Per chi | Cambia quando |
   |---|---|---|---|
-  | `docs/features/<slug>/` | com'è andato quel lavoro | chi indaga il passato | mai: è il cantiere, immutabile |
+  | `docs/features/<slug>/` | com'è andato quel lavoro | chi indaga il passato | mai, salvo la chiusura di `wm-plan`, che aggiorna l'overview dalle note; dopo si annota |
   | `docs/knowledge/<argomento>.md` | perché funziona così, cosa è già stato provato | chi deve cambiarlo | cambia la decisione |
   | `docs/howto/<procedura>.md` | come si fa | chi lavora sul repo, o Claude che esegue | cambia il codice |
   | `docs/guide/<argomento>/` | cosa fa il prodotto e come si usa | **l'utente finale** | cambia ciò che l'utente vede |
@@ -450,7 +450,7 @@ I rimandi sono **link Markdown o percorsi citati in prosa**. Mai la forma
 file viene caricato automaticamente all'avvio — annullando il motivo stesso di averlo
 separato.
 
-## Un cantiere è un diario, non una fotografia del risultato
+## La cartella di una feature è un diario, non una fotografia del risultato
 
 `docs/features/<slug>/` si scrive **mentre** il lavoro è in corso: contiene intenzioni,
 ipotesi e nomi decisi a tavolino che l'implementazione ha poi cambiato. Una classe annunciata
@@ -469,10 +469,12 @@ nel `notes.md` del cantiere, mentre il `CLAUDE.md` continuava a descriverla come
 sospetto non va quindi puntato sulla fonte più informale, ma su **entrambe**: l'arbitro è il
 codice, e chi dei due gli dà ragione lo si scopre solo guardando.
 
-**Il cantiere non si riscrive: si annota.** Quando si scopre che un cantiere afferma qualcosa
-di falso o superato, correggerlo cancellerebbe la registrazione di com'è andata davvero. Si
-appende invece in fondo al file un blocco di errata, datato, che non tocca nulla di ciò che
-c'era:
+**Una cartella chiusa non si riscrive: si annota.** Durante il lavoro l'`overview.md` non si
+tocca e le decisioni si annotano nel `notes.md`; alla chiusura `wm-plan` aggiorna l'overview
+copiando quelle voci (vedi «review-gate: chiusura dell'overview»). Da lì in poi, quando si
+scopre che la cartella afferma qualcosa di falso o superato, correggerla cancellerebbe la
+registrazione di com'è andata davvero. Si appende invece in fondo al file un blocco di errata,
+datato, che non tocca nulla di ciò che c'era:
 
 ```markdown
 > **Errata (2026-09-12)** — questo documento afferma «<citazione>».
