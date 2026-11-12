@@ -1215,7 +1215,7 @@ L'italiano resta nei testi destinati a persone: commenti, docblock, documentazio
 Se incontri un identificatore italiano già presente nel codice, **non rinominarlo di tua iniziativa**: è un refactor fuori dallo scope del ticket. Registralo in `Fase: notes` (sezione "Follow-up").
 
 **Regola traduzioni (obbligatoria):** ogni testo traducibile introdotto dall'implementazione deve:
-- avere il testo base nella **lingua di default del repo** (rilevata in Fase: reverse-interaction — solitamente inglese, ma verifica)
+- avere la **chiave in inglese**, sempre, qualunque sia la lingua di default del repo: `APP_LOCALE` (o l'equivalente dello stack) decide solo quale traduzione compare, non la lingua della chiave. Per questo va sempre aggiunta anche la traduzione nella lingua di default: con `APP_LOCALE=it`, la voce in `it.json`
 - avere una traduzione in **tutte le lingue presenti nel repo** (file di lingua rilevati in Fase: reverse-interaction)
 - non lasciare chiavi mancanti in nessun file di lingua esistente
 
