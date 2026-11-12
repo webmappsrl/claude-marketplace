@@ -213,7 +213,9 @@ durante il lavoro.
 
 **Il controllo meccanico** dei tre file è `${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh
 <cartella> <prima-del-commit|chiusura>`: link e àncore, identificativi scritti come testo, voci
-delle note, differenze dalla versione approvata, righe `Verifica`. Verifica la coerenza fra i
+delle note, differenze dalla versione approvata, righe `Verifica`. Dopo uno squash merge il
+commit che ha aggiunto l'overview è il merge stesso: il riferimento si passa come terzo argomento
+(il commit della PR che ha aggiunto l'overview, da `refs/pull/<n>/head`). Verifica la coerenza fra i
 documenti, non la loro verità: quella la giudicano il dev e la review.
 
 **Slug:** `<ID>-<titolo-in-kebab-case>` (es. `8068-wm-review-ticket`). Se non c'è ticket, solo `<titolo-in-kebab-case>`.
@@ -627,7 +629,7 @@ SE confidenza alta:
       - Lista file/componenti UI coinvolti
       - customer_request del ticket (se disponibile)
       Ricevuto il parere della skill:
-      - Le raccomandazioni UX → aggiunte come requisiti funzionali nella sezione "Requisiti" di overview.md con prefisso `[UX]`
+      - Le raccomandazioni UX → aggiunte come requisiti nella sezione "Requisiti" di overview.md, con identificativo e àncora come gli altri e la sigla `[UX]` subito dopo: `- <a id="r7"></a>**R7** — [UX] …`
       - I rischi UX → aggiunti nella sezione "Rischi" di overview.md con prefisso `[UX]`
   → SE non trovata:
       scrivi: "⚠️ La skill ui-ux-pro-max non è installata.
@@ -967,12 +969,13 @@ scritti perché si possa dire, di ciascuno, se è soddisfatto.
 - **Fra repo diversi.** L'overview dello shard può linkare i test del package con il percorso
   relativo che passa dal submodule (`../../../wm-package/tests/…`): su GitHub non si apre, in
   locale sì, ed è in locale che girano lo script e la review. L'overview del package linka solo i
-  propri test; un requisito verificato nello shard lo nomina — repo, file, test — senza link,
-  perché il package è condiviso e non dipende da dove è montato.
+  propri test; un requisito verificato nello shard lo nomina senza link, perché il package è
+  condiviso e non dipende da dove è montato: `` - Verifica: forestas tests/Feature/Sus/SusApplicationRoutesTest.php › `denies other users` ``.
+  Lo script accetta questa forma senza controllarla.
 
 Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
 
-**Dopo l'approvazione l'overview non si tocca fino alla chiusura.** Ogni cambiamento a un
+**Dopo l'approvazione del piano l'overview non si tocca fino alla chiusura.** Ogni cambiamento a un
 requisito durante il lavoro va in `notes.md`, nella sezione «Modifiche ai requisiti» (vedi
 `Fase: notes`); l'overview si aggiorna una volta sola, alla chiusura, copiando quelle voci. Chi
 la modificasse a metà lavoro cambierebbe la versione approvata senza che nessuno se ne accorga:
@@ -1182,7 +1185,7 @@ Se il piano include componenti UI/UX (nuove interfacce, layout, prototipi, slide
 
 > "Questa feature ha componenti visual. Ti consiglio di prototipare il design su claude.ai/design prima di implementare — puoi poi trasferire il risultato direttamente a Claude Code con un'istruzione."
 
-Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con 6b (creazione branch).
+Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con `execution: branch`.
 
 ### execution: branch (obbligatoria, prima di scrivere qualsiasi file)
 
@@ -1204,7 +1207,7 @@ git checkout -b <nome-branch>
 
 Ripeti per ogni submodule coinvolto dalla feature (stesso nome branch in tutti i repo).
 
-Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con 6c.
+Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con `execution: implementation`.
 
 ### execution: implementation
 
@@ -1265,7 +1268,7 @@ Motivo: tiene separate due domande — "cosa avevamo deciso" (il piano) e "cosa 
 
 **Nota tecnica:** l'ancora segue lo slug GitHub del titolo (minuscolo, punteggiatura rimossa, lettere accentate conservate, spazi convertiti in trattini). Lo script di controllo verifica che ogni task annotato nelle note abbia la sua riga `⚠️` nel piano: un rimando mancante non dà nessun errore in Markdown.
 
-**Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione — in quel caso conviene riscriverlo invece di continuare ad annotarlo.
+**Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione. In quel caso si può riscriverlo, ma solo con una nuova approvazione del dev: le note restano com'erano, e la riga di stato del piano lo dice — `> Stato: riscritto il <AAAA-MM-GG>, approvato dal dev; le divergenze precedenti sono in notes.md`.
 
 ### execution: review-gate (obbligatorio, non skippabile)
 
@@ -1395,7 +1398,8 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
    Se sì, segui `execution: formal-review`.
 7. Completa la `Fase: update-context`.
 8. **Prima della PR:** se `has_phpstan_ci: true` rilancia `review-gate: phpstan-check`, perché i
-   commit della chiusura possono contenere codice; poi mostra al dev, da sola, tutto ciò che è
+   commit della chiusura possono contenere codice; ricalcola «Moduli toccati» e committalo se è
+   cambiato; poi mostra al dev, da sola, tutto ciò che è
    cambiato dopo il suo commit — `git diff <primo commit>..HEAD --stat` e il diff completo — e
    chiedi se si può aprire la PR.
 9. Apri la PR verso **`develop`** (non `main`), il branch di integrazione Webmapp. **Una sola PR per ticket in ogni repo**, e si mergia una volta sola, in squash: il primo commit del dev e quelli della chiusura diventano un commit solo. Il puntatore di un submodule va in un commit suo, separato da quelli di lavoro, ma nella stessa PR: mai in una PR a parte.
@@ -1415,20 +1419,26 @@ guardando il codice farebbe derivare il metro della review da ciò che deve misu
 requisito non fatto sparirebbe invece di risultare non fatto.
 
 1. **Per ogni voce di «Modifiche ai requisiti»** applica l'effetto all'overview:
-   - *aggiunto* → il requisito nuovo, con un identificativo mai usato, testo copiato dalla voce;
+   - *aggiunto* → il requisito nuovo, con l'identificativo che la voce gli ha dato, testo copiato dalla voce;
    - *modificato* → il testo del requisito sostituito con quello della voce, parola per parola;
    - *tolto* → la riga del requisito rimossa;
-   - *non fatto* → il requisito resta com'è, con la sottovoce `- Non fatto: [motivo](notes.md#<voce>)`.
+   - *non fatto* → il requisito resta com'è, con la sottovoce `- Non fatto: [motivo](notes.md#<voce>)`;
+   - *fatto*, *ripristinato* → annullano una voce precedente: vedi `Fase: notes`.
+
+   Le voci di un requisito si applicano in ordine, partendo dalla versione approvata: **vale
+   l'ultima**.
 2. **Aggiungi la riga `Verifica`** a ogni requisito che non è «non fatto», nella forma descritta
    in `Fase: overview`.
 3. **Moduli toccati:** sostituisci quelli previsti con quelli toccati davvero, ricavati da git in
    ogni repo: `git diff --name-only $(git merge-base develop HEAD)..HEAD`. Dopo il primo commit
-   del dev non ci sono più file non tracciati da perdere.
+   del dev non ci sono più file non tracciati da perdere. Si ricalcola al passo 8 di
+   `review-gate: dialog`, prima della PR: le correzioni della review e le pagine di conoscenza
+   arrivano dopo.
 4. **Rischi:** quelli superati si tolgono; quelli ancora aperti non si cancellano, si spostano dove
    qualcuno li ritroverà — un ticket, il tag, la pagina di conoscenza — scrivendo dove.
 5. **Riga di stato:** `> Stato: chiusa il <AAAA-MM-GG> · approvata il <AAAA-MM-GG>`. In testa a
-   `plan.md` una riga analoga: `> Stato: seguito, con <N> divergenze annotate in notes.md`, oppure
-   `seguito senza divergenze`.
+   `plan.md` una riga analoga: `> Stato: seguito, con <N> divergenze annotate in notes.md`,
+   `seguito senza divergenze`, oppure quella del piano riscritto (vedi `execution: divergenze`).
 6. **Lancia il controllo** in ogni repo con una cartella della feature:
 
    ```bash
@@ -1459,7 +1469,7 @@ Se l'utente risponde **sì** alla proposta di review formale in `execution: revi
 2. Attendi il completamento della review
 3. Se emergono correzioni → applicale e committale. Una correzione che cambia un requisito passa
    da `notes.md` come ogni altra: voce in «Modifiche ai requisiti», poi l'overview si aggiorna
-   copiandola, e si rilancia il controllo di chiusura sulle sole modifiche nuove.
+   copiandola, e si rilancia il controllo di chiusura.
 4. Torna al punto 7 di `review-gate: dialog` (update-context, poi il diff finale prima della PR)
 
 ---
@@ -1477,10 +1487,19 @@ prende, male ricostruendola dopo.
 - **Le modifiche ai requisiti hanno una sezione propria, in testa.** È quella che la chiusura
   applica all'overview e che la review esamina una per una: non è un diario, è l'elenco delle
   differenze fra l'overview approvata e quella chiusa. Ogni voce ha l'effetto sul requisito —
-  aggiunto, modificato, tolto, non fatto — e chi l'ha deciso; quando il requisito è aggiunto o
+  aggiunto, modificato, tolto, non fatto, fatto, ripristinato — e chi l'ha deciso; quando il requisito è aggiunto o
   modificato, il testo nuovo **per intero**, così una sessione che riparte a metà lavoro legge lo
   stato vero da overview più note, senza ricostruirlo. Una decisione che non tocca nessun
   requisito va in «Decisioni», non qui.
+- **Un requisito aggiunto riceve l'identificativo quando si scrive la voce**: il primo numero mai
+  usato. Il link della voce punta a un'àncora che nell'overview nascerà alla chiusura; lo script
+  lo sa e, prima della chiusura, non lo segnala.
+- **Una voce si supera con un'altra, non si cancella.** Le voci si scrivono in fondo alla
+  sezione, in ordine di data; quelle di un requisito valgono in quell'ordine, e conta l'ultima: «fatto» annulla un «non fatto», «ripristinato» riporta il requisito alla
+  versione approvata, annullando un «modificato» o un «tolto» — e, su un requisito aggiunto
+  durante il lavoro, lo toglie.
+- **Un identificativo non si riusa**, nemmeno dopo un «tolto»: un requisito riscritto da capo con
+  lo stesso numero sarebbe una modifica travestita da aggiunta. Lo script lo segnala.
 - **Non registrare la pulizia della sessione** — risorse di prova create e poi cancellate, i loro id, chi le ha cancellate: né qui né in `plan.md`. Non serve a chi riprende il lavoro, e una sessione futura potrebbe mettersi a cercare cose che non esistono più. La pulizia si fa e si riferisce al dev nella risposta.
 - **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, nella sezione «Divergenze dal piano, task per task». Che ogni task annotato abbia il suo rimando `⚠️` in `plan.md`, e che ogni link porti a un'àncora che esiste, lo controlla lo script (`feature-docs-check.sh`, vedi `Contratto artefatti`).
 - **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.
@@ -1499,7 +1518,7 @@ prende, male ricostruendola dopo.
 
 ### <AAAA-MM-GG> — <cosa cambia, in una riga>
 - **Requisito:** [R3](overview.md#r3)
-- **Effetto:** modificato   ← aggiunto | modificato | tolto | non fatto
+- **Effetto:** modificato   ← aggiunto | modificato | tolto | non fatto | fatto | ripristinato
 - **Decide:** dev           ← chi l'ha deciso: dev, cliente (con la fonte), agente
 - **Perché:** <motivo>
 - **Scartato:** <l'alternativa e perché no, se c'era>

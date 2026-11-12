@@ -142,8 +142,8 @@ Fonte / Estratto`, quindi le domande vanno poste una per una, per esempio:
 
 - Cosa prevede `overview.md` in "Cosa cambia" e "Requisiti" per la feature `<slug>`?
 - Cosa è dichiarato "Out of scope" in `overview.md`?
-- Quali task elenca `plan.md` e risultano tutti completati?
-- `notes.md` registra deviazioni dal piano? Quali, e con quale motivazione?
+- Quali voci elenca `notes.md` in «Modifiche ai requisiti», con quale effetto e chi le ha decise?
+- `notes.md` registra divergenze dal piano? Su quali task, e con quale motivazione?
 
 Verifica ogni prova ricevuta con `sed -n '<inizio>,<fine>p' <file>` prima di usarne il
 contenuto — se non combacia, la ricerca si rifà nel context principale. Se l'agente risponde
@@ -194,7 +194,13 @@ git show <hash>
 
 Con il solo commit di merge, in squash, la versione approvata dell'overview non è più nella
 storia di `develop`: il confronto della Fase 4 si fa sui commit della PR, che GitHub conserva in
-`refs/pull/<numero>/head` (`git fetch origin pull/<numero>/head`).
+`refs/pull/<numero>/head`. Passa allo script, come riferimento, il commit della PR che ha aggiunto l'overview:
+
+```bash
+git fetch origin pull/<numero>/head
+BASE=$(git log --diff-filter=A --format=%H -1 FETCH_HEAD -- docs/features/<slug>/overview.md)
+${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<slug> chiusura "$BASE"
+```
 
 ### 5b — Finder paralleli
 
