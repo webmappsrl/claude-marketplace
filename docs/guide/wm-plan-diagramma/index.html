@@ -436,9 +436,11 @@ flowchart TD
     IMPL -. delega a .-> IMPLSKILL(["subagent-driven-development /\nexecuting-plans / brainstorming"])
 
     IMPL --> GATE{{"execution: review-gate\nHARD-GATE — subagente cieco riassume il diff"}}
-    GATE -. opzionale .-> REVSKILL(["wm-skills:wm-review-ticket\nreview formale prima dei commit"])
+    GATE --> FIRST[["primo commit del dev\nl'overview approvata diventa il riferimento"]]
+    FIRST --> CLOSE["chiusura dell'overview\ndalle voci di notes.md, mai dal codice"]
+    CLOSE -. opzionale .-> REVSKILL(["wm-skills:wm-review-ticket\nreview formale dopo il primo commit"])
 
-    GATE --> NOTES["Fase: notes\nRegistra deviazioni e decisioni on-the-fly"]
+    CLOSE --> NOTES["Fase: notes\nNasce col piano: modifiche ai requisiti, divergenze, decisioni"]
     NOTES --> CTX["Fase: update-context\nAggiorna CLAUDE.md del progetto"]
     CTX -. delega il controllo a .-> GUARDAG(["wm-context-guard\nrilievi di forma sul CLAUDE.md, mai sul merito"])
     CTX --> DONE["Checklist di completamento\nVerifica che tutti gli artefatti esistano"]
@@ -452,9 +454,9 @@ flowchart TD
     classDef external fill:none,stroke:#8a94a0,color:#8a94a0,stroke-dasharray: 4 3;
     classDef branch fill:#3f7d53,stroke:#3f7d53,color:#fff;
 
-    class T,ENV,INIT,REV,OV,EST,WP,EXE,IMPL,NOTES,CTX,DONE,SPLITEXE phase;
+    class T,ENV,INIT,REV,OV,EST,WP,EXE,IMPL,CLOSE,NOTES,CTX,DONE,SPLITEXE phase;
     class ENVAG,RESAG,GUARDAG,DOCTOR,ESTAG subagent;
-    class BR,GATE gate;
+    class BR,GATE,FIRST gate;
     class CH,SPLIT subagent;
     class TAG,UXSKILL,WPLAN,IMPLSKILL,REVSKILL,SPLITTAG external;
     class TYPE branch;
@@ -517,11 +519,11 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>execution: review-gate<span class="tag gate">hard-gate</span></h3>
-        <p>Il secondo cancello duro: dopo l'implementazione, un subagente cieco (stesso pattern di challenge, con <code>--find-renames --find-copies</code> per non travisare i file rinominati) riassume il diff completo, ma il riepilogo non sostituisce mai la lettura diretta da parte del developer — resta un ausilio di orientamento. Se il repo è Laravel con PHPStan configurato in CI, prima della conferma commit gira anche un check PHPStan automatico: errori sul diff corrente o fallimenti infrastrutturali bloccano di default, con un override sempre motivato e tracciato in <code>notes.md</code>; il debito preesistente fuori dal diff non blocca ma propone un ticket dedicato. Poi, una domanda per volta: se c'è da correggere, se serve la review formale; il commit si chiede per ultimo, con una domanda a sé, quando non resta altro da fare — un "ok" generico non basta.</p>
+        <p>Il secondo cancello duro: dopo l'implementazione, un subagente cieco (stesso pattern di challenge, con <code>--find-renames --find-copies</code> per non travisare i file rinominati) riassume il diff completo, ma il riepilogo non sostituisce mai la lettura diretta da parte del developer — resta un ausilio di orientamento. Se il repo è Laravel con PHPStan configurato in CI, prima della conferma commit gira anche un check PHPStan automatico: errori sul diff corrente o fallimenti infrastrutturali bloccano di default, con un override sempre motivato e tracciato in <code>notes.md</code>; il debito preesistente fuori dal diff non blocca ma propone un ticket dedicato. Poi, una domanda per volta: se c'è da correggere; poi, con le note complete e l'impronta dell'overview verificata da <code>feature-docs-check.sh</code>, il dev fa il primo commit — tutto il codice più overview, piano e note. L'overview in quel commit è la versione approvata. Segue la chiusura: l'overview si aggiorna copiando le voci di «Modifiche ai requisiti», un requisito non fatto resta segnato, ogni requisito riceve la sua riga <code>Verifica</code>; il dev approva la differenza dalla versione approvata, poi la review formale facoltativa. I commit della chiusura li fa la sessione principale, mai un subagente, senza amend né force push; prima della PR il dev vede tutto ciò che è cambiato dopo il suo commit.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: notes<span class="tag phase">fase</span></h3>
-        <p>Registra in <code>notes.md</code> ogni deviazione dal piano, bug scoperti durante l'implementazione, decisioni prese al volo e falsi negativi di classificazione emersi rispetto alla stima iniziale. Un notes.md con "nessuna deviazione" è valido; la sua assenza non lo è mai.</p>
+        <p><code>notes.md</code> nasce all'approvazione del piano, con l'impronta dell'overview approvata, e si scrive durante il lavoro. In testa le «Modifiche ai requisiti»: per ognuna l'effetto (aggiunto, modificato, tolto, non fatto), chi l'ha deciso e, se il requisito cambia, il testo nuovo per intero. Poi le divergenze dal piano task per task, i bug, le decisioni con il campo «Scartato», i falsi negativi di stima. Un notes.md con "nessuna deviazione" è valido; la sua assenza non lo è mai.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: update-context<span class="tag phase">fase</span></h3>

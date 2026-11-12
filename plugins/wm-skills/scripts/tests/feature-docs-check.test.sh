@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# Test di feature-docs-check.sh. Lavora in un repo git temporaneo, mai nel repo vero.
+set -uo pipefail
+QUI="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$QUI/../feature-docs-check.sh"
+FALLITI=0
+
+verifica() { # nome, atteso, ottenuto
+  if [ "$2" = "$3" ]; then printf '✔ %s\n' "$1"
+  else printf '✘ %s\n   atteso:   %s\n   ottenuto: %s\n' "$1" "$2" "$3"; FALLITI=$((FALLITI+1)); fi
+}
+ids() { "$SCRIPT" "$F" "$1" 2>/dev/null | awk -F'\t' '$1=="error"{print $2}' | sort -u | paste -sd, -; }
+
+REPO="$(mktemp -d)"; trap 'rm -rf "$REPO"' EXIT
+git -C "$REPO" init -q
+G() { git -C "$REPO" -c user.name=test -c user.email=test@example.invalid "$@"; }
+F="$REPO/docs/features/1-prova"; mkdir -p "$F" "$REPO/tests"
+cat > "$REPO/tests/ShowTest.php" <<'EOF'
+<?php
+it('hides the code until approval', function () {});
+EOF
+
+scrivi_overview() { # testo di R2
+cat > "$F/overview.md" <<EOF
+> Stato: approvata il 2026-11-12
+
+# Prova
+
+## Punto di partenza
+Oggi la domanda non si legge.
+
+## Requisiti
+- <a id="r1"></a>**R1** — la lettura risponde con lo stato della domanda.
+- <a id="r2"></a>**R2** — $1
+  come richiesto da [R1](#r1).
+EOF
+}
+scrivi_overview "il numero non compare finché la domanda non è approvata,"
+IMPRONTA="$(git -C "$REPO" hash-object -w "$F/overview.md")"
+cat > "$F/plan.md" <<'EOF'
+> Ticket: oc:1
+
+# Piano
+### Task 1
+> ⚠️ L'implementazione ha deviato da questo task: [notes.md](notes.md#task-1-lettura)
+EOF
+cat > "$F/notes.md" <<EOF
+> Overview approvata il 2026-11-12 · impronta \`$IMPRONTA\`
+
+# Notes
+
+## Modifiche ai requisiti
+
+## Divergenze dal piano, task per task
+### Task 1 lettura
+Diverso.
+EOF
+
+verifica "prima del commit, tutto in regola" "" "$(ids prima-del-commit)"
+
+cp "$F/overview.md" "$REPO/salvata"
+echo "Nota sparsa su R1." >> "$F/overview.md"
+verifica "identificativo come testo, overview cambiata" "id-senza-link,overview-cambiata" "$(ids prima-del-commit)"
+cp "$REPO/salvata" "$F/overview.md"
+
+echo "- [R9](overview.md#r9)" >> "$F/plan.md"
+verifica "link a un requisito inesistente" "ancora-assente" "$(ids prima-del-commit)"
+sed -i.bak '$d' "$F/plan.md" && rm -f "$F/plan.md.bak"
+
+sed -i.bak 's/^> ⚠️.*$//' "$F/plan.md" && rm -f "$F/plan.md.bak"
+verifica "divergenza senza rimando nel piano" "divergenza-senza-rimando" "$(ids prima-del-commit)"
+printf '> ⚠️ L%simplementazione ha deviato: [notes.md](notes.md#task-1-lettura)\n' "'" >> "$F/plan.md"
+
+# Primo commit del dev: da qui la versione approvata è quella del commit.
+G add -A && G commit -qm "primo commit"
+
+# Chiusura senza aggiornare niente: mancano stato e verifiche.
+verifica "chiusura incompleta" "stato-assente,stato-piano-assente,verifica-assente" "$(ids chiusura)"
+
+chiudi() { # testo di R2, riga di verifica di R2
+  scrivi_overview "$1"
+  sed -i.bak 's/^> Stato: approvata il 2026-11-12$/> Stato: chiusa il 2026-11-20 · approvata il 2026-11-12/' "$F/overview.md"
+  python3 - "$F/overview.md" "$2" <<'PY'
+import sys
+p, v = sys.argv[1], sys.argv[2]
+s = open(p).read()
+s = s.replace("con lo stato della domanda.\n", "con lo stato della domanda.\n  - Verifica: [ShowTest.php](../../../tests/ShowTest.php) › `hides the code until approval`\n")
+s = s.rstrip("\n") + "\n  - Verifica: " + v + "\n"
+open(p, "w").write(s)
+PY
+  rm -f "$F/overview.md.bak"
+  grep -q '^> Stato:' "$F/plan.md" || sed -i.bak '1s/^/> Stato: seguito, una divergenza\n/' "$F/plan.md"; rm -f "$F/plan.md.bak"
+}
+chiudi "il numero non compare finché la domanda non è approvata," "[ShowTest.php](../../../tests/ShowTest.php) › \`hides the code until approval\`"
+verifica "chiusura in regola" "" "$(ids chiusura)"
+
+chiudi "il numero non compare finché la domanda non è approvata," "[ShowTest.php](../../../tests/ShowTest.php) › \`a test that does not exist\`"
+verifica "test citato che non esiste" "nome-assente" "$(ids chiusura)"
+
+chiudi "il numero compare sempre," "a mano — dev, 2026-11-20: provato su UAT"
+verifica "requisito indebolito senza voce" "cambiato-senza-voce" "$(ids chiusura)"
+
+cat >> "$F/notes.md.voce" <<'EOF'
+### 2026-11-15 — Il numero si mostra sempre
+- **Requisito:** [R2](overview.md#r2)
+- **Effetto:** modificato
+- **Decide:** dev
+- **Testo nuovo:**
+  > il numero compare sempre, come richiesto da [R1](overview.md#r1).
+EOF
+awk -v f="$F/notes.md.voce" '{print} /^## Modifiche ai requisiti/{print ""; while((getline l < f)>0) print l}' "$F/notes.md" > "$F/n" && mv "$F/n" "$F/notes.md" && rm "$F/notes.md.voce"
+verifica "requisito modificato con la sua voce" "" "$(ids chiusura)"
+
+chiudi "il numero compare sempre, anche prima," "a mano — dev, 2026-11-20: provato su UAT"
+verifica "testo diverso da quello delle note" "testo-diverso" "$(ids chiusura)"
+
+chiudi "il numero compare sempre," "a mano — il dev"
+verifica "verifica a mano senza data" "verifica-a-mano-incompleta" "$(ids chiusura)"
+
+sed -i.bak '/<a id="r2">/,$d' "$F/overview.md" && rm -f "$F/overview.md.bak"
+verifica "requisito sparito senza voce (la nota punta al vuoto)" "ancora-assente,requisito-sparito" "$(ids chiusura)"
+
+sed -i.bak 's/^- \*\*Effetto:\*\* modificato$/- **Effetto:** tolto/; /^- \*\*Testo nuovo:\*\*$/,/^  > /d' "$F/notes.md" && rm -f "$F/notes.md.bak"
+verifica "requisito tolto con la sua voce" "" "$(ids chiusura)"
+
+echo
+[ "$FALLITI" -eq 0 ] && echo "Tutti i test passano." || { echo "$FALLITI test falliti."; exit 1; }
