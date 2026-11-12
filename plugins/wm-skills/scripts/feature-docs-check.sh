@@ -5,8 +5,8 @@
 #
 #   [commit]  solo in chiusura: il commit che contiene la versione approvata dell'overview. Di
 #             norma si ricava da git (il commit che ha aggiunto overview.md); va passato dopo uno
-#             squash merge, quando quel commit è il merge stesso — per esempio il primo commit
-#             della PR, preso da refs/pull/<n>/head.
+#             squash merge, quando quel commit è il merge stesso: il commit della PR che ha
+#             aggiunto overview.md, preso da refs/pull/<n>/head.
 #
 #   prima-del-commit  prima del primo commit del dev: l'overview è ancora quella approvata
 #                     (impronta registrata in notes.md)? link e voci delle note sono in regola?
@@ -60,14 +60,22 @@ done
 # non rientrata.
 # Stampa:  T<TAB>r3<TAB>testo normalizzato   |   V<TAB>r3<TAB>riga di verifica   |   N<TAB>r3
 REQ_AWK='
+function chiudi_verifica() {
+  if (verifica != "") {
+    gsub(/[[:space:]]+/, " ", verifica); sub(/ $/, "", verifica)
+    print "V\t" id "\t" verifica
+  }
+  verifica = ""
+}
 function chiudi() {
+  chiudi_verifica()
   if (id != "") {
     gsub(/[[:space:]]+/, " ", testo); sub(/^ /, "", testo); sub(/ $/, "", testo)
     print "T\t" id "\t" testo
   }
   id = ""; testo = ""; fuori = 0
 }
-/^```/ { codice = !codice }
+/^[[:space:]]*```/ { codice = !codice }
 codice { next }
 /^- <a id="r[0-9]+"><\/a>/ {
   chiudi()
@@ -82,11 +90,12 @@ id == "" { next }
 /^[[:space:]]*$/ { next }
 /^[^[:space:]]/ { chiudi(); next }
 /^[[:space:]]+- (\*\*)?Verifica:/ {
-  fuori = 1; r = $0; sub(/^[[:space:]]+- (\*\*)?Verifica:(\*\*)?[[:space:]]*/, "", r)
-  print "V\t" id "\t" r; next
+  chiudi_verifica(); fuori = 1; r = $0; sub(/^[[:space:]]+- (\*\*)?Verifica:(\*\*)?[[:space:]]*/, "", r)
+  verifica = r; next
 }
-/^[[:space:]]+- (\*\*)?Non fatto:/ { fuori = 1; print "N\t" id; next }
-/^[[:space:]]+- / { fuori = 0; testo = testo " " $0; next }
+/^[[:space:]]+- (\*\*)?Non fatto:/ { chiudi_verifica(); fuori = 1; print "N\t" id; next }
+/^[[:space:]]+- / { chiudi_verifica(); fuori = 0; testo = testo " " $0; next }
+verifica != "" { verifica = verifica " " $0; next }
 fuori == 0 { testo = testo " " $0 }
 END { chiudi() }'
 
@@ -107,7 +116,7 @@ function chiudi() {
   }
   titolo = ""; req = ""; eff = ""; dec = ""; nuovo = ""; innuovo = 0
 }
-/^```/ { codice = !codice; next }
+/^[[:space:]]*```/ { codice = !codice; next }
 codice { next }
 /^## / { chiudi(); dentro = ($0 ~ /^## Modifiche ai requisiti/); next }
 !dentro { next }
@@ -134,12 +143,16 @@ awk "$REQ_AWK" "$OV" > "$TMP/ora"
 awk "$NOTE_AWK" "$NO" > "$TMP/voci"
 # Àncore che possono mancare: quelle dei requisiti tolti, che non esistono più, e — prima della
 # chiusura — quelle dei requisiti aggiunti, che nell'overview nascono solo alla chiusura.
-awk -F'\t' -v fase="$FASE" '$4 == "tolto" || (fase == "prima-del-commit" && $4 == "aggiunto") { print $3 }' \
+awk -F'\t' -v fase="$FASE" '
+  $3 == "" { next }
+  { ultimo[$3] = $4 }
+  fase == "prima-del-commit" && $4 == "aggiunto" { aggiunto[$3] = 1 }
+  END { for (r in ultimo) if (ultimo[r] == "tolto" || ultimo[r] == "ripristinato" || (r in aggiunto)) print r }' \
   "$TMP/voci" > "$TMP/assenti-ammesse"
 
 # I file senza i blocchi di codice: un piano è pieno di codice, e `$a[$b]($c)` non è un link.
 # Le righe del blocco restano vuote, così i numeri di riga non cambiano.
-senza_codice() { awk '/^```/{c=!c; print ""; next} c{print ""; next} {print}' "$1"; }
+senza_codice() { awk '/^[[:space:]]*```/{c=!c; print ""; next} c{print ""; next} {print}' "$1"; }
 
 # Identificativi definiti due volte.
 grep -oE 'id="r[0-9]+"' "$OV" | sort | uniq -d | while read -r d; do echo "$d"; done > "$TMP/doppi"
@@ -197,6 +210,13 @@ while IFS="$(printf '\t')" read -r _ titolo req eff dec nuovo; do
     [ -n "$nuovo" ] || emetti error testo-nuovo-assente "notes.md «${titolo}»: un requisito $eff va riscritto per intero in «Testo nuovo»" ;;
   esac
 done < "$TMP/voci"
+
+# Un identificativo non si riusa: «aggiunto» su un numero già comparso nelle note è un errore.
+awk -F'\t' '$3 == "" { next } $4 == "aggiunto" && ($3 in visto) { print $3 "\t" $2 } { visto[$3] = 1 }' "$TMP/voci" \
+  > "$TMP/riusati"
+while IFS="$(printf '\t')" read -r r titolo; do
+  emetti error id-riusato "notes.md «${titolo}»: $r è già comparso prima nelle note — un requisito nuovo prende un numero mai usato"
+done < "$TMP/riusati"
 
 # Divergenze dal piano: ogni task annotato nelle note ha il suo rimando ⚠️ nel piano.
 awk '/^## /{d=($0 ~ /^## Divergenze dal piano/); next} d && /^### /{print substr($0,5)}' "$NO" | slug \
@@ -256,15 +276,17 @@ if [ "$FASE" = chiusura ]; then
       END {
         for (id in ids) {
           R = toupper(substr(id, 1, 1)) substr(id, 2)
-          presente = (id in b); testo = b[id]; nonfatto = 0; toccato = 0; ultimo = ""
+          inb = (id in b); testo = inb ? b[id] : ""
+          presente = inb; nonfatto = 0; toccato = 0; ultimo = ""
           for (i = 1; i <= nv[id]; i++) {
             e = eff[id, i]; ultimo = e
+            if (e == "aggiunto" && inb) err("id-riusato", R ": «aggiunto» su un identificativo che è nella versione approvata — un requisito nuovo prende un numero mai usato")
             if (e == "aggiunto")          { presente = 1; testo = txt[id, i]; toccato = 1 }
             else if (e == "modificato")   { testo = txt[id, i]; toccato = 1 }
             else if (e == "tolto")        { presente = 0 }
             else if (e == "non fatto")    { nonfatto = 1 }
             else if (e == "fatto")        { nonfatto = 0 }
-            else if (e == "ripristinato") { presente = (id in b); testo = b[id]; nonfatto = 0; toccato = 0 }
+            else if (e == "ripristinato") { presente = inb; testo = inb ? b[id] : ""; nonfatto = 0; toccato = 0 }
           }
           ino = (id in o)
           if (presente && !ino) err("requisito-sparito", R ": secondo la versione approvata e le note dovrebbe esserci, e nell\047overview non c\047è")

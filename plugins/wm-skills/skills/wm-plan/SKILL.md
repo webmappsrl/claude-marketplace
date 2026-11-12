@@ -215,7 +215,7 @@ durante il lavoro.
 <cartella> <prima-del-commit|chiusura>`: link e àncore, identificativi scritti come testo, voci
 delle note, differenze dalla versione approvata, righe `Verifica`. Dopo uno squash merge il
 commit che ha aggiunto l'overview è il merge stesso: il riferimento si passa come terzo argomento
-(il primo commit della PR). Verifica la coerenza fra i
+(il commit della PR che ha aggiunto l'overview, da `refs/pull/<n>/head`). Verifica la coerenza fra i
 documenti, non la loro verità: quella la giudicano il dev e la review.
 
 **Slug:** `<ID>-<titolo-in-kebab-case>` (es. `8068-wm-review-ticket`). Se non c'è ticket, solo `<titolo-in-kebab-case>`.
@@ -969,8 +969,9 @@ scritti perché si possa dire, di ciascuno, se è soddisfatto.
 - **Fra repo diversi.** L'overview dello shard può linkare i test del package con il percorso
   relativo che passa dal submodule (`../../../wm-package/tests/…`): su GitHub non si apre, in
   locale sì, ed è in locale che girano lo script e la review. L'overview del package linka solo i
-  propri test; un requisito verificato nello shard lo nomina — repo, file, test — senza link,
-  perché il package è condiviso e non dipende da dove è montato.
+  propri test; un requisito verificato nello shard lo nomina senza link, perché il package è
+  condiviso e non dipende da dove è montato: `` - Verifica: forestas tests/Feature/Sus/SusApplicationRoutesTest.php › `denies other users` ``.
+  Lo script accetta questa forma senza controllarla.
 
 Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
 
@@ -1486,16 +1487,19 @@ prende, male ricostruendola dopo.
 - **Le modifiche ai requisiti hanno una sezione propria, in testa.** È quella che la chiusura
   applica all'overview e che la review esamina una per una: non è un diario, è l'elenco delle
   differenze fra l'overview approvata e quella chiusa. Ogni voce ha l'effetto sul requisito —
-  aggiunto, modificato, tolto, non fatto — e chi l'ha deciso; quando il requisito è aggiunto o
+  aggiunto, modificato, tolto, non fatto, fatto, ripristinato — e chi l'ha deciso; quando il requisito è aggiunto o
   modificato, il testo nuovo **per intero**, così una sessione che riparte a metà lavoro legge lo
   stato vero da overview più note, senza ricostruirlo. Una decisione che non tocca nessun
   requisito va in «Decisioni», non qui.
 - **Un requisito aggiunto riceve l'identificativo quando si scrive la voce**: il primo numero mai
   usato. Il link della voce punta a un'àncora che nell'overview nascerà alla chiusura; lo script
   lo sa e, prima della chiusura, non lo segnala.
-- **Una voce si supera con un'altra, non si cancella.** Le voci di un requisito valgono in ordine,
-  e conta l'ultima: «fatto» annulla un «non fatto», «ripristinato» riporta il requisito alla
-  versione approvata, annullando un «modificato» o un «tolto».
+- **Una voce si supera con un'altra, non si cancella.** Le voci si scrivono in fondo alla
+  sezione, in ordine di data; quelle di un requisito valgono in quell'ordine, e conta l'ultima: «fatto» annulla un «non fatto», «ripristinato» riporta il requisito alla
+  versione approvata, annullando un «modificato» o un «tolto» — e, su un requisito aggiunto
+  durante il lavoro, lo toglie.
+- **Un identificativo non si riusa**, nemmeno dopo un «tolto»: un requisito riscritto da capo con
+  lo stesso numero sarebbe una modifica travestita da aggiunta. Lo script lo segnala.
 - **Non registrare la pulizia della sessione** — risorse di prova create e poi cancellate, i loro id, chi le ha cancellate: né qui né in `plan.md`. Non serve a chi riprende il lavoro, e una sessione futura potrebbe mettersi a cercare cose che non esistono più. La pulizia si fa e si riferisce al dev nella risposta.
 - **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, nella sezione «Divergenze dal piano, task per task». Che ogni task annotato abbia il suo rimando `⚠️` in `plan.md`, e che ogni link porti a un'àncora che esiste, lo controlla lo script (`feature-docs-check.sh`, vedi `Contratto artefatti`).
 - **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.

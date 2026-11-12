@@ -194,12 +194,12 @@ git show <hash>
 
 Con il solo commit di merge, in squash, la versione approvata dell'overview non è più nella
 storia di `develop`: il confronto della Fase 4 si fa sui commit della PR, che GitHub conserva in
-`refs/pull/<numero>/head`. Passa allo script il primo commit della PR come riferimento:
+`refs/pull/<numero>/head`. Passa allo script, come riferimento, il commit della PR che ha aggiunto l'overview:
 
 ```bash
-git fetch origin pull/<numero>/head:pr-<numero>
-PRIMO=$(git rev-list --reverse $(git merge-base develop pr-<numero>)..pr-<numero> | head -1)
-${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<slug> chiusura "$PRIMO"
+git fetch origin pull/<numero>/head
+BASE=$(git log --diff-filter=A --format=%H -1 FETCH_HEAD -- docs/features/<slug>/overview.md)
+${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<slug> chiusura "$BASE"
 ```
 
 ### 5b — Finder paralleli

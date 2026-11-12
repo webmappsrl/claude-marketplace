@@ -208,5 +208,50 @@ sed -i.bak 's/la conferma risponde con lo stato./la conferma risponde./' "$F/ove
 verifica "dopo lo squash, con il primo commit come riferimento" "testo-diverso" \
   "$("$SCRIPT" "$F" chiusura "$PRIMO" 2>/dev/null | awk -F'\t' '$1=="error"{print $2}' | sort -u | paste -sd, -)"
 
+# --- Casi trovati dalla review della #38 ------------------------------------------------------
+
+REPO3="$(mktemp -d)"; trap 'rm -rf "$REPO" "$REPO2" "$REPO3"' EXIT
+git -C "$REPO3" init -q
+G3() { git -C "$REPO3" -c user.name=test -c user.email=test@example.invalid "$@"; }
+F="$REPO3/docs/features/3-prova"; mkdir -p "$F" "$REPO3/tests"
+printf "<?php\nit('reads the application', function () {});\n" > "$REPO3/tests/ReadTest.php"
+cat > "$F/overview.md" <<'EOF'
+> Stato: approvata il 2026-11-12
+
+## Requisiti
+- <a id="r1"></a>**R1** — la lettura risponde con lo stato.
+EOF
+IMPRONTA="$(git -C "$REPO3" hash-object -w "$F/overview.md")"
+cat > "$F/plan.md" <<'EOF'
+> Stato: seguito
+
+1. Passo con codice rientrato:
+   ```php
+   $this->handlers[$name]($value);
+   ```
+EOF
+nota() { # effetto, requisito
+  printf '\n### 2026-11-1%s — voce\n- **Requisito:** [%s](overview.md#%s)\n- **Effetto:** %s\n- **Decide:** dev\n' \
+    "$((RANDOM % 9))" "$(echo "$2" | tr r R)" "$2" "$1"
+  [ "$1" = aggiunto ] && printf -- '- **Testo nuovo:**\n  > %s\n' "$3"
+  return 0
+}
+{ printf '> Overview approvata il 2026-11-12 · impronta `%s`\n\n## Modifiche ai requisiti\n' "$IMPRONTA"
+  nota aggiunto r2 "la conferma risponde."; nota ripristinato r2; } > "$F/notes.md"
+verifica "codice rientrato nel piano; «aggiunto» poi «ripristinato»" "" "$(ids prima-del-commit)"
+G3 add -A && G3 commit -qm "primo commit"
+sed -i.bak '1s/.*/> Stato: chiusa il 2026-11-20/' "$F/overview.md"
+cat >> "$F/overview.md" <<'EOF'
+  - Verifica: [ReadTest.php](../../../tests/ReadTest.php)
+    › `reads the application`
+EOF
+rm -f "$F"/*.bak
+verifica "requisito aggiunto e poi annullato; Verifica su due righe" "" "$(ids chiusura)"
+
+{ printf '> Overview approvata il 2026-11-12 · impronta `%s`\n\n## Modifiche ai requisiti\n' "$IMPRONTA"
+  nota tolto r1; nota aggiunto r1 "tutt altro requisito."; } > "$F/notes.md"
+sed -i.bak 's/la lettura risponde con lo stato./tutt altro requisito./' "$F/overview.md"; rm -f "$F"/*.bak
+verifica "identificativo riusato dopo «tolto»" "id-riusato" "$(ids chiusura)"
+
 echo
 [ "$FALLITI" -eq 0 ] && echo "Tutti i test passano." || { echo "$FALLITI test falliti."; exit 1; }
