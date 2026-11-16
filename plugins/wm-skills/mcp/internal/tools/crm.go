@@ -130,7 +130,11 @@ func registerCRM(server *mcp.Server, deps Deps) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_quotes",
 		Description: "Elenca i preventivi, con filtri facoltativi su cliente e stato.",
+		InputSchema: listQuotesInputSchema(deps.Enums),
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listQuotesInput) (*mcp.CallToolResult, any, error) {
+		if err := validateQuoteStatus(deps.Enums, in.Status); err != nil {
+			return nil, nil, err
+		}
 		path := listQuotesPath(in.CustomerID, in.Status)
 		raw, err := deps.Client.Do(ctx, "GET", path, nil)
 		if err != nil {
