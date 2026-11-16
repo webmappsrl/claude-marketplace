@@ -10,17 +10,16 @@ sulle citazioni, indipendente da chi le ha prodotte: si fa prima di usare una ci
    `excludeContentSnippets: true`. Un apostrofo nella frase va scritto `\'` (`un\'idea`): senza, la
    ricerca risponde `Invalid query`.
 
-   **Le cartelle dello scrum non hanno un id fisso**, e non è detto che siano una sola: Meet ne crea
-   una nuova con lo stesso titolo ogni volta che la serie ricorrente viene ricreata, e le call
-   vecchie restano in quella di prima. Risolvile con una ricerca, come fa
-   `wm-transcript-research`:
+   **La cartella dello scrum non ha un id fisso**: Meet ne crea una nuova con lo stesso titolo ogni
+   volta che la serie ricorrente viene ricreata, e le call di prima restano in quella vecchia.
+   Risolvile con una ricerca, come fa `wm-transcript-research`:
 
    `parentId = '1cqWMB7tCkX1IcF2hOwgBIdqad__WUEPT' and mimeType = 'application/vnd.google-apps.folder' and title contains 'scr-umwe-bmapp'`
 
-   poi cerca la frase in tutte quelle che tornano:
-   `(parentId = '<id 1>' or parentId = '<id 2>' …) and fullText contains '"<frase>"'`. Cercando in
-   una cartella sola, una citazione vera presa da una call che sta nell'altra risulta «non trovata».
-   Per una fonte fuori da queste cartelle ometti `parentId` e controlla l'id fra i risultati.
+   Ordinate per `createdTime`, ciascuna copre dalla propria creazione a quella della successiva.
+   La citazione che stai verificando ha la data nel titolo della sua fonte: cerca la frase **nella
+   sola cartella che copre quella data**. Per una fonte fuori da queste cartelle ometti `parentId`
+   e controlla l'id fra i risultati.
 3. Esiti:
    - **l'id della fonte citata è fra i risultati:** la citazione è attribuita bene;
    - **compare un altro id:** la citazione è attribuita alla call sbagliata; non usarla così com'è,
