@@ -93,16 +93,38 @@ I giorni **comprendono sempre oggi**. Senza indicazioni, sono solo oggi.
 
 ## Le fonti
 
-**Le call di un giorno.** Elencale con `search_files`,
-`parentId = '1Q8VVlo9eO_niYkzaSD_go7-SZIBx8Wak' and title contains 'AAAA/MM/GG'` (solo la parte
-della data: mai il fuso, `CEST` diventa `CET`), con `excludeContentSnippets: true` e
-`pageSize: 100`. **Drive restituisce i risultati a pagine:** finché la risposta contiene
-`nextPageToken`, rifai la ricerca con `pageToken`. Una sola pagina non è l'elenco: nelle prove del
-23/09 la prima pagina aveva 6 call su 13, e la call con la risposta era fuori.
+**La cartella delle call non ha un id fisso.** Meet tiene le trascrizioni dello scrum in una
+cartella della serie ricorrente, e quando la serie viene ricreata ne compare una nuova con lo
+**stesso identico titolo**, accanto alla vecchia e dentro lo stesso padre. È successo il
+22/10/2026: la cartella storica si ferma a quel giorno e le call da novembre stanno nella seconda.
+Un id scritto qui dentro prima o poi punta a quella sbagliata, e la ricerca non trova niente senza
+che nulla segnali l'errore.
 
-Per più giorni elenca tutte le date in una ricerca (`title contains '2026/09/15' or title contains
-'2026/09/22' …`), una clausola per data, seguendo le pagine: poi raggruppa le call per giorno.
-**Un giorno senza call non ha notebook**: saltalo.
+**Risolvi quindi le cartelle a ogni ricerca**, prima di cercare le call:
+
+`parentId = '1cqWMB7tCkX1IcF2hOwgBIdqad__WUEPT' and mimeType = 'application/vnd.google-apps.folder' and title contains 'scr-umwe-bmapp'`
+
+con `excludeContentSnippets: true`. `1cqWMB7t…` è la cartella `Google Meet` del Drive del dev, ed è
+l'unico id fisso rimasto. **Tieni tutte le cartelle che tornano, non la più recente:** le call
+vecchie restano dove sono state scritte, e una ricerca su più giorni attraversa lo spartiacque.
+
+**Se questa ricerca non restituisce nessuna cartella, fermati**: non cercare le call e non
+rispondere «nessuna call». È un fallimento, e si riporta come tale — vedi `## Fallimento`.
+
+**Le call di un giorno.** Elencale con `search_files` dentro le cartelle risolte,
+`(parentId = '<id prima cartella>' or parentId = '<id seconda cartella>' …) and title contains 'AAAA/MM/GG'`
+(della data solo la parte numerica: mai il fuso, `CEST` diventa `CET`), con
+`excludeContentSnippets: true` e `pageSize: 100`. **Drive restituisce i risultati a pagine:** finché
+la risposta contiene `nextPageToken`, rifai la ricerca con `pageToken`. Una sola pagina non è
+l'elenco: nelle prove del 23/09 la prima pagina aveva 6 call su 13, e la call con la risposta era
+fuori.
+
+Per più giorni elenca tutte le date in una sola ricerca, una clausola per data, dentro lo stesso
+gruppo di cartelle: `(parentId = '<id 1>' or parentId = '<id 2>') and (title contains '2026/09/15'
+or title contains '2026/09/22' …)`, seguendo le pagine; poi raggruppa le call per giorno.
+**Un giorno senza call non ha notebook**: saltalo — ma solo perché le cartelle le hai risolte. Un
+elenco vuoto vale «quel giorno non c'è stata call» soltanto dopo che la ricerca delle cartelle ha
+risposto; altrimenti non sai se stai guardando nel posto giusto.
 
 **Per ogni giorno con almeno una call** usa il notebook `scrum AAAA-MM-GG`: crealo se manca, e
 aggiungi con `source_add` le call di quel giorno che non ha ancora (`source_type: drive`,
@@ -196,6 +218,7 @@ Fonti:
 - <titolo> — <link> — id: <drive_doc_id>
 
 Copertura:
+- cartelle delle call risolte: <titolo — id, una per riga>
 - giorni del ticket: <elenco>; con almeno una call: <elenco>
 - per ogni notebook interrogato: <nome> — <T> call nell'elenco di Drive, <N> caricate (se N < T, il motivo)
 - citate: <titoli delle fonti da cui NotebookLM ha citato>
@@ -236,4 +259,12 @@ unica riga:
 
 e, se il motivo sono le credenziali, aggiungi: `Esegui ! nlm login con l'account @webmapp.it.`
 Se non riesci ad accedere a Drive per l'elenco delle call: `RICERCA FALLITA: <motivo>`.
-Non restituire un «non trovato» al posto di un fallimento.
+
+Se la ricerca delle cartelle dello scrum (`## Le fonti`) non restituisce nessuna cartella:
+
+`RICERCA FALLITA: nessuna cartella delle call sotto Google Meet (1cqWMB7tCkX1IcF2hOwgBIdqad__WUEPT) — il titolo della serie ricorrente può essere cambiato`
+
+**Non restituire un «non trovato» al posto di un fallimento.** Un giorno senza call e una cartella
+che non si trova si assomigliano — in tutti e due i casi l'elenco è vuoto — ma dicono cose opposte
+a chi ti ha chiamato: il primo è «non se n'è parlato», il secondo è «non ho guardato». Il 16/11/2026
+sono stati confusi, e il dev si è sentito dire che la call di quel giorno non esisteva.
