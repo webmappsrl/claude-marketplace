@@ -8,9 +8,18 @@ sulle citazioni, indipendente da chi le ha prodotte: si fa prima di usare una ci
 2. Cerca con `search_files` di Drive:
    `parentId = '<cartella della fonte>' and fullText contains '"<frase>"'`, con
    `excludeContentSnippets: true`. Un apostrofo nella frase va scritto `\'` (`un\'idea`): senza, la
-   ricerca risponde `Invalid query`. Per le call dello scrum la cartella è
-   `1Q8VVlo9eO_niYkzaSD_go7-SZIBx8Wak`; per una fonte fuori cartella ometti `parentId` e controlla
-   l'id fra i risultati.
+   ricerca risponde `Invalid query`.
+
+   **La cartella dello scrum non ha un id fisso**: Meet ne crea una nuova con lo stesso titolo ogni
+   volta che la serie ricorrente viene ricreata, e le call di prima restano in quella vecchia.
+   Risolvile con una ricerca, come fa `wm-transcript-research`:
+
+   `parentId = '1cqWMB7tCkX1IcF2hOwgBIdqad__WUEPT' and mimeType = 'application/vnd.google-apps.folder' and title contains 'scr-umwe-bmapp'`
+
+   Ordinate per `createdTime`, ciascuna copre dalla propria creazione a quella della successiva.
+   La citazione che stai verificando ha la data nel titolo della sua fonte: cerca la frase **nella
+   sola cartella che copre quella data**. Per una fonte fuori da queste cartelle ometti `parentId`
+   e controlla l'id fra i risultati.
 3. Esiti:
    - **l'id della fonte citata è fra i risultati:** la citazione è attribuita bene;
    - **compare un altro id:** la citazione è attribuita alla call sbagliata; non usarla così com'è,
