@@ -1,0 +1,391 @@
+import type { EngineInterface, Register } from 'claude-code'
+
+const PANE = 'wm-plan-anchors'
+
+type Req = { label: string; text: string; ux: boolean; verifica: boolean }
+
+type Voce = { label: string; text: string; nota: string }
+
+/** Toglie il markdown: nel pane non significa niente ed e solo rumore. */
+function pulisci(text: string): string {
+  return text
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Il testo senza i pezzi fra backtick.
+ *
+ * Una sigla fra backtick e la sigla di cui si parla, non il requisito a cui ci
+ * si riferisce: va ignorata, o il pane esplode i propri esempi. Gli spazi
+ * restano al posto del codice, cosi le posizioni non si spostano.
+ */
+function senzaCodice(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, blocco => ' '.repeat(blocco.length))
+    .replace(/`[^`\n]*`/g, pezzo => ' '.repeat(pezzo.length))
+}
+
+/** Legge la sezione Requisiti di un overview nel formato con ancore. */
+function parseRequirements(md: string): Map<string, Req> {
+  const found = new Map<string, Req>()
+  let current: Req | undefined
+
+  for (const line of md.split('\n')) {
+    const head = /^-\s*<a id="r(\d+)"><\/a>\s*\*\*(R\d+)\*\*\s*[—-]\s*(.*)$/.exec(line)
+    if (head) {
+      const body = (head[3] ?? '').trim()
+      current = {
+        label: head[2] ?? '',
+        text: body.replace(/^\[UX\]\s*/, ''),
+        ux: body.startsWith('[UX]'),
+        verifica: false,
+      }
+      found.set(current.label, current)
+      continue
+    }
+    if (!current) continue
+    if (/^\s+-\s*\*{0,2}(Verifica|Non fatto)/i.test(line)) {
+      if (/Verifica/i.test(line)) current.verifica = true
+      continue
+    }
+    if (/^\s+\S/.test(line) && !/^\s*-\s/.test(line)) {
+      current.text = `${current.text} ${line.trim()}`
+      continue
+    }
+    if (line.trim() !== '') current = undefined
+  }
+
+  return found
+}
+
+/** La cartella feature con l'overview piu recente che usa le ancore. */
+async function findOverview(
+  $: EngineInterface,
+): Promise<{ path: string; md: string } | undefined> {
+  let best: { path: string; md: string; mtimeMs: number } | undefined
+
+  try {
+    for (const entry of await $.fs.list('docs/features')) {
+      if (entry.kind !== 'dir') continue
+      const path = `docs/features/${entry.name}/overview.md`
+      try {
+        const stat = await $.fs.stat(path)
+        const md = await $.fs.read(path)
+        if (typeof md !== 'string') continue
+        if (!/<a id="r\d+"><\/a>/.test(md)) continue
+        if (!best || stat.mtimeMs > best.mtimeMs) best = { path, md, mtimeMs: stat.mtimeMs }
+      } catch {
+        continue
+      }
+    }
+  } catch {
+    // nessuna docs/features: si passa all'esempio incluso
+  }
+
+  if (best) return { path: best.path, md: best.md }
+
+  try {
+    const md = await $.fs.read(`${$.plugin.root}/mods/wm-plan-anchors/examples/overview-demo.md`)
+    if (typeof md === 'string') return { path: 'esempio incluso nella mod', md }
+  } catch {
+    return undefined
+  }
+
+  return undefined
+}
+
+/**
+ * Le etichette definite nei messaggi, nella forma `- **NOME** — descrizione`.
+ *
+ * NOME in maiuscolo, almeno tre caratteri: cosi una parola qualunque del
+ * discorso non diventa una definizione per sbaglio.
+ */
+function parseLabels(text: string): Map<string, string> {
+  const found = new Map<string, string>()
+
+  for (const line of text.split('\n')) {
+    const hit = /^\s*[-*]\s*\*\*([A-Z][A-Z0-9_-]{2,})\*\*\s*[—-]\s*(.+)$/.exec(line)
+    if (!hit) continue
+    const name = hit[1] ?? ''
+    const body = (hit[2] ?? '').trim()
+    if (name !== '' && body !== '') found.set(name, body)
+  }
+
+  return found
+}
+
+/**
+ * I riferimenti citati, dal piu recente.
+ *
+ * Legge la conversazione invece di aspettare `session.append`: quell'evento un
+ * altro plugin puo consumarlo senza passarlo oltre, e la mod resterebbe cieca.
+ */
+async function citedNow(
+  $: EngineInterface,
+  known: Map<string, Req>,
+  larghezza: number,
+  righe: number,
+) {
+  const rows = await $.session.messages()
+  const labels = new Map<string, string>()
+  const seen = new Map<string, Voce>()
+  const colonne = Math.max(24, larghezza)
+
+  for (const row of rows.slice(-60)) {
+    if (row.role !== 'assistant') continue
+
+    const detto = senzaCodice(row.text)
+
+    // Prima le definizioni di questo messaggio, poi i richiami: cosi
+    // un'etichetta definita qui e gia risolvibile nello stesso messaggio.
+    for (const [name, body] of parseLabels(row.text)) labels.set(name, body)
+
+    // Ogni occorrenza con la sua posizione: l'ordine del pane e quello in cui
+    // le cose sono state scritte, non quello in cui sono note.
+    const here: { at: number; voce: Voce }[] = []
+
+    for (const hit of detto.matchAll(/\bR(\d+)\b/g)) {
+      const req = known.get(`R${hit[1]}`)
+      if (!req || hit.index === undefined) continue
+      here.push({
+        at: hit.index,
+        voce: {
+          label: req.label,
+          text: pulisci(req.text),
+          nota: `#${req.label.toLowerCase()}${req.verifica ? ' · Verifica presente' : ' · Verifica assente'}${req.ux ? ' · [UX]' : ''}`,
+        },
+      })
+    }
+
+    for (const [name, body] of labels) {
+      for (const hit of detto.matchAll(new RegExp(`\\b${name}\\b`, 'g'))) {
+        if (hit.index === undefined) continue
+        here.push({
+          at: hit.index,
+          voce: { label: name, text: pulisci(body), nota: 'etichetta' },
+        })
+      }
+    }
+
+    for (const one of here.sort((a, b) => a.at - b.at)) {
+      seen.delete(one.voce.label)
+      seen.set(one.voce.label, one.voce)
+    }
+  }
+
+  // Quante voci entrano davvero: titolo, nota, riga vuota e testo a capo.
+  const dal_piu_recente = [...seen.values()].reverse()
+  const dentro: Voce[] = []
+  let spesa = 0
+
+  for (const voce of dal_piu_recente) {
+    const alte = Math.ceil(voce.text.length / colonne) + 3
+    if (dentro.length > 0 && spesa + alte > righe) break
+    dentro.push(voce)
+    spesa += alte
+  }
+
+  return dentro
+}
+
+/** Il modello senza il prefisso del fornitore e senza la data. */
+function modelloBreve(id: string | undefined): string {
+  if (!id || id === '') return '?'
+  const senzaData = id.replace(/-\d{8}$/, '')
+  const nome = senzaData
+    .split('-')
+    .find(uno => ['opus', 'sonnet', 'haiku', 'fable'].includes(uno))
+
+  return nome ?? senzaData
+}
+
+/**
+ * I modelli degli agenti al lavoro, contati.
+ *
+ * La lista nativa sotto il prompt da nome, durata e token, ma non il modello:
+ * questo e l'unico pezzo che manca, e l'unico che vale la pena aggiungere.
+ */
+async function modelliAlLavoro($: EngineInterface): Promise<string> {
+  let vivi
+  try {
+    vivi = (await $.agent.list()).filter(one => one.status === 'running')
+  } catch {
+    return ''
+  }
+
+  if (vivi.length === 0) return ''
+
+  const conti = new Map<string, number>()
+  for (const uno of vivi) {
+    const nome = modelloBreve(uno.model)
+    conti.set(nome, (conti.get(nome) ?? 0) + 1)
+  }
+
+  return [...conti.entries()]
+    .map(([nome, quanti]) => (quanti === 1 ? `1 agente su ${nome}` : `${quanti} agenti su ${nome}`))
+    .join(', ')
+}
+
+/**
+ * Il colore della percentuale di context.
+ *
+ * Chiavi del tema, non colori crudi: seguono il tema scelto dalla persona.
+ * Le soglie sono una scelta, non un dato del motore, e si cambiano qui.
+ */
+function colorePerContext(percento: number): 'success' | 'warning' | 'error' {
+  if (percento >= 75) return 'error'
+  if (percento >= 50) return 'warning'
+
+  return 'success'
+}
+
+export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    await $.command.register({
+      name: 'wm-anchors',
+      description: 'Apre il pane che esplode i riferimenti citati',
+    })
+    void $.ui.open({ id: PANE, title: 'Riferimenti' })
+
+    // La testa del pane non si ridisegna da sola mentre un agente lavora:
+    // senza questo, il conteggio resterebbe fermo proprio quando cambia.
+    $.clock.every(2000, async () => {
+      try {
+        const vivi = (await $.agent.list()).filter(one => one.status === 'running')
+        if (vivi.length > 0) void $.ui.invalidate('ui.render')
+      } catch {
+        // niente da aggiornare
+      }
+    })
+
+    return next(e)
+  })
+
+  on('command.run', { command: 'wm-anchors' }, async $ => {
+    const opened = await $.ui.open({ id: PANE, title: 'Riferimenti' })
+
+    return {
+      text: opened.isPlaced
+        ? 'Pane dei riferimenti aperto.'
+        : `Pane non disegnato: ${'reason' in opened ? opened.reason : 'motivo non dato'}`,
+    }
+  })
+
+  // Il pane si riapre da solo: chiuso per sbaglio, torna al turno dopo.
+  on('turn.complete', async ($, e, next) => {
+    const done = await next(e)
+    void $.ui.open({ id: PANE, title: 'Riferimenti' })
+    void $.ui.invalidate('ui.render')
+
+    return done
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    const larghezza = e.props?.bodyColumns ?? e.viewport?.columns ?? 40
+
+    let percento: number | undefined
+    let guaio = ''
+    try {
+      percento = (await $.session.usage()).context.percent
+      if (percento === undefined) guaio = 'percentuale non data'
+    } catch (errore) {
+      guaio = `usage() rifiutata: ${String(errore)}`
+    }
+
+    const agenti = await modelliAlLavoro($)
+
+    // Sempre in testa, anche quando il dato manca: una riga muta non si
+    // distingue da un hook che non gira.
+    const testa = (
+      <Box flexDirection="column" marginBottom={1}>
+        <Box>
+          <Text dimColor>context </Text>
+          {percento === undefined ? (
+            <Text dimColor>{`— ${guaio}`}</Text>
+          ) : (
+            <Text color={colorePerContext(percento)} bold>{`${percento}%`}</Text>
+          )}
+          <Text dimColor>
+            {percento !== undefined && percento >= 75
+              ? '  conviene un compact'
+              : percento !== undefined && percento >= 50
+                ? '  ci si avvicina'
+                : ''}
+          </Text>
+        </Box>
+        {agenti === '' ? undefined : <Text dimColor>{agenti}</Text>}
+        <Text dimColor>{'─'.repeat(Math.max(8, larghezza))}</Text>
+      </Box>
+    )
+
+    const overview = await findOverview($)
+
+    if (!overview) {
+      return (
+        <Box flexDirection="column">
+          {testa}
+          <Text dimColor wrap="wrap">
+            Nessun overview con ancore sotto docs/features/, e l'esempio incluso nella mod non si
+            legge.
+          </Text>
+        </Box>
+      )
+    }
+
+    const known = parseRequirements(overview.md)
+
+    if (known.size === 0) {
+      return (
+        <Box flexDirection="column">
+          {testa}
+          <Text dimColor wrap="wrap">
+            Overview trovato ma nessun requisito riconosciuto: il formato della riga non e quello
+            con l'ancora.
+          </Text>
+          <Text dimColor wrap="truncate-start">{overview.path}</Text>
+        </Box>
+      )
+    }
+
+    const list = await citedNow(
+      $,
+      known,
+      larghezza,
+      Math.max(6, (e.viewport?.rows ?? 24) - 2 - (agenti === '' ? 2 : 3)),
+    )
+
+    if (list.length === 0) {
+      return (
+        <Box flexDirection="column">
+          {testa}
+          <Text dimColor wrap="wrap">
+            {`${known.size} requisiti letti. Compaiono qui appena ne cito uno.`}
+          </Text>
+          <Text dimColor wrap="truncate-start">{overview.path}</Text>
+        </Box>
+      )
+    }
+
+    return (
+      <Box flexDirection="column">
+        {testa}
+        {list.map((one, index) => (
+          <Box flexDirection="column" marginBottom={1}>
+            <Text bold>
+              {one.label}
+              {index === 0 ? '  ← citato ora' : ''}
+            </Text>
+            <Text wrap="wrap">{one.text}</Text>
+            <Text dimColor>{one.nota}</Text>
+          </Box>
+        ))}
+        <Text dimColor wrap="truncate-start">{overview.path}</Text>
+      </Box>
+    )
+  })
+}
