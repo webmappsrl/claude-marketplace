@@ -225,6 +225,8 @@ Perciò:
 
 - una riga nella tabella **Coupling tra skill** del `CLAUDE.md`: `wm-plan` ↔ la mod ↔
   `feature-docs-check.sh`, contratto = la forma della riga del requisito e dell'àncora;
+*(Fatto: `.github/scripts/verifica-formato-requisito.sh` e il workflow omonimo.)*
+
 - **un controllo in CI che non confronta regex con regex**, perche due espressioni diverse possono
   essere equivalenti e il confronto direbbe il falso. Prende le righe d'esempio **dallo SKILL.md**,
   che resta la fonte autoritativa, le scrive in un `overview.md` temporaneo e verifica che entrambi
@@ -252,7 +254,8 @@ Perciò:
   numero anche prima di avere il titolo.
 - Aggiornare in `CLAUDE.md` la tabella dei comandi e la frase «In CI girano…», che elencano i
   controlli attivi.
-- I test, con `claude plugin test <cartella>`, che gira ogni `*.test.ts`/`*.test.tsx` sotto la mod
+- ~~I test~~ *(fatto: `plugins/wm-skills/mods/wm-plan-anchors/parse.test.ts`, 12 casi)*, con
+  `claude plugin test <cartella>`, che gira ogni `*.test.ts`/`*.test.tsx` sotto la mod
   ed esce 1 al primo fallimento, quindi si aggancia alla CI cosi com'e. Il kit si importa da
   `claude-code/testing`. Da coprire: il parser su un overview col formato nuovo, su uno col vecchio
   formato a checkbox, su uno senza sezione Requisiti, e su spazzatura — un parser non deve mai
@@ -279,6 +282,27 @@ gli hook su `tool.call` che **fanno rispettare** i divieti oggi scritti in prosa
 niente `git commit` dentro un lavoro, nessuna scrittura verso `orchestrator.maphub.it`, i binari di
 `bin/` non toccati a mano. Un hook nega, non raccomanda: quelle regole smettono di dipendere dalla
 buona volontà del modello. Il dev ha scelto di partire dal pane; questa resta da aprire a parte.
+
+## Com'e fatto il controllo in CI, alla fine
+
+Non esegue i parser: li **legge**. Estrae dallo `SKILL.md` le righe d'esempio dei requisiti, estrae
+la regex awk da `feature-docs-check.sh` e la costante `RIGA_REQUISITO` da `parse.ts`, traduce la
+seconda in espressione regolare POSIX e verifica che entrambe riconoscano quelle righe.
+
+Eseguirli sarebbe stato piu diretto, ma il lato TypeScript richiede Node 22 per girare senza
+compilazione, e il repo non ha Node fra le sue dipendenze: sarebbe stata una dipendenza nuova in
+CI per un controllo di tre righe. Cosi bastano bash, grep e sed, come per gli altri due controlli
+del repo.
+
+Insieme alle righe buone passa tre contro-esempi che non devono essere riconosciuti — il vecchio
+formato a checkbox, un identificativo senza ancora, un'ancora che non comincia per `r` — e se
+dallo `SKILL.md` non estrae nessuna riga fallisce invece di passare.
+
+**Provato a fallire, non solo a passare:** cambiando la regex di `parse.ts` il controllo segnala
+le tre righe non riconosciute; rendendola permissiva segnala i tre contro-esempi accettati.
+
+Il limite, scritto nella testata dello script: verifica che i due parser riconoscano le stesse
+righe, non che le interpretino allo stesso modo. Quello lo coprono i test del parser.
 
 ## Stato
 

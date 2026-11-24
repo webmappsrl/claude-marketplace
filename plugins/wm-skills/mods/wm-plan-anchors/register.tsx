@@ -1,66 +1,11 @@
 import type { EngineInterface, Register } from 'claude-code'
 
+import { parseLabels, parseRequirements, pulisci, senzaCodice } from './parse.ts'
+import type { Req } from './parse.ts'
+
 const PANE = 'wm-plan-anchors'
 
-type Req = { label: string; text: string; ux: boolean; verifica: boolean }
-
 type Voce = { label: string; text: string; nota: string }
-
-/** Toglie il markdown: nel pane non significa niente ed e solo rumore. */
-function pulisci(text: string): string {
-  return text
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/**
- * Il testo senza i pezzi fra backtick.
- *
- * Una sigla fra backtick e la sigla di cui si parla, non il requisito a cui ci
- * si riferisce: va ignorata, o il pane esplode i propri esempi. Gli spazi
- * restano al posto del codice, cosi le posizioni non si spostano.
- */
-function senzaCodice(text: string): string {
-  return text
-    .replace(/```[\s\S]*?```/g, blocco => ' '.repeat(blocco.length))
-    .replace(/`[^`\n]*`/g, pezzo => ' '.repeat(pezzo.length))
-}
-
-/** Legge la sezione Requisiti di un overview nel formato con ancore. */
-function parseRequirements(md: string): Map<string, Req> {
-  const found = new Map<string, Req>()
-  let current: Req | undefined
-
-  for (const line of md.split('\n')) {
-    const head = /^-\s*<a id="r(\d+)"><\/a>\s*\*\*(R\d+)\*\*\s*[—-]\s*(.*)$/.exec(line)
-    if (head) {
-      const body = (head[3] ?? '').trim()
-      current = {
-        label: head[2] ?? '',
-        text: body.replace(/^\[UX\]\s*/, ''),
-        ux: body.startsWith('[UX]'),
-        verifica: false,
-      }
-      found.set(current.label, current)
-      continue
-    }
-    if (!current) continue
-    if (/^\s+-\s*\*{0,2}(Verifica|Non fatto)/i.test(line)) {
-      if (/Verifica/i.test(line)) current.verifica = true
-      continue
-    }
-    if (/^\s+\S/.test(line) && !/^\s*-\s/.test(line)) {
-      current.text = `${current.text} ${line.trim()}`
-      continue
-    }
-    if (line.trim() !== '') current = undefined
-  }
-
-  return found
-}
 
 /** La cartella feature con l'overview piu recente che usa le ancore. */
 async function findOverview(
@@ -96,26 +41,6 @@ async function findOverview(
   }
 
   return undefined
-}
-
-/**
- * Le etichette definite nei messaggi, nella forma `- **NOME** — descrizione`.
- *
- * NOME in maiuscolo, almeno tre caratteri: cosi una parola qualunque del
- * discorso non diventa una definizione per sbaglio.
- */
-function parseLabels(text: string): Map<string, string> {
-  const found = new Map<string, string>()
-
-  for (const line of text.split('\n')) {
-    const hit = /^\s*[-*]\s*\*\*([A-Z][A-Z0-9_-]{2,})\*\*\s*[—-]\s*(.+)$/.exec(line)
-    if (!hit) continue
-    const name = hit[1] ?? ''
-    const body = (hit[2] ?? '').trim()
-    if (name !== '' && body !== '') found.set(name, body)
-  }
-
-  return found
 }
 
 /**

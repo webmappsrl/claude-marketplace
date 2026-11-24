@@ -1,0 +1,29 @@
+name: Formato della riga di un requisito
+
+# Il formato `- <a id="r1"></a>**R1** — …` è prescritto da wm-plan/SKILL.md e riconosciuto da due
+# parser: la regex awk di feature-docs-check.sh e RIGA_REQUISITO della mod wm-plan-anchors. Se
+# cambia in uno solo, gli altri smettono di riconoscere i requisiti senza dire niente: lo script
+# dei documenti passa su un overview che non legge, il pane della mod resta vuoto.
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'plugins/wm-skills/scripts/feature-docs-check.sh'
+      - 'plugins/wm-skills/mods/wm-plan-anchors/**'
+      - '.github/scripts/verifica-formato-requisito.sh'
+  pull_request:
+    paths:
+      - 'plugins/wm-skills/skills/wm-plan/SKILL.md'
+      - 'plugins/wm-skills/scripts/feature-docs-check.sh'
+      - 'plugins/wm-skills/mods/wm-plan-anchors/**'
+      - '.github/scripts/verifica-formato-requisito.sh'
+  workflow_dispatch:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./.github/scripts/verifica-formato-requisito.sh
