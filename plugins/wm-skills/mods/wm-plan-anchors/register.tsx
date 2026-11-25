@@ -170,11 +170,14 @@ function colorePerContext(percento: number): 'success' | 'warning' | 'error' {
 
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
-    await $.command.register({
-      name: 'wm-anchors',
-      description: 'Apre il pane che esplode i riferimenti citati',
-    })
-    void $.ui.open({ id: PANE, title: 'Riferimenti' })
+    // Un pane che nessuno ha chiesto si siede solo da 144 colonne di terminale.
+    // Sotto quella larghezza resta non disegnato: senza questo avviso la mod
+    // sarebbe muta, e il dev non saprebbe che c'e' un pane da vedere.
+    const aperto = await $.ui.open({ id: PANE, title: 'Riferimenti' })
+    if (!aperto.isPlaced) {
+      const motivo = 'reason' in aperto ? aperto.reason : 'motivo non dato'
+      $.ui.toast(`Pane dei riferimenti non disegnato: ${motivo}`)
+    }
 
     // La testa del pane non si ridisegna da sola mentre un agente lavora:
     // senza questo, il conteggio resterebbe fermo proprio quando cambia.
@@ -188,16 +191,6 @@ export const register: Register = on => {
     })
 
     return next(e)
-  })
-
-  on('command.run', { command: 'wm-anchors' }, async $ => {
-    const opened = await $.ui.open({ id: PANE, title: 'Riferimenti' })
-
-    return {
-      text: opened.isPlaced
-        ? 'Pane dei riferimenti aperto.'
-        : `Pane non disegnato: ${'reason' in opened ? opened.reason : 'motivo non dato'}`,
-    }
   })
 
   // Il pane si riapre da solo: chiuso per sbaglio, torna al turno dopo.

@@ -41,7 +41,11 @@ requisiti. Il pane deve sempre distinguere «non ho trovato requisiti» da «non
 - Il modulo gira senza DOM e senza Node: tutto passa da `$`.
 - Una lettura di `$.fs.read` è limitata a 4 MiB; gli overview sono molto sotto.
 - Un pane aperto senza che nessuno lo chieda si posiziona da 144 colonne di terminale; uno aperto
-  su richiesta (`/wm-anchors`) sta a qualsiasi larghezza.
+  su richiesta di un comando sta a qualsiasi larghezza. **La mod non registra alcun comando**: il
+  dev non lo chiamerebbe mai a mano, e un comando registrato compare nell'elenco dei comandi
+  utente e in `/help` senza che esista un modo per nasconderlo (`CommandSpec` non ha un flag per
+  questo). Il prezzo e' che sotto le 144 colonne il pane non si siede: per non restare muta, la
+  mod controlla `isPlaced` e mostra un toast con il motivo.
 - Il team lavora tutto da terminale: nessuna superficie diversa da coprire.
 - `plugins/wm-skills/hooks/hooks.json` usa oggi la chiave `hooks` per lo script di lint di
   `wm-context-doctor`; una mod si dichiara sotto `modules`. **Verificato: le due chiavi convivono**
