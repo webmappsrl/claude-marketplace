@@ -22,13 +22,13 @@ fare il deploy / deployare, fare il build, fare il checkout del branch, fare il 
 Spingere, fondere, registrare, costruire, ritirare, avvolgere non sono mai la traduzione di quei
 verbi.
 
-**I nomi che proponi per il codice sono sempre in inglese**, anche quando il dominio e' italiano e
+**I nomi che proponi per il codice sono sempre in inglese**, anche quando il dominio è italiano e
 anche quando il nome lo stai solo proponendo a voce in un messaggio, prima che esista una riga di
 codice: si scrive `$quote`, non `$preventivo`; `getUserTracks()`, non `getTracceUtente()`. Vale per
 variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi
 di file e di branch. L'italiano resta nei testi destinati a persone: commenti, docblock,
 documentazione, messaggi di commit, risposte al dev. Cosa fare quando trovi un identificatore
-italiano gia' scritto nel codice sta in `execution: implementation`.
+italiano già scritto nel codice sta in `execution: implementation`.
 
 Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
 peggiore» si capisce; «non ha alzato il pavimento» no.
@@ -60,18 +60,26 @@ trenta righe. Se non ce ne sono, nessuna domanda.
 
 ### Il controllo prima di consegnare
 
-Una regola sulla lingua non si rispetta da sé: va verificata, come si verifica un test. Prima di
-consegnare `overview.md` e `plan.md`, cerca nel documento queste parole e, per ognuna che trovi,
-o la sostituisci con il nome del codice o la porti al dev:
+Una regola sulla lingua non si rispetta da sé: va verificata. Prima di consegnare un testo —
+`overview.md`, `plan.md`, un messaggio al dev — rileggilo guardando i **sostantivi che nominano
+parti del sistema**, e per ognuno chiediti da dove viene quella parola. Se non la trovi nel
+codice, nel framework o nell'output dello strumento di cui stai parlando, l'hai coniata tu, e
+va sostituita con il nome vero.
 
-```bash
-grep -noiE "\b(scheda|schede|pannello|pannelli|riquadro|tendina|casella|elenco|lista|vista|voce|voci|etichetta|etichette|blocco|sezione)\b" docs/features/<slug>/*.md
-```
+Tre modi in cui l'errore si presenta, per riconoscerlo:
 
-Non sono parole vietate in assoluto — «sezione» può essere la sezione di un documento, «elenco»
-un elenco di cose — ma ognuna va guardata: se nomina un elemento dell'interfaccia o del modello
-dati, quell'elemento ha un nome proprio e va usato quello. La lista cresce ogni volta che ne
-salta fuori una nuova.
+- «la scheda del sentiero» dove il nome è `detail view` della Resource `EcTrack`: il nome esiste
+  in Nova e dice al dev quale oggetto aprire, la resa italiana lo obbliga a indovinare;
+- «il repo è allineato» dove git dice `behind` e `ahead`: quei due numeri li stampa
+  `git rev-list --left-right --count`, e «allineato» non compare in nessun output;
+- «il riquadro laterale» dove il tipo si chiama `Pane`: è il nome che si cerca nei tipi e nella
+  documentazione quando qualcosa non funziona.
+
+**Non esiste una lista di parole da cercare**, e non va costruita: una lista dà per sospette
+parole che spesso sono giuste — «sezione» è davvero la sezione di un documento — e soprattutto
+lascia passare tutte quelle che non contiene. L'errore arriva sempre dalla parola che alla lista
+mancava. Quello che si ripete è il **tipo** di errore, non la parola: un oggetto che ha un nome
+proprio chiamato con una parola italiana che scorre meglio.
 
 ## Header di sessione
 
@@ -254,9 +262,11 @@ In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
 3. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
 4. `Fase: overview` — produce l'overview con la struttura canonica
 5. `Fase: challenge` — analisi adversariale sull'overview
-6. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
-7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`; il tag padre si associa **dopo**, con `attach_story_to_tag`, mai passando `tags` a `create_story`
-8. **Stop** — restituisce il controllo a `wm-tag`
+6. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`; il tag padre si associa **dopo**, con `attach_story_to_tag`, mai passando `tags` a `create_story`
+7. **Stop** — restituisce il controllo a `wm-tag`
+
+`Fase: estimation` non fa parte di questo elenco: il ticket nasce senza `estimated_hours`, e la
+stima si fa dopo, se il dev la chiede.
 
 Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**. Di
 conseguenza non valgono nemmeno la chiusura dell'overview e lo script di controllo: l'overview
@@ -266,7 +276,7 @@ esiste solo nel ticket, in HTML, dove gli identificativi `R1`, `R2`… restano t
 
 ### tag-mode: creazione ticket con overview
 
-Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. Il campo `description` è renderizzato da un editor WYSIWYG lato Orchestrator (nessun parsing Markdown): costruisci il contenuto in **HTML**, non in Markdown, convertendo la struttura canonica dell'overview 1:1 in tag HTML (`<h2>`/`<h3>` per le sezioni, `<p>` per il testo, `<ul><li>` per liste e requisiti):
+Dopo l'approvazione dell'overview crea il ticket in un'unica chiamata POST con tutti i campi disponibili. Il campo `description` è renderizzato da un editor WYSIWYG lato Orchestrator (nessun parsing Markdown): costruisci il contenuto in **HTML**, non in Markdown, convertendo la struttura canonica dell'overview 1:1 in tag HTML (`<h2>`/`<h3>` per le sezioni, `<p>` per il testo, `<ul><li>` per liste e requisiti):
 
 ```html
 <h2>Overview</h2>
@@ -345,7 +355,7 @@ Fasi che delegano, e a chi:
 | `ticket` (avvio e caso B) | `wm-transcript-research` | informata |
 | `reverse-interaction` | `wm-transcript-research` | informata |
 | `challenge` | subagente già previsto | **cieca** |
-| `estimation` | `wm-estimate` | **cieca** |
+| `estimation` (solo quando il dev la chiede) | `wm-estimate` | **cieca** |
 | `review-gate` | subagente già previsto | **cieca** |
 | `update-context` | `wm-context-guard` | informata |
 
@@ -373,7 +383,7 @@ Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico
 date -u +"%Y-%m-%dT%H:%M:%S%z"
 ```
 
-Tieni questo valore attivo per tutto il workflow — serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato).
+Tieni questo valore attivo per tutto il workflow: serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato). Si registra sempre, anche se quella fase non partirà: costa un comando, e se il dev chiede una stima a lavoro avviato il dato non si può più ricostruire.
 
 **Subito dopo, lancia in background `wm-skills:wm-transcript-research` con la richiesta «prepara»**:
 crea o completa il notebook NotebookLM del giorno (`scrum AAAA-MM-GG`) con le call di oggi. Non
@@ -582,6 +592,52 @@ Se l'agente restituisce `RILEVAMENTO FALLITO`, mostra
 | `stack_ui` | `false` | nessun segnale |
 | `has_phpstan_ci` | `true` | trovato `phpstan.neon`/`phpstan.neon.dist` nella root **E** keyword `phpstan` (case-insensitive) in almeno un file `.github/workflows/*.yml` |
 | `has_phpstan_ci` | `false` | manca almeno una delle due condizioni |
+
+### environment-setup: repo-sync
+
+Verifica che il branch locale non sia **behind** rispetto al remoto, **prima** che il lavoro
+cominci. Un branch di feature che nasce da una base vecchia porta conflitti al merge e, peggio,
+fa scrivere codice contro una versione che non esiste più: il costo non si vede subito, si
+paga alla PR.
+
+```bash
+git fetch --quiet 2>/dev/null
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || echo origin/develop)
+git rev-list --left-right --count "$UPSTREAM...HEAD" 2>/dev/null
+git status --porcelain
+```
+
+`git rev-list --left-right --count` stampa due numeri: **behind** e **ahead**. Il confronto è
+con l'upstream del branch corrente; quando non ce n'è uno — un branch locale appena creato —
+vale `origin/develop`, perché è da lì che nasce ogni branch di feature.
+
+- **behind = 0** → mostra `✅ <BRANCH>: 0 commit behind <UPSTREAM>.` e prosegui senza altro.
+- **behind > 0** → **chiedi, e non fare il pull di tua iniziativa**:
+
+  > Il branch `<BRANCH>` è `<N>` commit behind `<UPSTREAM>`. Faccio un `git pull --ff-only`
+  > prima di cominciare?
+
+  Solo dopo un sì esplicito esegui `git pull --ff-only`. Il `--ff-only` è il punto: se la
+  storia è divergente il comando si ferma invece di aprire un merge che nessuno ha chiesto, e
+  quel caso torna al dev con il suo messaggio di errore.
+
+**Se il working tree non è pulito** (`git status --porcelain` non vuoto), dillo insieme alla
+domanda e non proporre nulla da solo: un pull con modifiche in corso è esattamente il momento
+in cui si perde lavoro. Decide il dev se fare uno stash o restare behind.
+
+**Con `has_submodules: true`** il controllo vale anche per i submodule, uno per volta e con la
+stessa domanda: un puntatore di submodule vecchio è la causa più comune di un repo che sembra
+in pari e non lo è.
+
+```bash
+git submodule foreach --quiet 'git fetch --quiet 2>/dev/null; echo "$name $(git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null)"'
+```
+
+**Se il dev dice di no, o se `git fetch` fallisce** — niente rete, nessun remoto configurato —
+prosegui: la fase è fail-soft e un branch behind non ferma un lavoro. Registra la scelta in
+`notes.md` (`## Decisioni`) solo se il dev ha detto di no sapendo di essere behind: serve a
+spiegare, alla PR, da dove vengono i conflitti.
 
 ### environment-setup: domain-mapping
 
@@ -1081,9 +1137,18 @@ Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, agg
 
 ## Fase: estimation
 
-**Eseguita solo se il ticket è di tipo `Feature`.** Per qualsiasi altro tipo (fra quelli ammessi da `create_story`/`update_story`), salta questa fase e procedi direttamente a `Fase: write-plan`.
+**Questa fase non parte mai da sola.** Non si esegue per tipo di ticket, non si esegue in
+tag-mode, non si propone: da `Fase: challenge` si va direttamente a `Fase: write-plan`, e il
+ticket resta senza `estimated_hours`.
 
-In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a write-plan).
+**Si esegue solo se il dev la chiede**, con parole sue — «stima questo ticket», «quante ore
+sono», «aggiorna la stima» — in qualunque momento del workflow, anche dopo. Allora si fa per
+intero, come descritto qui sotto, e serve `plan.md`: prima che il piano esista non c'è niente
+da stimare, e va detto al dev invece di stimare a vuoto.
+
+**Perché non parte da sola.** Una stima che nessuno ha chiesto costa un agente e un giro di
+messaggi a ogni ticket, e il numero finisce su Orchestrator senza che nessuno lo stesse
+aspettando. Chiederla quando serve è il dev a saperlo.
 
 ### estimation: analisi
 
@@ -1112,7 +1177,8 @@ Restano nel context principale:
   Differenza con `planning_start_at` registrato in `Fase: ticket`. Se non è stato registrato,
   vale il fallback già previsto: dichiararlo al dev e presentare solo la quota stimata.
 
-- **la conferma del dev**, invariata.
+- **la presentazione al dev**, che è un esito e non una domanda: vedi
+  `estimation: nessuna domanda al dev`.
 
 Presenta al dev la tabella dell'agente con in testa la riga della pianificazione misurata, e
 chiudi sempre con la scomposizione, mai un numero unico fuso:
@@ -1124,17 +1190,31 @@ seguendo gli stessi criteri (tempo di esecuzione per componente, buffer di novit
 in valore assoluto, 5% di integrazione trasversale) e dichiara al dev che la stima non è
 indipendente.
 
-### estimation: conferma
+### estimation: nessuna domanda al dev
 
-Chiedi al dev, riportando sempre la scomposizione (mai un numero unico fuso):
+**La stima non si fa approvare.** Presentala come esito, con la scomposizione e mai un numero
+unico fuso, e prosegui senza fermarti:
 
-> "Accetti questa stima — **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h** — la sostituisci con un tuo valore, o la fai rifare a `wm-estimate` con le tue obiezioni?"
+> **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h**
 
-Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev. Se il dev modifica solo la quota stimata (implementazione) lasciando invariata quella misurata (pianificazione), aggiorna solo `<S>` e ricalcola `<N>`. Se il dev ritiene il ragionamento sbagliato (es. buffer eccessivo, componente sottostimato), rimanda le sue obiezioni a `wm-estimate` invece di correggere il numero a mano — vedi `## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
+Nessuna domanda, nessuna attesa: è un'informazione, e il messaggio deve far capire che non
+chiede niente.
+
+**Se il dev interviene**, vale quello che dice lui, come è sempre stato: un valore diverso si
+usa senza discutere; se cambia solo la quota stimata, la quota misurata resta e si ricalcola il
+totale; se contesta il ragionamento — buffer eccessivo, un componente sottostimato — le
+obiezioni tornano a `wm-estimate` invece di correggere il numero a mano (vedi
+`## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`). Se la stima
+è già stata scritta su Orchestrator, si riscrive con il valore nuovo.
+
+**Perché non si chiede.** La stima la produce un agente cieco leggendo overview e piano, e sul
+momento il dev non ha in mano un dato diverso per giudicarla: la domanda arriva quando la
+risposta è quasi sempre «va bene». Un numero stimato non è una decisione irreversibile — si
+riscrive quando serve, e `execution: re-estimation` lo fa già durante il lavoro.
 
 ### estimation: scrittura su Orchestrator
 
-Chiama `update_story` con `story_id` ed `estimated_hours: <N>`, prima senza `confirm` per mostrare al dev la differenza calcolata dal tool rispetto al valore attuale, poi con `confirm: true` dopo l'approvazione esplicita. Nota interna da tenere a mente nel dialogo con il dev (non un campo separato da inviare): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`.
+Chiama `update_story` con `story_id` ed `estimated_hours: <N>`, prima senza `confirm` per avere la differenza calcolata dal tool rispetto al valore attuale, poi subito con `confirm: true`. **Qui non si chiede nulla**: `estimated_hours` non notifica nessuno, e la stima non passa più da un'approvazione. Riporta al dev il valore scritto. Nota interna da tenere a mente nel dialogo con il dev (non un campo separato da inviare): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`.
 
 **Nessun marcatore di versione della metodologia va scritto nella nota.** La stima di un ticket parte **sempre** dal presupposto che l'esecuzione avvenga con un LLM: è il default, non una variante da segnalare. Un marcatore suggerirebbe che esista ancora una baseline alternativa in dev-hours umane, che non è più il caso.
 
@@ -1251,15 +1331,17 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
-### execution: re-estimation (solo se il ticket è di tipo Feature)
+### execution: re-estimation (solo se una stima esiste già)
 
-Se durante l'implementazione emerge un problema non previsto nell'overview e nella stima originale, e questo problema è stimabile in ore (non un semplice imprevisto trascurabile), proponi al dev una revisione della stima prima di proseguire:
+Se il dev non ha mai chiesto una stima, qui non c'è niente da rivedere e non si propone nulla: `Fase: estimation` resta un servizio che parte su richiesta.
 
-> "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
+Se invece una stima è stata fatta e durante l'implementazione emerge un problema non previsto, stimabile in ore (non un semplice imprevisto trascurabile), **aggiorna la stima e dillo al dev, senza chiederglielo** — vale la stessa ragione di `estimation: nessuna domanda al dev`:
 
-Se il dev conferma, chiama `update_story` con `estimated_hours` pari al nuovo totale, prima senza `confirm` poi con `confirm: true` dopo l'approvazione esplicita.
+> "Ho trovato \<descrizione problema non previsto\>. Impatto aggiuntivo **\<X\>h**: il totale passa da \<N\> a \<N+X\>h, aggiornato su Orchestrator."
 
-Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
+Chiama `update_story` con `estimated_hours` pari al nuovo totale, prima senza `confirm` per l'anteprima e poi subito con `confirm: true`. Se il dev non è d'accordo lo dice, e il valore si riscrive.
+
+Registra sempre l'evento in `Fase: notes` (sezione "Decisioni").
 
 ### execution: divergenze
 

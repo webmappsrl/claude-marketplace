@@ -405,7 +405,7 @@
     <div class="diagram-scroll">
 <pre class="mermaid">
 flowchart TD
-    T["Fase: ticket\nMenu A/B/C — collega o crea il ticket Orchestrator"] --> ENV["Fase: environment-setup\nRileva stack, Docker, UX detection — propone i tag di ambiente"]
+    T["Fase: ticket\nMenu A/B/C — collega o crea il ticket Orchestrator"] --> ENV["Fase: environment-setup\nRileva stack, Docker, UX detection — sync del repo, tag di ambiente"]
     T -. caso C .-> TAG(["wm-skills:wm-tag\ntrascrizione/brief → tag + ticket"])
     T -. caso A, Help desk .-> SPLIT{{"ticket: caso-a-split-detection\nSubagente cieco — rileva richieste multiple"}}
     SPLIT -- 1 sola richiesta --> ENV
@@ -423,11 +423,9 @@ flowchart TD
     T -. prepara il notebook del giorno, caso B .-> TRAG
     REV --> OV["Fase: overview\nScrive overview.md, approvazione utente — propone i tag di contenuto"]
     OV --> CH{{"Fase: challenge\nSubagente cieco — legge solo overview.md"}}
-    CH --> TYPE{"Tipo ticket?"}
-    TYPE -- Feature --> EST["Fase: estimation\nStima per-componente, approvata dal dev"]
+    CH --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
+    WP -. su richiesta del dev .-> EST["Fase: estimation\nServizio on demand, mai automatico"]
     EST -. delega a .-> ESTAG{{"wm-estimate\nAgente cieco — legge solo overview.md e plan.md"}}
-    TYPE -- altri tipi --> WP["Fase: write-plan\nScrive plan.md, approvazione utente"]
-    EST --> WP
     WP -. delega a .-> WPLAN(["superpowers:writing-plans\ngenera plan.md da briefing"])
 
     WP --> EXE["Fase: execution"]
@@ -459,7 +457,6 @@ flowchart TD
     class BR,GATE,FIRST gate;
     class CH,SPLIT subagent;
     class TAG,UXSKILL,WPLAN,IMPLSKILL,REVSKILL,SPLITTAG external;
-    class TYPE branch;
 </pre>
     </div>
   </div>
@@ -483,7 +480,7 @@ flowchart TD
       </div>
       <div class="detail-item">
         <h3>Fase: environment-setup<span class="tag phase">fase</span></h3>
-        <p>Normalizza l'ambiente prima di qualsiasi altra operazione: rileva lo stack tecnologico (Laravel, frontend Vue/Angular/React, fullstack), la presenza di submodule e Docker, e valuta se la feature ha componenti UI abbastanza rilevanti da richiedere il parere di <code>ui-ux-pro-max</code>. I check sono eseguiti dall'agente <code>wm-env-detect</code>, che restituisce i flag già risolti con un contratto nominale sulle variabili invece dell'output grezzo dei comandi. Fa eccezione <code>docker-check</code>, che resta nel context principale perché ha effetti sul sistema del dev. È una fase fail-soft — un Docker daemon spento o un check fallito non bloccano mai il resto del workflow, producono solo un avviso.</p>
+        <p>Normalizza l'ambiente prima di qualsiasi altra operazione: rileva lo stack tecnologico (Laravel, frontend Vue/Angular/React, fullstack), la presenza di submodule e Docker, e valuta se la feature ha componenti UI abbastanza rilevanti da richiedere il parere di <code>ui-ux-pro-max</code>. I check sono eseguiti dall'agente <code>wm-env-detect</code>, che restituisce i flag già risolti con un contratto nominale sulle variabili invece dell'output grezzo dei comandi. Fa eccezione <code>docker-check</code>, che resta nel context principale perché ha effetti sul sistema del dev. Qui si controlla anche che il branch locale non sia behind rispetto al remoto — l'upstream del branch corrente, o <code>origin/develop</code> per un branch che non ne ha ancora uno, submodule compresi: un branch di feature nato da una base vecchia porta conflitti al merge e fa scrivere codice contro una versione superata. Il pull non è mai automatico: viene proposto e si esegue con <code>git pull --ff-only</code> solo dopo un sì esplicito, così una storia divergente si ferma invece di aprire un merge che nessuno ha chiesto. È una fase fail-soft — un Docker daemon spento o un check fallito non bloccano mai il resto del workflow, producono solo un avviso.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: init-context<span class="tag phase">fase</span></h3>
@@ -502,8 +499,8 @@ flowchart TD
         <p>Un subagente che riceve in pasto solo il percorso di <code>overview.md</code> — nessun riassunto della conversazione precedente — con l'unico mandato di trovare criticità sui cinque assi: assunzioni fragili, rischi architetturali, blind spot, worst case, difficoltà di rollback. L'isolamento è deliberato: garantisce un giudizio non contaminato dall'ottimismo accumulato nel dialogo precedente. L'esito viene poi discusso con l'utente un asse alla volta, in ordine di criticità.</p>
       </div>
       <div class="detail-item">
-        <h3>Fase: estimation<span class="tag branch">solo Feature</span></h3>
-        <p>Eseguita solo se il ticket è di tipo <code>Feature</code> — i Bug non si stimano in ore perché il costo sta nella diagnosi, non nella scrittura. La stima presuppone sempre l'esecuzione da parte di un agente, e si scompone in tre voci indipendenti: tempo di esecuzione per componente (nessun buffer percentuale), un buffer di novità di dominio in valore assoluto una sola volta sull'intera feature (+20-30 min se il pattern esiste già nel codebase, +1-2h se è il primo del suo genere), ed eventuali deliverable extra dichiarati a priori. Il tempo di pianificazione non è stimato ma misurato da timestamp reali, e mostrato separato: «Misurato + Stimato = Totale». La stima è prodotta dall'agente cieco <code>wm-estimate</code>, che riceve solo i percorsi di <code>overview.md</code> e <code>plan.md</code>: chi ha condotto il dialogo e scritto l'overview stima ottimista in modo sistematico, e il valore dell'agente sta proprio nel non aver vissuto quella conversazione. Il tempo misurato di pianificazione e la conferma restano nel context principale. La stima finale è sempre quella approvata dal developer, anche quando diverge dalla proposta.</p>
+        <h3>Fase: estimation<span class="tag branch">su richiesta</span></h3>
+        <p>Un servizio on demand: non parte mai da sola, né per tipo di ticket né in tag-mode, e non viene proposta. Si esegue solo quando il developer la chiede, in qualunque momento, e richiede che <code>plan.md</code> esista già. Una stima che nessuno ha chiesto costa un agente a ogni ticket e finisce su Orchestrator senza che nessuno la stesse aspettando. Quando viene chiesta, la stima presuppone sempre l'esecuzione da parte di un agente, e si scompone in tre voci indipendenti: tempo di esecuzione per componente (nessun buffer percentuale), un buffer di novità di dominio in valore assoluto una sola volta sull'intera feature (+20-30 min se il pattern esiste già nel codebase, +1-2h se è il primo del suo genere), ed eventuali deliverable extra dichiarati a priori. Il tempo di pianificazione non è stimato ma misurato da timestamp reali, e mostrato separato: «Misurato + Stimato = Totale». La stima è prodotta dall'agente cieco <code>wm-estimate</code>, che riceve solo i percorsi di <code>overview.md</code> e <code>plan.md</code>: chi ha condotto il dialogo e scritto l'overview stima ottimista in modo sistematico, e il valore dell'agente sta proprio nel non aver vissuto quella conversazione. Il tempo misurato di pianificazione resta nel context principale. La stima non si fa approvare: viene presentata come esito, scritta su Orchestrator e il workflow prosegue — un numero stimato non è una decisione irreversibile, e sul momento il developer non ha un dato diverso per giudicarla. Se interviene vale quello che dice lui, e le obiezioni sul ragionamento tornano all'agente invece di correggere il numero a mano.</p>
       </div>
       <div class="detail-item">
         <h3>Fase: write-plan<span class="tag phase">fase</span></h3>
@@ -558,7 +555,7 @@ flowchart TD
         <span class="swatch branch"></span>
         <div>
           <h3>Diramazione</h3>
-          <p>Il percorso cambia in base al tipo di ticket (<code>Feature</code> vs gli altri valori dell'enum <code>StoryType</code>) o al caso scelto in Fase: ticket.</p>
+          <p>Il percorso cambia in base al caso scelto in Fase: ticket, o a una richiesta esplicita del developer come per Fase: estimation.</p>
         </div>
       </div>
       <div class="legend-item">
