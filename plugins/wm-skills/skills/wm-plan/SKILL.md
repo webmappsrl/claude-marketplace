@@ -18,8 +18,17 @@ illeggibile.
 **Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
 Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
 mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
-fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
-registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+fare il deploy / deployare, fare il build, fare il checkout del branch, fare il wrap / wrappare.
+Spingere, fondere, registrare, costruire, ritirare, avvolgere non sono mai la traduzione di quei
+verbi.
+
+**I nomi che proponi per il codice sono sempre in inglese**, anche quando il dominio e' italiano e
+anche quando il nome lo stai solo proponendo a voce in un messaggio, prima che esista una riga di
+codice: si scrive `$quote`, non `$preventivo`; `getUserTracks()`, non `getTracceUtente()`. Vale per
+variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi
+di file e di branch. L'italiano resta nei testi destinati a persone: commenti, docblock,
+documentazione, messaggi di commit, risposte al dev. Cosa fare quando trovi un identificatore
+italiano gia' scritto nel codice sta in `execution: implementation`.
 
 Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
 peggiore» si capisce; «non ha alzato il pavimento» no.
