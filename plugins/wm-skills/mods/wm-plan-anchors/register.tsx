@@ -215,6 +215,16 @@ export const register: Register = on => {
       guaio = `usage() rifiutata: ${String(errore)}`
     }
 
+    // Il modello del loop principale, come lo mostra /model. Quello degli
+    // agenti e' un'altra cosa e sta nella riga sotto: qui si legge con quale
+    // modello sta rispondendo la sessione, che altrove non si vede mai.
+    let modello = ''
+    try {
+      modello = await $.session.model()
+    } catch {
+      modello = '?'
+    }
+
     const agenti = await modelliAlLavoro($)
 
     // Sempre in testa, anche quando il dato manca: una riga muta non si
@@ -222,6 +232,7 @@ export const register: Register = on => {
     const testa = (
       <Box flexDirection="column" marginBottom={1}>
         <Box>
+          <Text dimColor>{modello === '' ? '? ' : `${modello}  `}</Text>
           <Text dimColor>context </Text>
           {percento === undefined ? (
             <Text dimColor>{`— ${guaio}`}</Text>
@@ -277,16 +288,13 @@ export const register: Register = on => {
       Math.max(6, (e.viewport?.rows ?? 24) - 2 - (agenti === '' ? 2 : 3)),
     )
 
+    // In quiete il pane mostra solo la testa: dire a ogni turno quanti
+    // requisiti sono stati letti e da quale file non serve a nessuno, e il
+    // file e' comunque scritto in fondo appena una voce compare. I due casi
+    // che vanno detti - nessun overview, formato non riconosciuto - restano
+    // sopra: il silenzio qui vuol dire "letto, nessun riferimento citato".
     if (list.length === 0) {
-      return (
-        <Box flexDirection="column">
-          {testa}
-          <Text dimColor wrap="wrap">
-            {`${known.size} requisiti letti. Compaiono qui appena ne cito uno.`}
-          </Text>
-          <Text dimColor wrap="truncate-start">{overview.path}</Text>
-        </Box>
-      )
+      return <Box flexDirection="column">{testa}</Box>
     }
 
     return (
