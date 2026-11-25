@@ -7,6 +7,9 @@ const PANE = 'wm-plan-anchors'
 
 type Voce = { label: string; text: string; nota: string }
 
+/** Un agente al lavoro: cosa fa, e l'id con cui se ne apre la trascrizione. */
+type Agente = { id?: string; testo: string }
+
 /**
  * Il branch corrente, come lo vede il motore.
  *
@@ -143,30 +146,30 @@ function modelloBreve(id: string | undefined): string {
 }
 
 /**
- * I modelli degli agenti al lavoro, contati.
+ * Gli agenti al lavoro: cosa sta facendo ciascuno, e con quale modello.
  *
- * La lista nativa sotto il prompt da nome, durata e token, ma non il modello:
- * questo e l'unico pezzo che manca, e l'unico che vale la pena aggiungere.
+ * La lista nativa sotto il prompt dà nome, durata e token; `description` è la
+ * frase con cui l'agente è stato lanciato — cioè il compito che sta eseguendo
+ * in questo momento — e il modello non si vede da nessuna parte. Sono i due
+ * pezzi che mancano, ed è l'unica ragione per cui questa riga esiste.
  */
-async function modelliAlLavoro($: EngineInterface): Promise<string> {
+async function agentiAlLavoro($: EngineInterface): Promise<Agente[]> {
   let vivi
   try {
     vivi = (await $.agent.list()).filter(one => one.status === 'running')
   } catch {
-    return ''
+    return []
   }
 
-  if (vivi.length === 0) return ''
+  // Oltre tre, il pane diventa la lista degli agenti invece dei riferimenti:
+  // i primi tre e un conteggio di quelli rimasti.
+  const mostrati: Agente[] = vivi.slice(0, 3).map(uno => ({
+    id: uno.id,
+    testo: `▸ ${uno.description === '' ? uno.type : uno.description} · ${modelloBreve(uno.model)}`,
+  }))
+  if (vivi.length > 3) mostrati.push({ testo: `▸ e altri ${vivi.length - 3}` })
 
-  const conti = new Map<string, number>()
-  for (const uno of vivi) {
-    const nome = modelloBreve(uno.model)
-    conti.set(nome, (conti.get(nome) ?? 0) + 1)
-  }
-
-  return [...conti.entries()]
-    .map(([nome, quanti]) => (quanti === 1 ? `1 agente su ${nome}` : `${quanti} agenti su ${nome}`))
-    .join(', ')
+  return mostrati
 }
 
 /**
@@ -217,7 +220,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
     const larghezza = e.props?.bodyColumns ?? e.viewport?.columns ?? 40
 
     let percento: number | undefined
@@ -239,7 +242,7 @@ export const register: Register = on => {
       modello = '?'
     }
 
-    const agenti = await modelliAlLavoro($)
+    const agenti = await agentiAlLavoro($)
 
     // L'overview si legge prima della testa: il ticket e lo stato del lavoro
     // stanno in quelle due righe, e vanno mostrati anche quando non c'è
@@ -268,7 +271,21 @@ export const register: Register = on => {
                 : ''}
           </Text>
         </Box>
-        {agenti === '' ? undefined : <Text dimColor>{agenti}</Text>}
+        {agenti.map(agente =>
+          agente.id === undefined ? (
+            <Text dimColor wrap="truncate-end">{agente.testo}</Text>
+          ) : (
+            // Premendo la riga, la trascrizione dell'agente prende la vista
+            // principale: è il modo più corto per vedere cosa sta davvero
+            // facendo, invece di aspettare il report.
+            <Button key={agente.id} onPress={async () => {
+              const aperto = await $.ui.view({ agentId: agente.id })
+              if ('deny' in aperto && aperto.deny !== undefined) $.ui.toast(aperto.deny)
+            }}>
+              <Text dimColor wrap="truncate-end">{agente.testo}</Text>
+            </Button>
+          ),
+        )}
         <Box>
           <Text bold>{testaDoc.ticket ?? (overview === undefined ? 'nessun overview' : 'senza ticket')}</Text>
           <Text dimColor>{branch === '' ? '' : `  ${branch}`}</Text>
@@ -309,7 +326,7 @@ export const register: Register = on => {
       $,
       known,
       larghezza,
-      Math.max(6, (e.viewport?.rows ?? 24) - 2 - (agenti === '' ? 2 : 3)),
+      Math.max(6, (e.viewport?.rows ?? 24) - 3 - agenti.length),
     )
 
     // In quiete il pane mostra solo la testa: dire a ogni turno quanti
