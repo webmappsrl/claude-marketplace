@@ -110,3 +110,18 @@ export function pulisci(text: string): string {
 export function identificativi(md: string): string[] {
   return [...parseRequirements(md).keys()]
 }
+
+/**
+ * Il ticket e lo stato scritti in testa a un `overview.md`.
+ *
+ * Le due righe le detta `wm-plan`: `> Ticket: oc:<ID>` e
+ * `> Stato: approvata il <data>` o `> Stato: chiusa il <data> · approvata il <data>`.
+ * Senza ticket la prima riga non c'è, e lo stato esiste solo da quando l'overview
+ * viene approvata: entrambi i casi tornano `undefined`, non una stringa vuota.
+ */
+export function testaOverview(md: string): { ticket?: string; stato?: string } {
+  const ticket = /^>\s*Ticket:\s*(oc:\d+)/m.exec(md)?.[1]
+  const stato = /^>\s*Stato:\s*(.+?)\s*$/m.exec(md)?.[1]
+
+  return { ticket, stato }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { identificativi, parseLabels, parseRequirements, pulisci, senzaCodice } from './parse.ts'
+import { identificativi, parseLabels, parseRequirements, pulisci, senzaCodice, testaOverview } from './parse.ts'
 
 const NUOVO = [
   '## Requisiti',
@@ -108,4 +108,33 @@ test('il markdown esce dal testo mostrato', () => {
   expect(pulisci('il modo in cui `wm-tag` invoca **wm-plan**, vedi [qui](x.md)')).toBe(
     'il modo in cui wm-tag invoca wm-plan, vedi qui',
   )
+})
+
+describe('la testa di un overview', () => {
+  test('legge ticket e stato', () => {
+    const md = [
+      '> Ticket: oc:8700',
+      '> Stato: chiusa il 2026-11-25 · approvata il 2026-11-20',
+      '',
+      '# Titolo',
+    ].join('\n')
+
+    expect(testaOverview(md).ticket).toBe('oc:8700')
+    expect(testaOverview(md).stato).toBe('chiusa il 2026-11-25 · approvata il 2026-11-20')
+  })
+
+  test('un overview senza ticket non inventa un id', () => {
+    const md = '> Stato: approvata il 2026-11-20\n\n# Titolo'
+
+    expect(testaOverview(md).ticket).toBeUndefined()
+    expect(testaOverview(md).stato).toBe('approvata il 2026-11-20')
+  })
+
+  test('prima dell\'approvazione lo stato non c\'è ancora', () => {
+    expect(testaOverview('> Ticket: oc:8700\n\n# Titolo').stato).toBeUndefined()
+  })
+
+  test('una riga di testo che nomina un ticket non è la riga di testa', () => {
+    expect(testaOverview('Il lavoro nasce dal Ticket: oc:1 di ieri.').ticket).toBeUndefined()
+  })
 })

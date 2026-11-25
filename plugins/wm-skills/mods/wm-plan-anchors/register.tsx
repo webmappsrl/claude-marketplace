@@ -1,11 +1,25 @@
 import type { EngineInterface, Register } from 'claude-code'
 
-import { parseLabels, parseRequirements, pulisci, senzaCodice } from './parse.ts'
+import { parseLabels, parseRequirements, pulisci, senzaCodice, testaOverview } from './parse.ts'
 import type { Req } from './parse.ts'
 
 const PANE = 'wm-plan-anchors'
 
 type Voce = { label: string; text: string; nota: string }
+
+/**
+ * Il branch corrente, come lo vede il motore.
+ *
+ * `$.vcs.detect` risponde per qualunque sistema di versionamento, non solo git,
+ * e può non dare un branch (detached HEAD, o un sistema che non ne ha).
+ */
+async function branchCorrente($: EngineInterface): Promise<string> {
+  try {
+    return (await $.vcs.detect({ path: '.' }))?.branch ?? ''
+  } catch {
+    return ''
+  }
+}
 
 /** La cartella feature con l'overview piu recente che usa le ancore. */
 async function findOverview(
@@ -172,7 +186,7 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     // Un pane che nessuno ha chiesto si siede solo da 144 colonne di terminale.
     // Sotto quella larghezza resta non disegnato: senza questo avviso la mod
-    // sarebbe muta, e il dev non saprebbe che c'e' un pane da vedere.
+    // sarebbe muta, e il dev non saprebbe che c'è un pane da vedere.
     const aperto = await $.ui.open({ id: PANE, title: 'Riferimenti' })
     if (!aperto.isPlaced) {
       const motivo = 'reason' in aperto ? aperto.reason : 'motivo non dato'
@@ -216,7 +230,7 @@ export const register: Register = on => {
     }
 
     // Il modello del loop principale, come lo mostra /model. Quello degli
-    // agenti e' un'altra cosa e sta nella riga sotto: qui si legge con quale
+    // agenti è un'altra cosa e sta nella riga sotto: qui si legge con quale
     // modello sta rispondendo la sessione, che altrove non si vede mai.
     let modello = ''
     try {
@@ -226,6 +240,13 @@ export const register: Register = on => {
     }
 
     const agenti = await modelliAlLavoro($)
+
+    // L'overview si legge prima della testa: il ticket e lo stato del lavoro
+    // stanno in quelle due righe, e vanno mostrati anche quando non c'è
+    // nessun riferimento citato.
+    const overview = await findOverview($)
+    const testaDoc = overview === undefined ? {} : testaOverview(overview.md)
+    const branch = await branchCorrente($)
 
     // Sempre in testa, anche quando il dato manca: una riga muta non si
     // distingue da un hook che non gira.
@@ -248,11 +269,14 @@ export const register: Register = on => {
           </Text>
         </Box>
         {agenti === '' ? undefined : <Text dimColor>{agenti}</Text>}
+        <Box>
+          <Text bold>{testaDoc.ticket ?? (overview === undefined ? 'nessun overview' : 'senza ticket')}</Text>
+          <Text dimColor>{branch === '' ? '' : `  ${branch}`}</Text>
+        </Box>
+        {testaDoc.stato === undefined ? undefined : <Text dimColor>{testaDoc.stato}</Text>}
         <Text dimColor>{'─'.repeat(Math.max(8, larghezza))}</Text>
       </Box>
     )
-
-    const overview = await findOverview($)
 
     if (!overview) {
       return (
@@ -290,7 +314,7 @@ export const register: Register = on => {
 
     // In quiete il pane mostra solo la testa: dire a ogni turno quanti
     // requisiti sono stati letti e da quale file non serve a nessuno, e il
-    // file e' comunque scritto in fondo appena una voce compare. I due casi
+    // file è comunque scritto in fondo appena una voce compare. I due casi
     // che vanno detti - nessun overview, formato non riconosciuto - restano
     // sopra: il silenzio qui vuol dire "letto, nessun riferimento citato".
     if (list.length === 0) {
