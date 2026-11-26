@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { indicizza, indicizzaTutti, riferimenti, slug } from './documento.ts'
+import {
+  indicizza,
+  indicizzaTutti,
+  pathCitati,
+  riferimenti,
+  sigleNominate,
+  slug,
+  ticketCitati,
+} from './documento.ts'
 import { testaOverview } from './parse.ts'
 
 /**
@@ -159,5 +167,76 @@ describe("l'ID del ticket quando la riga di testa non c'è", () => {
 
   test('senza ID da nessuna parte non se lo inventa', () => {
     expect(testaOverview('# Un titolo qualunque\n', 'docs/features/senza-numero').ticket).toBe(undefined)
+  })
+})
+
+describe('pathCitati', () => {
+  test('prende i link e i path nudi, senza doppioni', () => {
+    const testo = 'Vedi [le note](docs/features/x/notes.md#r1) e anche docs/features/x/plan.md, poi notes.md.'
+    expect(pathCitati(testo).sort()).toEqual([
+      'docs/features/x/notes.md',
+      'docs/features/x/plan.md',
+      'notes.md',
+    ])
+  })
+
+  test('un testo senza markdown non produce path', () => {
+    expect(pathCitati('nessun documento qui')).toEqual([])
+  })
+})
+
+describe('sigleNominate', () => {
+  test('dice tutto quello che è stato nominato, risolto o no', () => {
+    expect(sigleNominate('T1, T3 e R99 sono citati').sort()).toEqual(['R99', 'T1', 'T3'])
+  })
+})
+
+describe('ticketCitati', () => {
+  test('prende il numero dei ticket nominati, senza doppioni', () => {
+    expect(ticketCitati('fatto in oc:8333, vedi anche oc:9056 e di nuovo oc:8333').sort()).toEqual([
+      '8333',
+      '9056',
+    ])
+  })
+
+  test('un numero che non è un ticket non conta', () => {
+    expect(ticketCitati('la riga 8333 del file')).toEqual([])
+  })
+})
+
+describe('una sigla si qualifica con il ticket nominato nella stessa frase', () => {
+  const indice = indicizzaTutti([
+    { file: 'docs/features/9056-corrente/overview.md', md: '### <a id="r2"></a>**R2** — quello di 9056' },
+    { file: 'docs/features/8968-altro/overview.md', md: '### <a id="r2"></a>**R2** — quello di 8968' },
+  ])
+
+  test('il ticket nominato prima della sigla vince', () => {
+    const esito = riferimenti('fatto in oc:8968, vedi il suo R2', indice)
+    expect(esito[0]?.voce.titolo).toBe('quello di 8968')
+  })
+
+  test('dopo il punto la qualificazione non vale più', () => {
+    const esito = riferimenti('fatto in oc:8968. Qui siamo su R2', indice)
+    expect(esito[0]?.voce.titolo).toBe('quello di 9056')
+  })
+
+  test('senza ticket nominato vince il primo documento', () => {
+    expect(riferimenti('siamo su R2', indice)[0]?.voce.titolo).toBe('quello di 9056')
+  })
+
+  test('una sigla che nel ticket nominato non esiste resta non risolta', () => {
+    expect(riferimenti('in oc:8968 il suo R7', indice)).toEqual([])
+  })
+})
+
+describe('una sigla scritta in minuscolo vale come in maiuscolo', () => {
+  const indice = indicizza('## T9 — Il canale si chiude\n\nTesto del task.', 'plan.md')
+
+  test('t9 trova T9', () => {
+    expect(riferimenti('ricordami t9', indice)[0]?.voce.sigla).toBe('T9')
+  })
+
+  test('una parola che somiglia a una sigla ma non è nell indice non conta', () => {
+    expect(riferimenti('la versione v2 del file', indice)).toEqual([])
   })
 })

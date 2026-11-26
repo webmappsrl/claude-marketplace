@@ -1,6 +1,12 @@
 import type { EngineInterface, Register } from 'claude-code'
 
-import { indicizzaTutti, riferimenti } from './documento.ts'
+import {
+  indicizzaTutti,
+  pathCitati,
+  riferimenti,
+  sigleNominate,
+  ticketCitati,
+} from './documento.ts'
 import type { Voce as VoceDoc } from './documento.ts'
 import { parseLabels, pulisci, senzaCodice, testaOverview } from './parse.ts'
 
@@ -9,12 +15,7 @@ const PANE = 'wm-plan-anchors'
 type Voce = { label: string; text: string; nota: string }
 
 /** I documenti della feature su cui il pane sta lavorando. */
-type Feature = {
-  path: string
-  dir: string
-  md: string
-  documenti: { file: string; md: string }[]
-}
+type Feature = { path: string; dir: string; md: string }
 
 /** Un agente al lavoro: cosa fa, e l'id con cui se ne apre la trascrizione. */
 type Agente = { id?: string; testo: string }
@@ -31,6 +32,126 @@ async function branchCorrente($: EngineInterface): Promise<string> {
   } catch {
     return ''
   }
+}
+
+/**
+ * I documenti già letti, con la mtime che avevano.
+ *
+ * Il pane si ridisegna a ogni fine turno e, finché un agente lavora, ogni due
+ * secondi: senza questa cache rileggerebbe e riparserebbe ogni volta decine
+ * di KB che non sono cambiati. Si tiene la mtime e si rilegge solo il file
+ * che si è mosso, così l'indice non è mai stantio e il lavoro si fa una volta.
+ */
+const letti = new Map<string, { mtimeMs: number; md: string }>()
+
+/**
+ * L'ultimo indice costruito, con la firma dei documenti da cui viene.
+ *
+ * La firma è l'elenco dei path con la loro mtime: finché non cambia, l'indice
+ * è ancora buono e non si riparsa niente. Sta in memoria e non su disco
+ * perché la mod vive quanto la sessione — un file temporaneo costerebbe una
+ * scrittura in più e la stat andrebbe fatta lo stesso.
+ */
+let indiceTenuto: { firma: string; indice: Map<string, VoceDoc> } | undefined
+
+/** Legge un markdown, dalla cache se la mtime non è cambiata. */
+async function leggiSeCambiato(
+  $: EngineInterface,
+  path: string,
+): Promise<{ file: string; md: string } | undefined> {
+  try {
+    const stat = await $.fs.stat(path)
+    const prima = letti.get(path)
+    if (prima && prima.mtimeMs === stat.mtimeMs) return { file: path, md: prima.md }
+
+    const md = await $.fs.read(path)
+    if (typeof md !== 'string') return undefined
+    letti.set(path, { mtimeMs: stat.mtimeMs, md })
+
+    return { file: path, md }
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * I documenti che la sessione sta toccando.
+ *
+ * Non è più "i tre file della cartella della feature": è ogni `.md` di quella
+ * cartella, più ogni `.md` che la conversazione nomina — un link a un altro
+ * ticket, una pagina di `docs/knowledge/`, un README. Se la sessione elenca
+ * un riferimento, il documento che lo definisce deve essere fra questi, o il
+ * pane non ha modo di svilupparlo.
+ *
+ * L'ordine è quello che decide chi vince su un id ripetuto: prima l'overview
+ * della feature corrente, poi il resto della sua cartella, poi i citati.
+ */
+async function raccogliDocumenti(
+  $: EngineInterface,
+  dir: string,
+  citati: string[],
+  ticket: string[],
+): Promise<{ documenti: { file: string; md: string }[]; firma: string }> {
+  const presi: { file: string; md: string }[] = []
+  const firme: string[] = []
+  const visti = new Set<string>()
+
+  const aggiungi = async (path: string) => {
+    if (visti.has(path)) return
+    visti.add(path)
+    const uno = await leggiSeCambiato($, path)
+    if (!uno) return
+    presi.push({ file: path.startsWith(`${dir}/`) ? path.slice(dir.length + 1) : path, md: uno.md })
+    firme.push(`${path}@${letti.get(path)?.mtimeMs ?? 0}`)
+  }
+
+  if (dir !== '') {
+    // L'ordine non e quello del filesystem: a parita di sigla vince chi viene
+    // letto prima, e `T1` deve risolvere sempre allo stesso documento da una
+    // sessione all'altra. Overview, piano, note, poi il resto in ordine.
+    const primi = ['overview.md', 'plan.md', 'notes.md']
+    for (const nome of primi) await aggiungi(`${dir}/${nome}`)
+    try {
+      const resto = (await $.fs.list(dir))
+        .filter(entry => entry.kind !== 'dir' && entry.name.endsWith('.md'))
+        .map(entry => entry.name)
+        .filter(nome => !primi.includes(nome))
+        .sort()
+      for (const nome of resto) await aggiungi(`${dir}/${nome}`)
+    } catch {
+      // la cartella non si legge: restano i citati
+    }
+  }
+
+  // Un ticket nominato porta la sua cartella: il numero si traduce cercando
+  // `docs/features/<numero>-…`, come fa la skill, invece di ri-derivare lo
+  // slug dal titolo — che nel frattempo puo essere cambiato.
+  if (ticket.length > 0) {
+    try {
+      const cartelle = await $.fs.list('docs/features')
+      for (const numero of [...ticket].sort()) {
+        const trovata = cartelle.find(
+          entry => entry.kind === 'dir' && entry.name.startsWith(`${numero}-`),
+        )
+        if (!trovata) continue
+        for (const nome of ['overview.md', 'plan.md', 'notes.md']) {
+          await aggiungi(`docs/features/${trovata.name}/${nome}`)
+        }
+      }
+    } catch {
+      // nessuna docs/features leggibile: restano i path citati
+    }
+  }
+
+  for (const path of [...citati].sort()) {
+    if (!path.endsWith('.md')) continue
+    // Un path relativo scritto parlando si intende dentro la cartella della
+    // feature: `notes.md` vuol dire quello di questa feature, non uno in radice.
+    if (!path.includes('/') && dir !== '') await aggiungi(`${dir}/${path}`)
+    await aggiungi(path)
+  }
+
+  return { documenti: presi, firma: firme.join('|') }
 }
 
 /**
@@ -61,33 +182,13 @@ async function findOverview($: EngineInterface): Promise<Feature | undefined> {
   }
 
   if (best) {
-    const documenti: { file: string; md: string }[] = []
-    // L'ordine conta: un identificativo è definito nell'overview, e plan.md
-    // o notes.md lo richiamano senza doverlo ridefinire.
-    for (const file of ['overview.md', 'plan.md', 'notes.md']) {
-      try {
-        const md = await $.fs.read(`${best.dir}/${file}`)
-        if (typeof md === 'string') documenti.push({ file, md })
-      } catch {
-        continue
-      }
-    }
-    const overview = documenti.find(uno => uno.file === 'overview.md')
-    if (overview) {
-      return { path: `${best.dir}/overview.md`, dir: best.dir, md: overview.md, documenti }
-    }
+    const uno = await leggiSeCambiato($, `${best.dir}/overview.md`)
+    if (uno) return { path: `${best.dir}/overview.md`, dir: best.dir, md: uno.md }
   }
 
   try {
     const md = await $.fs.read(`${$.plugin.root}/mods/wm-plan-anchors/examples/overview-demo.md`)
-    if (typeof md === 'string') {
-      return {
-        path: 'esempio incluso nella mod',
-        dir: '',
-        md,
-        documenti: [{ file: 'overview.md', md }],
-      }
-    }
+    if (typeof md === 'string') return { path: 'esempio incluso nella mod', dir: '', md }
   } catch {
     return undefined
   }
@@ -101,20 +202,19 @@ async function findOverview($: EngineInterface): Promise<Feature | undefined> {
  * Legge la conversazione invece di aspettare `session.append`: quell'evento un
  * altro plugin puo consumarlo senza passarlo oltre, e la mod resterebbe cieca.
  */
-async function citedNow(
-  $: EngineInterface,
+function citedNow(
+  rows: { role: string; text: string }[],
   indice: Map<string, VoceDoc>,
   larghezza: number,
   righe: number,
 ) {
-  const rows = await $.session.messages()
+  // I documenti letti usano le sigle? Basta che una voce ne abbia una.
+  const usaSigle = [...indice.values()].some(voce => voce.sigla !== undefined)
   const labels = new Map<string, string>()
   const seen = new Map<string, Voce>()
   const colonne = Math.max(24, larghezza)
 
   for (const row of rows.slice(-60)) {
-    if (row.role !== 'assistant') continue
-
     const detto = senzaCodice(row.text)
 
     // Prima le definizioni di questo messaggio, poi i richiami: cosi
@@ -128,6 +228,23 @@ async function citedNow(
     // I riferimenti li trova l'indice: una sigla nuda come `R1` o `T4`, e i
     // link alle ancore. Il pane non sa piu che forma abbia la riga che li
     // definisce, e non deve saperlo.
+    // Una sigla nominata che nei documenti non c'e: si mostra lo stesso,
+    // perche un riferimento che non si trova e un difetto del documento, e
+    // tacerlo lo lascia addosso al dev da scoprire al merge.
+    //
+    // Ma solo se questi documenti le sigle le usano: in un repo i cui
+    // overview non ne hanno, ogni sigla nominata parlando risulterebbe
+    // mancante e il pane sarebbe un elenco di falsi allarmi.
+    for (const sigla of usaSigle ? sigleNominate(detto) : []) {
+      if (indice.has(sigla)) continue
+      const at = detto.indexOf(sigla)
+      if (at < 0) continue
+      here.push({
+        at,
+        voce: { label: sigla, text: 'citato ma non trovato nei documenti letti', nota: 'manca' },
+      })
+    }
+
     for (const { at, voce } of riferimenti(detto, indice)) {
       const dove = voce.file === 'overview.md' ? '' : ` · ${voce.file}`
       here.push({
@@ -343,7 +460,25 @@ export const register: Register = on => {
       )
     }
 
-    const indice = indicizzaTutti(overview.documenti)
+    // La conversazione si legge una volta sola: da qui escono sia i documenti
+    // che la sessione nomina, sia i riferimenti da sviluppare.
+    const rows = await $.session.messages()
+    // Anche quello che scrive il dev, non solo quello che scrivo io: «com'era
+    // T5?» e il caso piu naturale di tutti, e con il solo ruolo assistant il
+    // pane restava muto proprio quando gli si chiedeva qualcosa.
+    const detti = rows.slice(-60).filter(uno => uno.role === 'assistant' || uno.role === 'user')
+    const citati = [...new Set(detti.flatMap(uno => pathCitati(uno.text)))]
+    const ticket = [...new Set(detti.flatMap(uno => ticketCitati(uno.text)))]
+
+    const raccolti = await raccogliDocumenti($, overview.dir, citati, ticket)
+
+    // L'indice si ricostruisce solo se un documento si è mosso o se la
+    // sessione ne ha nominato uno nuovo: la firma dice entrambe le cose.
+    const indice =
+      indiceTenuto?.firma === raccolti.firma
+        ? indiceTenuto.indice
+        : indicizzaTutti(raccolti.documenti)
+    indiceTenuto = { firma: raccolti.firma, indice }
 
     if (indice.size === 0) {
       return (
@@ -357,8 +492,8 @@ export const register: Register = on => {
       )
     }
 
-    const list = await citedNow(
-      $,
+    const list = citedNow(
+      detti,
       indice,
       larghezza,
       Math.max(6, (e.viewport?.rows ?? 24) - 3 - agenti.length),

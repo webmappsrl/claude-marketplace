@@ -174,8 +174,17 @@ export function indicizzaTutti(documenti: { file: string; md: string }[]): Map<s
   const indice = new Map<string, Voce>()
 
   for (const uno of documenti) {
+    // Il ticket a cui il documento appartiene, letto dal path della cartella.
+    // Serve a dare a ogni voce un secondo nome qualificato, `8333:R2`, con cui
+    // una sigla si risolve nel ticket giusto quando se ne nominano due.
+    const ticket = /docs\/features\/(\d+)-/.exec(uno.file)?.[1]
+
     for (const [chiave, voce] of indicizza(uno.md, uno.file)) {
       if (!indice.has(chiave)) indice.set(chiave, voce)
+      if (ticket !== undefined) {
+        const qualificata = `${ticket}:${chiave}`
+        if (!indice.has(qualificata)) indice.set(qualificata, voce)
+      }
     }
   }
 
@@ -195,22 +204,122 @@ export function riferimenti(
   indice: Map<string, Voce>,
 ): { at: number; voce: Voce }[] {
   const trovati: { at: number; voce: Voce }[] = []
+  // I tratti di testo gia consumati da un link: la sigla che sta dentro
+  // l'ancora — `#t4--la-sovrapposizione` — e lo stesso riferimento, non un
+  // secondo, e contarla due volte riempirebbe il pane di doppioni.
+  const presi: { da: number; a: number }[] = []
 
   for (const hit of testo.matchAll(/\(([^)\s]*#([^)\s]+))\)/g)) {
     const ancora = hit[2]
     if (ancora === undefined || hit.index === undefined) continue
+    presi.push({ da: hit.index, a: hit.index + hit[0].length })
     const apertura = ancora.split('-')[0] ?? ''
     const voce =
       indice.get(ancora) ?? indice.get(apertura) ?? indice.get(apertura.toUpperCase())
     if (voce) trovati.push({ at: hit.index, voce })
   }
 
-  for (const hit of testo.matchAll(/\b([A-Z]+\d+)\b/g)) {
-    const sigla = hit[1]
-    if (sigla === undefined || hit.index === undefined) continue
-    const voce = indice.get(sigla)
+  // Dove sono nominati i ticket: una sigla che viene dopo `oc:8333` si
+  // intende in quel ticket, perche e cosi che se ne parla — «fatto in
+  // oc:8333, vedi il suo R2». Senza questo vincerebbe sempre la feature
+  // corrente, e il pane mostrerebbe il requisito sbagliato con lo stesso nome.
+  const ticketA: { at: number; numero: string }[] = []
+  for (const hit of testo.matchAll(/\boc:(\d+)\b/g)) {
+    if (hit[1] !== undefined && hit.index !== undefined) {
+      ticketA.push({ at: hit.index, numero: hit[1] })
+    }
+  }
+
+  // Anche minuscola: `t9` scritto di fretta e la stessa cosa di `T9`, e il
+  // pane non deve fare lo schizzinoso. Il rischio di prendere una parola a
+  // caso non c'e: una sigla conta solo se l'indice la conosce davvero.
+  for (const hit of testo.matchAll(/\b([A-Za-z]+\d+)\b/g)) {
+    const scritta = hit[1]
+    if (scritta === undefined || hit.index === undefined) continue
+    const dove = hit.index
+    if (presi.some(uno => dove >= uno.da && dove < uno.a)) continue
+    const sigla = scritta.toUpperCase()
+    // La qualificazione vale dentro la frase, non per tutto il messaggio:
+    // «fatto in oc:8968, vedi il suo R2. Qui siamo su R3» parla di due
+    // ticket diversi, e il punto e quello che li separa.
+    const prima = [...ticketA]
+      .reverse()
+      .find(
+        uno =>
+          uno.at < (hit.index ?? 0) &&
+          !/[.;\n]/.test(testo.slice(uno.at, hit.index ?? 0)),
+      )
+    const qualificata = prima === undefined ? undefined : indice.get(`${prima.numero}:${sigla}`)
+
+    // Se il ticket nominato e fra quelli letti ma quella sigla li dentro non
+    // c'e, la si lascia non risolta: ricadere sulla sigla della feature
+    // corrente mostrerebbe un requisito diverso con lo stesso nome, cioe un
+    // dato sbagliato al posto di un dato mancante.
+    const letto =
+      prima !== undefined && [...indice.keys()].some(k => k.startsWith(`${prima.numero}:`))
+    if (qualificata === undefined && letto) continue
+
+    const voce = qualificata ?? indice.get(sigla)
     if (voce) trovati.push({ at: hit.index, voce })
   }
 
   return trovati.sort((a, b) => a.at - b.at)
+}
+
+/**
+ * I file markdown nominati in un testo.
+ *
+ * Due forme: il link, `[notes.md](docs/features/x/notes.md#r1)`, e il path
+ * nudo che si scrive parlando, `docs/features/x/plan.md`. Serve a sapere
+ * quali documenti la sessione sta toccando: sono quelli da indicizzare, non
+ * solo i tre della cartella corrente.
+ */
+export function pathCitati(testo: string): string[] {
+  const trovati = new Set<string>()
+
+  for (const hit of testo.matchAll(/\]\(([^)\s]+\.md)(?:#[^)\s]*)?\)/g)) {
+    if (hit[1] !== undefined) trovati.add(hit[1])
+  }
+
+  for (const hit of testo.matchAll(/(?:^|[\s`"'(])([\w./-]+\.md)\b/g)) {
+    if (hit[1] !== undefined) trovati.add(hit[1])
+  }
+
+  return [...trovati]
+}
+
+/**
+ * Le sigle nominate in un testo, risolte o no.
+ *
+ * `riferimenti` restituisce solo quelle che l'indice conosce: questa dice
+ * tutto quello che la sessione ha nominato, così chi disegna il pane può
+ * accorgersi di una sigla citata che nei documenti non esiste. Un riferimento
+ * che non si trova è un difetto del documento, e va mostrato, non taciuto.
+ */
+export function sigleNominate(testo: string): string[] {
+  const trovate = new Set<string>()
+
+  for (const hit of testo.matchAll(/\b([A-Z]+\d+)\b/g)) {
+    if (hit[1] !== undefined) trovate.add(hit[1])
+  }
+
+  return [...trovate]
+}
+
+/**
+ * I ticket nominati in un testo, come numero: `oc:8333` da `8333`.
+ *
+ * Un ticket non è un path, ma indica un documento quanto un path: «questo è
+ * già stato fatto in oc:8333» vuol dire che l'overview di quel ticket va
+ * letta. Chi raccoglie i documenti traduce il numero nella sua cartella,
+ * `docs/features/<numero>-<titolo>`.
+ */
+export function ticketCitati(testo: string): string[] {
+  const trovati = new Set<string>()
+
+  for (const hit of testo.matchAll(/\boc:(\d+)\b/g)) {
+    if (hit[1] !== undefined) trovati.add(hit[1])
+  }
+
+  return [...trovati]
 }
