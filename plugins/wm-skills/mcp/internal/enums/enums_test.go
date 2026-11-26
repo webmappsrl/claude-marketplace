@@ -84,10 +84,11 @@ func TestParsePHPEnumErrorsOnUnrecognizedCaseLine(t *testing.T) {
 }
 
 func TestLoadOrFetchFailsWhenNetworkDownAndCacheCorrupt(t *testing.T) {
-	origType, origStatus := storyTypeURL, storyStatusURL
+	origType, origStatus, origQuote := storyTypeURL, storyStatusURL, quoteStatusURL
+	quoteStatusURL = "http://127.0.0.1:1"
 	storyTypeURL = "http://127.0.0.1:1"
 	storyStatusURL = "http://127.0.0.1:1"
-	t.Cleanup(func() { storyTypeURL, storyStatusURL = origType, origStatus })
+	t.Cleanup(func() { storyTypeURL, storyStatusURL, quoteStatusURL = origType, origStatus, origQuote })
 
 	cache := filepath.Join(t.TempDir(), "enums.json")
 	// Copia locale troncata/corrotta: non è JSON valido.
@@ -111,10 +112,11 @@ func TestFetchFreshMergesFreshWithCacheOnPartialFailure(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	origType, origStatus := storyTypeURL, storyStatusURL
+	origType, origStatus, origQuote := storyTypeURL, storyStatusURL, quoteStatusURL
+	quoteStatusURL = "http://127.0.0.1:1"
 	storyTypeURL = srv.URL
 	storyStatusURL = "http://127.0.0.1:1" // non raggiungibile
-	t.Cleanup(func() { storyTypeURL, storyStatusURL = origType, origStatus })
+	t.Cleanup(func() { storyTypeURL, storyStatusURL, quoteStatusURL = origType, origStatus, origQuote })
 
 	cache := filepath.Join(t.TempDir(), "enums.json")
 	old := Values{StoryType: []string{"vecchio"}, StoryStatus: []string{"vecchio-status"}}
@@ -156,10 +158,11 @@ func TestLoadOrFetchReturnsCacheImmediatelyWithoutWaitingForNetwork(t *testing.T
 	// pronto immediatamente a ogni sessione. Punta a un indirizzo che non
 	// risponde mai (127.0.0.1:1): se LoadOrFetch attendesse la rete, il test
 	// scadrebbe per timeout.
-	origType, origStatus := storyTypeURL, storyStatusURL
+	origType, origStatus, origQuote := storyTypeURL, storyStatusURL, quoteStatusURL
+	quoteStatusURL = "http://127.0.0.1:1"
 	storyTypeURL = "http://127.0.0.1:1"
 	storyStatusURL = "http://127.0.0.1:1"
-	t.Cleanup(func() { storyTypeURL, storyStatusURL = origType, origStatus })
+	t.Cleanup(func() { storyTypeURL, storyStatusURL, quoteStatusURL = origType, origStatus, origQuote })
 
 	cache := filepath.Join(t.TempDir(), "enums.json")
 	old := Values{StoryType: []string{"vecchio"}, StoryStatus: []string{"vecchio-status"}}
@@ -184,5 +187,49 @@ func TestLoadOrFetchReturnsCacheImmediatelyWithoutWaitingForNetwork(t *testing.T
 	}
 	if len(v.StoryStatus) != 1 || v.StoryStatus[0] != "vecchio-status" {
 		t.Fatalf("atteso il valore dalla copia locale, ottenuto %v", v.StoryStatus)
+	}
+}
+
+func TestFetchFreshReadsQuoteStatusAndKeepsOldCacheUsable(t *testing.T) {
+	// Lo stato dei preventivi arriva da QuoteStatus.php come gli stati dei
+	// ticket. Una copia locale salvata prima che esistesse quote_status deve
+	// restare utilizzabile, e il nuovo elenco deve finire nella copia.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("enum QuoteStatus: string {\n case New = 'new';\n case On_Hold = 'on hold';\n}"))
+	}))
+	defer srv.Close()
+
+	origType, origStatus, origQuote := storyTypeURL, storyStatusURL, quoteStatusURL
+	storyTypeURL = "http://127.0.0.1:1"
+	storyStatusURL = "http://127.0.0.1:1"
+	quoteStatusURL = srv.URL
+	t.Cleanup(func() { storyTypeURL, storyStatusURL, quoteStatusURL = origType, origStatus, origQuote })
+
+	cache := filepath.Join(t.TempDir(), "enums.json")
+	if err := os.WriteFile(cache, []byte(`{"story_type":["Bug"],"story_status":["new"]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	v, err := fetchFresh(context.Background(), cache)
+	if err != nil {
+		t.Fatalf("errore inatteso: %v", err)
+	}
+	if len(v.QuoteStatus) != 2 || v.QuoteStatus[1] != "on hold" {
+		t.Fatalf("atteso il valore letterale dei case, non il nome: %v", v.QuoteStatus)
+	}
+	if len(v.StoryType) != 1 || v.StoryType[0] != "Bug" {
+		t.Fatalf("atteso StoryType dalla copia locale, ottenuto %v", v.StoryType)
+	}
+
+	var got Values
+	updated, err := os.ReadFile(cache)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(updated, &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.QuoteStatus) != 2 {
+		t.Fatalf("la copia locale non contiene quote_status: %+v", got)
 	}
 }
