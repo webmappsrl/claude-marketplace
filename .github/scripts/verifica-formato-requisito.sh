@@ -3,7 +3,7 @@
 #
 #   1. plugins/wm-skills/skills/wm-plan/SKILL.md      lo prescrive  (la fonte autoritativa)
 #   2. plugins/wm-skills/scripts/feature-docs-check.sh  lo riconosce con una regex awk
-#   3. plugins/wm-skills/mods/wm-plan-anchors/parse.ts  lo riconosce con una regex JavaScript
+#   3. plugins/wm-skills/mods/wm-plan-anchors/documents.ts  lo indicizza per il pane della mod
 #
 # Se la forma cambia in uno solo, gli altri due smettono di riconoscere i requisiti senza dire
 # niente: lo script di controllo dei documenti passa su un overview che non legge, e il pane
@@ -22,7 +22,7 @@ cd "$(dirname "$0")/../.."
 
 SKILL="plugins/wm-skills/skills/wm-plan/SKILL.md"
 AWK_SRC="plugins/wm-skills/scripts/feature-docs-check.sh"
-TS_SRC="plugins/wm-skills/mods/wm-plan-anchors/parse.ts"
+TS_SRC="plugins/wm-skills/mods/wm-plan-anchors/documents.ts"
 ESITO=0
 
 for F in "$SKILL" "$AWK_SRC" "$TS_SRC"; do
@@ -30,7 +30,7 @@ for F in "$SKILL" "$AWK_SRC" "$TS_SRC"; do
 done
 
 # ── le righe d'esempio, dalla fonte autoritativa ────────────────────────────
-ESEMPI="$(grep -oE '^[[:space:]]*- <a id="r[0-9]+"></a>\*\*R[0-9]+\*\*.*$' "$SKILL" \
+ESEMPI="$(grep -oE '^[[:space:]]*(- |#+ )<a id="r[0-9]+"></a>\*\*R[0-9]+\*\*.*$' "$SKILL" \
   | sed 's/^[[:space:]]*//' | sort -u)"
 ESEMPI="$ESEMPI
 $(grep -oE '`- <a id="r[0-9]+"></a>\*\*R[0-9]+\*\* — \[UX\][^`]*`' "$SKILL" | tr -d '`' | sort -u)"
@@ -43,15 +43,22 @@ if [ "$QUANTI" -eq 0 ]; then
   exit 1
 fi
 
-# ── le due regex, estratte dai parser ───────────────────────────────────────
-# awk: la riga che apre il blocco del requisito in feature-docs-check.sh
-AWK_RE="$(grep -oE '/\^- <a id="r\[0-9\]\+"><\\/a>/' "$AWK_SRC" | head -1)"
-[ -n "$AWK_RE" ] || { echo "❌ non trovo la regex del requisito in $AWK_SRC"; exit 1; }
-AWK_ERE='^- <a id="r[0-9]+"></a>'
+# ── il parser awk, eseguito davvero ─────────────────────────────────────────
+# Non si ricopia qui la sua regex: una copia si scollega dall'originale senza che nessuno se ne
+# accorga, ed è esattamente il guasto che questo controllo deve impedire. Si estrae il programma
+# awk dallo script e lo si fa girare su un overview costruito con le righe prescritte.
+REQ_AWK="$(awk "/^REQ_AWK='/{dentro=1; sub(/^REQ_AWK='/, \"\"); } dentro { if (/'$/ && !/^REQ_AWK/) { sub(/'$/, \"\"); print; exit } print }" "$AWK_SRC")"
+[ -n "$REQ_AWK" ] || { echo "❌ non trovo REQ_AWK in $AWK_SRC"; exit 1; }
 
-# JavaScript: la costante RIGA_REQUISITO in parse.ts, tradotta in ERE
-TS_RE="$(grep -oE 'export const RIGA_REQUISITO = /.*/$' "$TS_SRC" | sed 's|^.* = /||; s|/$||')"
-[ -n "$TS_RE" ] || { echo "❌ non trovo RIGA_REQUISITO in $TS_SRC"; exit 1; }
+awk_riconosce() { # <riga> → 0 se il parser le dà un identificativo
+  printf '## Requisiti\n\n%s\n' "$1" | awk "$REQ_AWK" 2>/dev/null | grep -q "^T\t"
+}
+
+# JavaScript: l'indicizzatore non ha una regex per «la riga di un requisito» — segna le àncore
+# e gli heading, e una riga è indicizzata se porta un'àncora. Si estrae quella costante e si
+# verifica che la riga la contenga: è ciò che decide se quel requisito finirà nel pane.
+TS_RE="$(grep -oE 'const ANCHOR = /.*/$' "$TS_SRC" | sed 's|^.* = /||; s|/$||')"
+[ -n "$TS_RE" ] || { echo "❌ non trovo la costante ANCHOR in $TS_SRC"; exit 1; }
 TS_ERE="$(printf '%s' "$TS_RE" \
   | sed 's|\\s|[[:space:]]|g; s|\\d|[0-9]|g; s|\\/|/|g; s|\\\*|[*]|g')"
 
@@ -62,7 +69,7 @@ prova() { # <ere> <riga> → 0 se riconosciuta
 # ── le righe prescritte devono essere riconosciute da entrambi ──────────────
 while IFS= read -r RIGA; do
   [ -n "$RIGA" ] || continue
-  prova "$AWK_ERE" "$RIGA" || {
+  awk_riconosce "$RIGA" || {
     echo "❌ $AWK_SRC non riconosce una riga che $SKILL prescrive:"
     echo "   $RIGA"
     echo "   → allinea la regex in $AWK_SRC"
@@ -71,7 +78,7 @@ while IFS= read -r RIGA; do
   prova "$TS_ERE" "$RIGA" || {
     echo "❌ $TS_SRC non riconosce una riga che $SKILL prescrive:"
     echo "   $RIGA"
-    echo "   → allinea RIGA_REQUISITO in $TS_SRC"
+    echo "   → allinea ANCHOR in $TS_SRC"
     ESITO=1
   }
 done <<< "$ESEMPI"
@@ -81,10 +88,10 @@ done <<< "$ESEMPI"
 CONTRO=(
   '- [ ] il vecchio formato a checkbox, senza identificativo'
   '- **R1** — identificativo senza ancora'
-  '- <a id="x1"></a>**R1** — ancora che non comincia per r'
+  '## Requisiti'
 )
 for RIGA in "${CONTRO[@]}"; do
-  if prova "$AWK_ERE" "$RIGA"; then
+  if awk_riconosce "$RIGA"; then
     echo "❌ $AWK_SRC riconosce una riga che non è un requisito:"
     echo "   $RIGA"
     ESITO=1

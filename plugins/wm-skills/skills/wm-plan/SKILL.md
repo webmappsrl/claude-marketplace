@@ -99,11 +99,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.7.0
+**Versione installata:** v1.7.1
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.7.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.7.1` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -188,6 +188,21 @@ Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per featu
 - Dopo la domanda **fermati** e aspetta la risposta.
 - Se il dev risponde a una cosa sola di un messaggio che ne conteneva di più, **il silenzio sulle altre non è una delega**: il messaggio era sbagliato. Riproponi la cosa rimasta aperta, da sola, nel messaggio successivo.
 - Un'informazione che non richiede risposta (un esito, una verifica fatta) può stare nel messaggio, purché sia chiaro che non chiede nulla.
+
+**La domanda sta in fondo, staccata dal resto.** Un messaggio lungo va bene — contesto, prove, dettaglio tecnico servono — ma la domanda **non deve restare dentro il corpo del testo**: in un muro di testo non si trova, e il dev deve rileggere tutto per capire cosa gli stai chiedendo. Dopo la spiegazione, chiudi sempre con un blocco a sé:
+
+```
+**Domanda:** <la richiesta, in una riga>
+- <opzione A> — <una riga>
+- <opzione B> — <una riga>
+💡 Best practice: <quale si consiglia e perché, in mezza riga>
+```
+
+**Nel blocco finale non entra niente di nuovo.** Tutto quello che serve a decidere — contesto, prove, numeri, cosa succede oggi e cosa succederebbe dopo — sta **sopra**, nella spiegazione. In fondo resta solo la scelta: la domanda in una riga, le opzioni in una riga ciascuna, il consiglio. Se un'opzione ha bisogno di tre righe per capirsi, quelle tre righe vanno sopra e in fondo ne resta il nome. Un blocco finale che argomenta è di nuovo testo da leggere, e non serve più a niente.
+
+Vale anche quando la domanda l'hai già scritta nel corpo: si **ripete** in fondo, isolata. Se le opzioni non sono due o tre chiuse ma una scelta aperta, lascia solo la riga `**Domanda:**` e la best practice. Se non c'è niente da chiedere, chiudi con una riga che dice cosa farai o cosa aspetti: anche lì il dev non deve cercare.
+
+**La riga `💡 Best practice` è obbligatoria su ogni domanda, in ogni fase** — non solo in `reverse-interaction`, dove è nata. Una domanda senza il consiglio è incompleta: il dev decide meglio se sa cosa consiglieresti e perché. Se su quel punto non hai una raccomandazione, dillo («nessuna delle due è più corretta: dipende da X») invece di saltare la riga.
 
 **Scrivi ogni messaggio come se fosse il primo.** Il dev non ha in testa il ragionamento che ti ha portato lì: prima il contesto (di quale pezzo parli, dove sta, cosa succede in pratica), poi un **esempio concreto** con dati veri, e nessun rimando a testo di messaggi precedenti («l'asse 5», «questa cosa»). Una scelta A/B senza il caso d'uso non si capisce: mostra cosa succede oggi e cosa succederebbe dopo. Due fatti nella stessa frase vanno collegati dal loro nesso; se il nesso non c'è, spezza la frase.
 
@@ -941,7 +956,7 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   raggiungibile, non è che non ci fosse nulla. Per le credenziali scadute vale la procedura di
   `${CLAUDE_PLUGIN_ROOT}/shared/notebooklm-login.md`.
 
-- **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
+- **Ogni domanda porta il suo consiglio e sta in fondo al messaggio**, nella forma descritta in `## Una domanda per messaggio, in tutto il workflow`: `**Domanda:**`, le opzioni, poi `💡 Best practice:` con la raccomandazione più rilevante per quel problema. Qui non si ripete la regola, che vale ovunque: quello che segue è ciò che in questa fase va messo **prima** della domanda.
   Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
 
   La riga sulle call non è un ornamento: obbliga a **guardare le citazioni prima di formulare la domanda**, invece di farla e accorgersi dopo che la risposta c'era già. Una fonte che gira e che nessuno legge prima di parlare è peggio di non averla, perché costa e non evita nulla. Se l'agente delle trascrizioni non ha trovato niente, scrivilo: «dalle call, nulla» è un'informazione, e dice al dev che su quel punto non esiste una decisione pregressa.
@@ -1014,6 +1029,25 @@ scritti perché si possa dire, di ciascuno, se è soddisfatto.
 - **Ogni requisito ha un identificativo stabile**, `R1`, `R2`…, con un'àncora esplicita
   `<a id="r3"></a>`. L'àncora del titolo non va bene: cambia quando si riformula il testo. Un
   identificativo non si riusa mai, nemmeno dopo che il requisito è stato tolto.
+- **Due forme, a scelta secondo la lunghezza.** Voce di elenco quando il requisito sta in una
+  frase, sezione quando ha bisogno di un corpo, di una fonte e di una verifica:
+
+  ```
+  - <a id="r1"></a>**R1** — <comportamento atteso>
+    - Verifica: [File.php](percorso) › `nome del test`
+
+  ### <a id="r1"></a>**R1** — <titolo del requisito>
+
+  <il corpo, uno o più paragrafi>
+
+  *Fonte:* <chi l'ha detto e quando>
+  **Verifica:** [File.php](percorso) › `nome del test`
+  ```
+
+  Quello che non cambia è la testa della riga: àncora, identificativo in grassetto, trattino.
+  Non mescolare le due forme nella stessa overview. La riga `*Fonte:*` esiste solo nella forma
+  a sezione e non fa parte del testo del requisito: dice chi ha deciso, non cosa si deve fare,
+  e riscriverla non è una modifica da registrare nelle note.
 - **Un identificativo si scrive sempre come link**, in qualunque file e anche dentro l'overview
   stessa: `[R3](#r3)` nell'overview, `[R3](overview.md#r3)` in `plan.md` e `notes.md`. Chi
   legge arriva al requisito con un clic; chi riprende il lavoro sa di quale overview si parla,
@@ -1242,6 +1276,7 @@ Questo briefing è lo spec che writing-plans usa per generare il piano — senza
 - **Commit convention:** tutti i commit usano `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
 - **⚠️ Nessun commit durante l'esecuzione:** i commit nel piano sono istruzioni testuali, non azioni da eseguire. Il primo commit lo fa il dev all'inizio della chiusura (`review-gate: dialog`); i successivi, della chiusura, la sessione principale. Nessuna skill e nessun subagent committa durante l'esecuzione, e nessun branch si crea senza il dev.
 - **Identificativi dei requisiti:** ogni task che realizza un requisito lo cita come link, `[R3](overview.md#r3)`.
+- **Identificatori in inglese, anche dentro il piano:** i nomi nascono qui, nei blocchi di codice dei task, e l'implementazione li copia. Variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi di file e di branch si scrivono **sempre in inglese**, anche quando il dominio è italiano: `$quote` e non `$preventivo`, `getUserTracks()` e non `getTracceUtente()`. L'italiano resta nella prosa del task e nei commenti.
 
 Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
 
@@ -1330,6 +1365,8 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 > "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. Il primo commit lo fa il developer all'inizio della chiusura. Non modificare `overview.md`: ogni cambiamento a un requisito va in `notes.md`, sezione «Modifiche ai requisiti», con l'effetto e, se il requisito cambia, il testo nuovo per intero. Gli identificatori nel codice — variabili, funzioni, classi, campi, chiavi — vanno scritti sempre in inglese, mai in italiano, anche quando il dominio è italiano; l'italiano è ammesso solo nei commenti e nei testi rivolti a persone."
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
+
+**Se la skill scelta dispaccia subagent — `subagent-driven-development` — l'override va ripetuto per intero dentro il prompt di ogni implementer.** Il template di Superpowers (`implementer-prompt.md`) passa al subagent il solo brief del task: un override dichiarato qui, nella conversazione principale, il subagent non lo vede mai. È il motivo per cui il suo punto «4. Commit your work» va contraddetto esplicitamente in ogni dispatch, e per cui la regola sugli identificatori va scritta lì dentro e non solo qui.
 
 ### execution: re-estimation (solo se una stima esiste già)
 

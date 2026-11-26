@@ -1,0 +1,18 @@
+# Le eccezioni: parole che il controllo deve lasciar passare anche se stanno nel dizionario.
+#
+# Si aggiunge una riga qui quando un nome italiano è obbligato, non quando è comodo:
+#
+#   - un nome imposto dall'esterno — una colonna di un database che esiste già, una chiave
+#     di un payload di un servizio terzo, un campo di un formato di scambio;
+#   - un termine giuridico o amministrativo italiano che in inglese non ha un equivalente
+#     esatto, e tradurlo cambierebbe il significato;
+#   - un nome proprio.
+#
+# Non si aggiunge una riga per evitare di rinominare qualcosa che si può rinominare.
+# Ogni riga porta accanto il motivo: senza, al primo riordino nessuno sa più perché c'è.
+#
+# Il confronto è sul token intero, minuscolo.
+
+comune      # ente locale italiano: "municipality" non è la stessa cosa in un dato ISTAT
+provincia   # idem
+regione     # idem
