@@ -119,9 +119,20 @@ export function identificativi(md: string): string[] {
  * Senza ticket la prima riga non c'è, e lo stato esiste solo da quando l'overview
  * viene approvata: entrambi i casi tornano `undefined`, non una stringa vuota.
  */
-export function testaOverview(md: string): { ticket?: string; stato?: string } {
-  const ticket = /^>\s*Ticket:\s*(oc:\d+)/m.exec(md)?.[1]
+export function testaOverview(
+  md: string,
+  dir?: string,
+): { ticket?: string; stato?: string } {
   const stato = /^>\s*Stato:\s*(.+?)\s*$/m.exec(md)?.[1]
+  const ticket =
+    /^>\s*Ticket:\s*(oc:\d+)/m.exec(md)?.[1] ??
+    // La riga di testa e la forma prescritta, ma non e l'unico posto dove
+    // l'ID e scritto: il titolo lo porta quasi sempre, e il nome della
+    // cartella lo porta per contratto (`<ID>-<titolo-in-kebab-case>`).
+    // Mostrare `senza ticket` con l'ID scritto due volte li accanto e un
+    // dato sbagliato, non un dato mancante.
+    /^#\s+(?:oc:)?(\d+)\b/m.exec(md)?.[1]?.replace(/^/, 'oc:') ??
+    (dir === undefined ? undefined : /(?:^|\/)(\d+)-/.exec(dir)?.[1]?.replace(/^/, 'oc:'))
 
   return { ticket, stato }
 }

@@ -1,11 +1,20 @@
 import type { EngineInterface, Register } from 'claude-code'
 
-import { parseLabels, parseRequirements, pulisci, senzaCodice, testaOverview } from './parse.ts'
-import type { Req } from './parse.ts'
+import { indicizzaTutti, riferimenti } from './documento.ts'
+import type { Voce as VoceDoc } from './documento.ts'
+import { parseLabels, pulisci, senzaCodice, testaOverview } from './parse.ts'
 
 const PANE = 'wm-plan-anchors'
 
 type Voce = { label: string; text: string; nota: string }
+
+/** I documenti della feature su cui il pane sta lavorando. */
+type Feature = {
+  path: string
+  dir: string
+  md: string
+  documenti: { file: string; md: string }[]
+}
 
 /** Un agente al lavoro: cosa fa, e l'id con cui se ne apre la trascrizione. */
 type Agente = { id?: string; testo: string }
@@ -24,22 +33,25 @@ async function branchCorrente($: EngineInterface): Promise<string> {
   }
 }
 
-/** La cartella feature con l'overview piu recente che usa le ancore. */
-async function findOverview(
-  $: EngineInterface,
-): Promise<{ path: string; md: string } | undefined> {
-  let best: { path: string; md: string; mtimeMs: number } | undefined
+/**
+ * I documenti della feature più recente sotto `docs/features/`.
+ *
+ * Non si filtra più per formato della riga dei requisiti: prima si cercava
+ * `<a id="r\d+"></a>` e un overview che scrive i requisiti come heading
+ * veniva scartato in silenzio, pane vuoto e nessuna spiegazione. Si prende la
+ * cartella toccata per ultima e si leggono i tre documenti: l'indice ci trova
+ * dentro quello che c'è.
+ */
+async function findOverview($: EngineInterface): Promise<Feature | undefined> {
+  let best: { dir: string; mtimeMs: number } | undefined
 
   try {
     for (const entry of await $.fs.list('docs/features')) {
       if (entry.kind !== 'dir') continue
-      const path = `docs/features/${entry.name}/overview.md`
+      const dir = `docs/features/${entry.name}`
       try {
-        const stat = await $.fs.stat(path)
-        const md = await $.fs.read(path)
-        if (typeof md !== 'string') continue
-        if (!/<a id="r\d+"><\/a>/.test(md)) continue
-        if (!best || stat.mtimeMs > best.mtimeMs) best = { path, md, mtimeMs: stat.mtimeMs }
+        const stat = await $.fs.stat(`${dir}/overview.md`)
+        if (!best || stat.mtimeMs > best.mtimeMs) best = { dir, mtimeMs: stat.mtimeMs }
       } catch {
         continue
       }
@@ -48,11 +60,34 @@ async function findOverview(
     // nessuna docs/features: si passa all'esempio incluso
   }
 
-  if (best) return { path: best.path, md: best.md }
+  if (best) {
+    const documenti: { file: string; md: string }[] = []
+    // L'ordine conta: un identificativo è definito nell'overview, e plan.md
+    // o notes.md lo richiamano senza doverlo ridefinire.
+    for (const file of ['overview.md', 'plan.md', 'notes.md']) {
+      try {
+        const md = await $.fs.read(`${best.dir}/${file}`)
+        if (typeof md === 'string') documenti.push({ file, md })
+      } catch {
+        continue
+      }
+    }
+    const overview = documenti.find(uno => uno.file === 'overview.md')
+    if (overview) {
+      return { path: `${best.dir}/overview.md`, dir: best.dir, md: overview.md, documenti }
+    }
+  }
 
   try {
     const md = await $.fs.read(`${$.plugin.root}/mods/wm-plan-anchors/examples/overview-demo.md`)
-    if (typeof md === 'string') return { path: 'esempio incluso nella mod', md }
+    if (typeof md === 'string') {
+      return {
+        path: 'esempio incluso nella mod',
+        dir: '',
+        md,
+        documenti: [{ file: 'overview.md', md }],
+      }
+    }
   } catch {
     return undefined
   }
@@ -68,7 +103,7 @@ async function findOverview(
  */
 async function citedNow(
   $: EngineInterface,
-  known: Map<string, Req>,
+  indice: Map<string, VoceDoc>,
   larghezza: number,
   righe: number,
 ) {
@@ -90,15 +125,17 @@ async function citedNow(
     // le cose sono state scritte, non quello in cui sono note.
     const here: { at: number; voce: Voce }[] = []
 
-    for (const hit of detto.matchAll(/\bR(\d+)\b/g)) {
-      const req = known.get(`R${hit[1]}`)
-      if (!req || hit.index === undefined) continue
+    // I riferimenti li trova l'indice: una sigla nuda come `R1` o `T4`, e i
+    // link alle ancore. Il pane non sa piu che forma abbia la riga che li
+    // definisce, e non deve saperlo.
+    for (const { at, voce } of riferimenti(detto, indice)) {
+      const dove = voce.file === 'overview.md' ? '' : ` · ${voce.file}`
       here.push({
-        at: hit.index,
+        at,
         voce: {
-          label: req.label,
-          text: pulisci(req.text),
-          nota: `#${req.label.toLowerCase()}${req.verifica ? ' · Verifica presente' : ' · Verifica assente'}${req.ux ? ' · [UX]' : ''}`,
+          label: voce.sigla ?? voce.titolo,
+          text: pulisci(voce.titolo === '' ? voce.corpo : `${voce.titolo}. ${voce.corpo}`),
+          nota: `#${voce.id}${dove}`,
         },
       })
     }
@@ -248,7 +285,7 @@ export const register: Register = on => {
     // stanno in quelle due righe, e vanno mostrati anche quando non c'è
     // nessun riferimento citato.
     const overview = await findOverview($)
-    const testaDoc = overview === undefined ? {} : testaOverview(overview.md)
+    const testaDoc = overview === undefined ? {} : testaOverview(overview.md, overview.dir)
     const branch = await branchCorrente($)
 
     // Sempre in testa, anche quando il dato manca: una riga muta non si
@@ -300,22 +337,20 @@ export const register: Register = on => {
         <Box flexDirection="column">
           {testa}
           <Text dimColor wrap="wrap">
-            Nessun overview con ancore sotto docs/features/, e l'esempio incluso nella mod non si
-            legge.
+            Nessun overview sotto docs/features/, e l'esempio incluso nella mod non si legge.
           </Text>
         </Box>
       )
     }
 
-    const known = parseRequirements(overview.md)
+    const indice = indicizzaTutti(overview.documenti)
 
-    if (known.size === 0) {
+    if (indice.size === 0) {
       return (
         <Box flexDirection="column">
           {testa}
           <Text dimColor wrap="wrap">
-            Overview trovato ma nessun requisito riconosciuto: il formato della riga non e quello
-            con l'ancora.
+            Documenti trovati ma niente da indicizzare: nessun heading e nessuna ancora.
           </Text>
           <Text dimColor wrap="truncate-start">{overview.path}</Text>
         </Box>
@@ -324,7 +359,7 @@ export const register: Register = on => {
 
     const list = await citedNow(
       $,
-      known,
+      indice,
       larghezza,
       Math.max(6, (e.viewport?.rows ?? 24) - 3 - agenti.length),
     )
