@@ -1029,6 +1029,25 @@ scritti perché si possa dire, di ciascuno, se è soddisfatto.
 - **Ogni requisito ha un identificativo stabile**, `R1`, `R2`…, con un'àncora esplicita
   `<a id="r3"></a>`. L'àncora del titolo non va bene: cambia quando si riformula il testo. Un
   identificativo non si riusa mai, nemmeno dopo che il requisito è stato tolto.
+- **Due forme, a scelta secondo la lunghezza.** Voce di elenco quando il requisito sta in una
+  frase, sezione quando ha bisogno di un corpo, di una fonte e di una verifica:
+
+  ```
+  - <a id="r1"></a>**R1** — <comportamento atteso>
+    - Verifica: [File.php](percorso) › `nome del test`
+
+  ### <a id="r1"></a>**R1** — <titolo del requisito>
+
+  <il corpo, uno o più paragrafi>
+
+  *Fonte:* <chi l'ha detto e quando>
+  **Verifica:** [File.php](percorso) › `nome del test`
+  ```
+
+  Quello che non cambia è la testa della riga: àncora, identificativo in grassetto, trattino.
+  Non mescolare le due forme nella stessa overview. La riga `*Fonte:*` esiste solo nella forma
+  a sezione e non fa parte del testo del requisito: dice chi ha deciso, non cosa si deve fare,
+  e riscriverla non è una modifica da registrare nelle note.
 - **Un identificativo si scrive sempre come link**, in qualunque file e anche dentro l'overview
   stessa: `[R3](#r3)` nell'overview, `[R3](overview.md#r3)` in `plan.md` e `notes.md`. Chi
   legge arriva al requisito con un clic; chi riprende il lavoro sa di quale overview si parla,

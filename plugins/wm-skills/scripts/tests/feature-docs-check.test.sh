@@ -253,5 +253,85 @@ verifica "requisito aggiunto e poi annullato; Verifica su due righe" "" "$(ids c
 sed -i.bak 's/la lettura risponde con lo stato./tutt altro requisito./' "$F/overview.md"; rm -f "$F"/*.bak
 verifica "identificativo riusato dopo «tolto»" "id-riusato" "$(ids chiusura)"
 
+# --- La forma a sezione ------------------------------------------------------------------------
+# Gli stessi requisiti scritti come heading invece che come voci di elenco: e quello che wm-plan
+# produce quando sono lunghi, con verifica e fonti. Lo script li deve leggere allo stesso modo.
+#
+# I casi qui sotto riscrivono tutti e tre i documenti: quelli lasciati dai test precedenti hanno
+# link e divergenze loro, che altrimenti si sommerebbero all'esito e nasconderebbero il punto.
+
+pulisci_contorno() { # un piano, delle note e il file di test citato, senza niente da segnalare
+  # La radice si ricava da $F: a questo punto i test girano in un secondo repo temporaneo, e
+  # dare per scontato il repo iniziale lascerebbe un link rotto che non c'entra con il caso.
+  RADICE="$(cd "$F/../../.." && pwd)"
+  mkdir -p "$RADICE/tests"
+  printf "<?php\nit('hides the code until approval', function () {});\n" > "$RADICE/tests/ShowTest.php"
+  cat > "$F/plan.md" <<'EOF'
+> Ticket: oc:1
+
+# Piano
+### Task 1
+Nessuna deviazione.
+EOF
+  printf '> Overview approvata il 2026-11-12 · impronta `%s`\n\n# Notes\n\n## Modifiche ai requisiti\n\n## Divergenze dal piano, task per task\n' "$1" > "$F/notes.md"
+}
+
+cat > "$F/overview.md" <<'EOF'
+> Stato: approvata il 2026-11-12
+
+# Prova
+
+## Punto di partenza
+Oggi la domanda non si legge.
+
+## Requisiti
+
+### <a id="r1"></a>**R1** — la lettura risponde con lo stato della domanda
+
+Il corpo del requisito, su piu righe,
+anche spezzato.
+
+*Fonte:* il dev, il 2026-11-12
+
+**Verifica:** [ShowTest.php](../../../tests/ShowTest.php) › `hides the code until approval`
+
+### <a id="r2"></a>**R2** — il numero non compare finche la domanda non e approvata
+
+Come richiesto da [R1](#r1).
+
+## Rischi
+Nessuno.
+EOF
+IMPRONTA2="$(git -C "$REPO" hash-object -w "$F/overview.md")"
+pulisci_contorno "$IMPRONTA2"
+verifica "forma a sezione: i requisiti si leggono come quelli a elenco" "" "$(ids prima-del-commit)"
+
+sed -i.bak 's/^Come richiesto da/Tutt altro testo. Come richiesto da/' "$F/overview.md"; rm -f "$F"/*.bak
+verifica "forma a sezione: un testo cambiato dopo l approvazione si vede" "overview-cambiata" "$(ids prima-del-commit)"
+
+# --- Lo script non tace -------------------------------------------------------------------------
+# Il caso che lo rendeva inutile: una sezione Requisiti che lo script non sa leggere. Prima
+# usciva con exit 0 e nessun messaggio, e chi lo lanciava credeva di aver verificato.
+
+cat > "$F/overview.md" <<'EOF'
+> Stato: approvata il 2026-11-12
+
+# Prova
+
+## Punto di partenza
+Oggi la domanda non si legge.
+
+## Requisiti
+
+- [ ] il vecchio formato a checkbox, senza identificativo
+- [ ] un altro punto
+
+## Rischi
+Nessuno.
+EOF
+IMPRONTA3="$(git -C "$REPO" hash-object -w "$F/overview.md")"
+pulisci_contorno "$IMPRONTA3"
+verifica "una sezione Requisiti illeggibile e un errore, non un silenzio" "requisiti-non-riconosciuti" "$(ids prima-del-commit)"
+
 echo
 [ "$FALLITI" -eq 0 ] && echo "Tutti i test passano." || { echo "$FALLITI test falliti."; exit 1; }

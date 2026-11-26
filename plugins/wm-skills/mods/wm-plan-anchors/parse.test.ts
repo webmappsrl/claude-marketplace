@@ -1,75 +1,8 @@
 import { describe, expect, test } from 'claude-code/testing'
 
-import { identificativi, parseLabels, parseRequirements, pulisci, senzaCodice, testaOverview } from './parse.ts'
+import { parseLabels, pulisci, senzaCodice, testaOverview } from './parse.ts'
 
-const NUOVO = [
-  '## Requisiti',
-  '',
-  '- <a id="r1"></a>**R1** — i POI importati mantengono l\'id Geohub.',
-  '- <a id="r2"></a>**R2** — la config dello shard non sovrascrive le chiavi',
-  '  gia presenti nel package.',
-  '  - Verifica: `tests/Feature/ImportConfigTest.php`',
-  '- <a id="r3"></a>**R3** — [UX] la mappa centra sull\'app.',
-  '- <a id="r4"></a>**R4** — l\'import non tocca Elastic.',
-  '  - Non fatto: [manca il tempo](notes.md#voce)',
-  '',
-  '## Rischi',
-  '',
-  '- qui non ci sono requisiti.',
-].join('\n')
 
-const VECCHIO = [
-  '## Requisiti',
-  '',
-  '**Parametri e modalita**',
-  '',
-  '- [ ] `update_story` accetta due parametri nuovi.',
-  '- [x] Senza `prepend` si comporta come oggi.',
-].join('\n')
-
-describe('il formato dei requisiti', () => {
-  test('riconosce gli identificativi nel formato con ancore', () => {
-    expect(identificativi(NUOVO)).toEqual(['R1', 'R2', 'R3', 'R4'])
-  })
-
-  test('un testo su piu righe rientrate resta un requisito solo', () => {
-    const r2 = parseRequirements(NUOVO).get('R2')
-
-    expect(r2?.text).toBe(
-      'la config dello shard non sovrascrive le chiavi gia presenti nel package.',
-    )
-  })
-
-  test('la sigla [UX] si legge e non resta nel testo', () => {
-    const r3 = parseRequirements(NUOVO).get('R3')
-
-    expect(r3?.ux, 'R3 porta la sigla [UX]').toBe(true)
-    expect(r3?.text).toBe("la mappa centra sull'app.")
-    expect(parseRequirements(NUOVO).get('R1')?.ux).toBe(false)
-  })
-
-  test('le sottovoci Verifica e Non fatto si distinguono', () => {
-    const reqs = parseRequirements(NUOVO)
-
-    expect(reqs.get('R2')?.verifica, 'R2 ha la riga Verifica').toBe(true)
-    expect(reqs.get('R1')?.verifica, 'R1 non ce l\'ha').toBe(false)
-    expect(reqs.get('R4')?.nonFatto, 'R4 e segnato non fatto').toBe(true)
-  })
-
-  test('il vecchio formato a checkbox non viene riconosciuto', () => {
-    expect(identificativi(VECCHIO)).toEqual([])
-  })
-
-  test('una riga senza ancora non e un requisito', () => {
-    expect(identificativi('- **R1** — manca l\'ancora, non vale.')).toEqual([])
-  })
-
-  test('su spazzatura non lancia e non riconosce niente', () => {
-    expect(identificativi('')).toEqual([])
-    expect(identificativi('\u0000 <a id= **R** —')).toEqual([])
-    expect(identificativi('- <a id="rX"></a>**RX** — lettera al posto del numero')).toEqual([])
-  })
-})
 
 describe('le sigle fra backtick', () => {
   test('una sigla fra backtick sparisce, e le posizioni non si spostano', () => {

@@ -50,14 +50,32 @@ done
 
 # --- Parser -----------------------------------------------------------------------------------
 
-# Requisiti dell'overview. Forma attesa:
+# Requisiti dell'overview. Due forme, entrambe valide:
+#
+#   voce di elenco
 #   - <a id="r3"></a>**R3** — testo, anche su più righe rientrate, anche con un sottoelenco
 #     - punto del sottoelenco: fa parte del requisito e si confronta
 #     - Verifica: [File.php](percorso) › `nome del test o del simbolo`
 #     - Non fatto: [motivo](notes.md#...)
-# Solo le sottovoci Verifica e Non fatto restano fuori dal testo confrontato. Le righe vuote
-# dentro il requisito non lo chiudono; lo chiudono un titolo, il requisito successivo o una riga
-# non rientrata.
+#
+#   sezione
+#   ### <a id="r3"></a>**R3** — titolo
+#
+#   Il corpo del requisito, uno o più paragrafi.
+#
+#   *Fonte:* chi l'ha detto e quando
+#   **Verifica:** [File.php](percorso) › `nome del test`
+#
+# La seconda è quella che wm-plan produce quando i requisiti sono lunghi, con verifica e fonti:
+# riconoscerne una sola lasciava lo script cieco su interi overview, che passavano senza un
+# messaggio. Le due forme danno lo stesso risultato.
+#
+# Fuori dal testo confrontato restano le sottovoci Verifica e Non fatto, e — nella forma a
+# sezione — la riga *Fonte:*, che dice chi ha deciso e non cosa si deve fare: una fonte riscritta
+# non è una modifica del requisito e non va registrata nelle note.
+#
+# Chiude il requisito: il requisito successivo, un titolo (forma a sezione: un titolo qualunque)
+# o una riga non rientrata (forma a elenco). Le righe vuote non lo chiudono.
 # Stampa:  T<TAB>r3<TAB>testo normalizzato   |   V<TAB>r3<TAB>riga di verifica   |   N<TAB>r3
 REQ_AWK='
 function chiudi_verifica() {
@@ -73,27 +91,31 @@ function chiudi() {
     gsub(/[[:space:]]+/, " ", testo); sub(/^ /, "", testo); sub(/ $/, "", testo)
     print "T\t" id "\t" testo
   }
-  id = ""; testo = ""; fuori = 0
+  id = ""; testo = ""; fuori = 0; modo = ""
+}
+function apri(riga, forma) {
+  chiudi()
+  match(riga, /id="r[0-9]+"/); id = substr(riga, RSTART + 4, RLENGTH - 5)
+  modo = forma
+  sub(/^(- |#+ )<a id="r[0-9]+"><\/a>/, "", riga)
+  sub(/^\*\*R[0-9]+\*\*[[:space:]]*(—|-)?[[:space:]]*/, "", riga)
+  testo = riga
 }
 /^[[:space:]]*```/ { codice = !codice }
 codice { next }
-/^- <a id="r[0-9]+"><\/a>/ {
-  chiudi()
-  match($0, /id="r[0-9]+"/); id = substr($0, RSTART + 4, RLENGTH - 5)
-  riga = $0
-  sub(/^- <a id="r[0-9]+"><\/a>/, "", riga)
-  sub(/^\*\*R[0-9]+\*\*[[:space:]]*(—|-)?[[:space:]]*/, "", riga)
-  testo = riga
-  next
-}
+/^- <a id="r[0-9]+"><\/a>/ { apri($0, "elenco"); next }
+/^#+ <a id="r[0-9]+"><\/a>/ { apri($0, "sezione"); next }
 id == "" { next }
 /^[[:space:]]*$/ { next }
-/^[^[:space:]]/ { chiudi(); next }
-/^[[:space:]]+- (\*\*)?Verifica:/ {
-  chiudi_verifica(); fuori = 1; r = $0; sub(/^[[:space:]]+- (\*\*)?Verifica:(\*\*)?[[:space:]]*/, "", r)
+modo == "sezione" && /^#/ { chiudi(); next }
+modo == "elenco" && /^[^[:space:]]/ { chiudi(); next }
+/^([[:space:]]+- )?(\*\*)?Verifica:/ {
+  chiudi_verifica(); fuori = 1; r = $0
+  sub(/^([[:space:]]+- )?(\*\*)?Verifica:(\*\*)?[[:space:]]*/, "", r)
   verifica = r; next
 }
-/^[[:space:]]+- (\*\*)?Non fatto:/ { chiudi_verifica(); fuori = 1; print "N\t" id; next }
+/^([[:space:]]+- )?(\*\*)?Non fatto:/ { chiudi_verifica(); fuori = 1; print "N\t" id; next }
+modo == "sezione" && /^\*Fonte:\*/ { chiudi_verifica(); fuori = 1; next }
 /^[[:space:]]+- / { chiudi_verifica(); fuori = 0; testo = testo " " $0; next }
 verifica != "" { verifica = verifica " " $0; next }
 fuori == 0 { testo = testo " " $0 }
@@ -141,6 +163,15 @@ slug() { # titolo Markdown -> àncora GitHub
 
 awk "$REQ_AWK" "$OV" > "$TMP/ora"
 awk "$NOTE_AWK" "$NO" > "$TMP/voci"
+
+# Un overview con la sezione Requisiti e nessun requisito riconosciuto è il caso peggiore: non
+# vuol dire che i requisiti non ci sono, vuol dire che questo script non li vede. Finché restava
+# muto, passava con exit 0 su overview con tredici requisiti e nessun controllo eseguito — e chi
+# lo lanciava credeva di aver verificato qualcosa.
+if grep -qE '^#+[[:space:]]+Requisiti[[:space:]]*$' "$OV" && [ ! -s "$TMP/ora" ]; then
+  emetti error requisiti-non-riconosciuti \
+    "overview.md: c'è la sezione Requisiti ma nessun requisito è riconoscibile — la riga di un requisito è «- <a id=\"r1\"></a>**R1** — …» oppure «### <a id=\"r1\"></a>**R1** — …»"
+fi
 # Àncore che possono mancare: quelle dei requisiti tolti, che non esistono più, e — prima della
 # chiusura — quelle dei requisiti aggiunti, che nell'overview nascono solo alla chiusura.
 awk -F'\t' -v fase="$FASE" '
