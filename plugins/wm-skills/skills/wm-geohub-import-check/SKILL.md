@@ -40,7 +40,9 @@ frase parlando con un collega, non scriverla.
   e solo se servono a chi deve intervenire. Quando un dato manca, di' sempre la proporzione rispetto
   a Geohub (`su_geohub` di `diff.json`): «manca su 3 tracce su 3, tutte quelle che su Geohub ce
   l'hanno», non «manca su 3 tracce».
-- **Una domanda per messaggio.** Dopo la domanda fermati e aspetta la risposta.
+- **Una domanda per messaggio.** Dopo la domanda fermati e aspetta la risposta. E mettila **in
+  fondo, staccata** dal resto del messaggio — `**Domanda:**`, le opzioni una per riga, poi
+  `💡 Best practice:` — perché dentro un muro di testo il dev non la trova.
 - **Sola lettura.** Il comando fa solo GET. La skill non corregge i dati: segnala.
 - **Nessuna scrittura su Orchestrator senza anteprima e conferma**, una per volta: ogni tool di
   scrittura si chiama prima senza `confirm`, si mostra l'anteprima al dev e solo dopo il suo sì si

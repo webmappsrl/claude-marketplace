@@ -189,6 +189,21 @@ Workflow obbligatorio prima che venga scritta qualsiasi riga di codice per featu
 - Se il dev risponde a una cosa sola di un messaggio che ne conteneva di più, **il silenzio sulle altre non è una delega**: il messaggio era sbagliato. Riproponi la cosa rimasta aperta, da sola, nel messaggio successivo.
 - Un'informazione che non richiede risposta (un esito, una verifica fatta) può stare nel messaggio, purché sia chiaro che non chiede nulla.
 
+**La domanda sta in fondo, staccata dal resto.** Un messaggio lungo va bene — contesto, prove, dettaglio tecnico servono — ma la domanda **non deve restare dentro il corpo del testo**: in un muro di testo non si trova, e il dev deve rileggere tutto per capire cosa gli stai chiedendo. Dopo la spiegazione, chiudi sempre con un blocco a sé:
+
+```
+**Domanda:** <la richiesta, in una riga>
+- <opzione A> — <una riga>
+- <opzione B> — <una riga>
+💡 Best practice: <quale si consiglia e perché, in mezza riga>
+```
+
+**Nel blocco finale non entra niente di nuovo.** Tutto quello che serve a decidere — contesto, prove, numeri, cosa succede oggi e cosa succederebbe dopo — sta **sopra**, nella spiegazione. In fondo resta solo la scelta: la domanda in una riga, le opzioni in una riga ciascuna, il consiglio. Se un'opzione ha bisogno di tre righe per capirsi, quelle tre righe vanno sopra e in fondo ne resta il nome. Un blocco finale che argomenta è di nuovo testo da leggere, e non serve più a niente.
+
+Vale anche quando la domanda l'hai già scritta nel corpo: si **ripete** in fondo, isolata. Se le opzioni non sono due o tre chiuse ma una scelta aperta, lascia solo la riga `**Domanda:**` e la best practice. Se non c'è niente da chiedere, chiudi con una riga che dice cosa farai o cosa aspetti: anche lì il dev non deve cercare.
+
+**La riga `💡 Best practice` è obbligatoria su ogni domanda, in ogni fase** — non solo in `reverse-interaction`, dove è nata. Una domanda senza il consiglio è incompleta: il dev decide meglio se sa cosa consiglieresti e perché. Se su quel punto non hai una raccomandazione, dillo («nessuna delle due è più corretta: dipende da X») invece di saltare la riga.
+
 **Scrivi ogni messaggio come se fosse il primo.** Il dev non ha in testa il ragionamento che ti ha portato lì: prima il contesto (di quale pezzo parli, dove sta, cosa succede in pratica), poi un **esempio concreto** con dati veri, e nessun rimando a testo di messaggi precedenti («l'asse 5», «questa cosa»). Una scelta A/B senza il caso d'uso non si capisce: mostra cosa succede oggi e cosa succederebbe dopo. Due fatti nella stessa frase vanno collegati dal loro nesso; se il nesso non c'è, spezza la frase.
 
 **Un problema sollevato dal dev tiene il campo finché non si dice soddisfatto lui.** Se il dev solleva un dubbio o segnala qualcosa che non torna, non riprendere il workflow e non proporre il passo successivo nello stesso messaggio: rispondi, fermati, e riparti solo quando te lo dice.
@@ -941,7 +956,7 @@ Conduci un dialogo socratico con l'utente: **una domanda alla volta**, aspetta l
   raggiungibile, non è che non ci fosse nulla. Per le credenziali scadute vale la procedura di
   `${CLAUDE_PLUGIN_ROOT}/shared/notebooklm-login.md`.
 
-- **Ogni domanda deve includere un consiglio da best practice.** Non aspettare che l'utente lo chieda. Dopo aver posto la domanda aggiungi sempre una riga "💡 Best practice:" con la raccomandazione tecnica più rilevante per quel problema specifico, così l'utente può decidere con più contesto. Questa riga è obbligatoria — una domanda senza consiglio è incompleta.
+- **Ogni domanda porta il suo consiglio e sta in fondo al messaggio**, nella forma descritta in `## Una domanda per messaggio, in tutto il workflow`: `**Domanda:**`, le opzioni, poi `💡 Best practice:` con la raccomandazione più rilevante per quel problema. Qui non si ripete la regola, che vale ovunque: quello che segue è ciò che in questa fase va messo **prima** della domanda.
   Prima di ogni domanda scrivi esplicitamente cosa risulta dalle **due** ricerche: *"Dal dossier di `wm-codebase-research` risulta [conclusione/non determinabile, con riferimento alla prova verificata]; dalle call risulta [citazione con data e speaker / nulla] — quindi chiedo:"*. Se non scrivi questa riga, non puoi fare la domanda.
 
   La riga sulle call non è un ornamento: obbliga a **guardare le citazioni prima di formulare la domanda**, invece di farla e accorgersi dopo che la risposta c'era già. Una fonte che gira e che nessuno legge prima di parlare è peggio di non averla, perché costa e non evita nulla. Se l'agente delle trascrizioni non ha trovato niente, scrivilo: «dalle call, nulla» è un'informazione, e dice al dev che su quel punto non esiste una decisione pregressa.
