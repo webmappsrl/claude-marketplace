@@ -1276,6 +1276,7 @@ Questo briefing è lo spec che writing-plans usa per generare il piano — senza
 - **Commit convention:** tutti i commit usano `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
 - **⚠️ Nessun commit durante l'esecuzione:** i commit nel piano sono istruzioni testuali, non azioni da eseguire. Il primo commit lo fa il dev all'inizio della chiusura (`review-gate: dialog`); i successivi, della chiusura, la sessione principale. Nessuna skill e nessun subagent committa durante l'esecuzione, e nessun branch si crea senza il dev.
 - **Identificativi dei requisiti:** ogni task che realizza un requisito lo cita come link, `[R3](overview.md#r3)`.
+- **Identificatori in inglese, anche dentro il piano:** i nomi nascono qui, nei blocchi di codice dei task, e l'implementazione li copia. Variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi di file e di branch si scrivono **sempre in inglese**, anche quando il dominio è italiano: `$quote` e non `$preventivo`, `getUserTracks()` e non `getTracceUtente()`. L'italiano resta nella prosa del task e nei commenti.
 
 Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
 
@@ -1364,6 +1365,8 @@ Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse par
 > "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. Il primo commit lo fa il developer all'inizio della chiusura. Non modificare `overview.md`: ogni cambiamento a un requisito va in `notes.md`, sezione «Modifiche ai requisiti», con l'effetto e, se il requisito cambia, il testo nuovo per intero. Gli identificatori nel codice — variabili, funzioni, classi, campi, chiavi — vanno scritti sempre in inglese, mai in italiano, anche quando il dominio è italiano; l'italiano è ammesso solo nei commenti e nei testi rivolti a persone."
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
+
+**Se la skill scelta dispaccia subagent — `subagent-driven-development` — l'override va ripetuto per intero dentro il prompt di ogni implementer.** Il template di Superpowers (`implementer-prompt.md`) passa al subagent il solo brief del task: un override dichiarato qui, nella conversazione principale, il subagent non lo vede mai. È il motivo per cui il suo punto «4. Commit your work» va contraddetto esplicitamente in ogni dispatch, e per cui la regola sugli identificatori va scritta lì dentro e non solo qui.
 
 ### execution: re-estimation (solo se una stima esiste già)
 

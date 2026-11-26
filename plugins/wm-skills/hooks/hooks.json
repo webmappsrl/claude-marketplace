@@ -1,5 +1,5 @@
 {
-  "description": "Hook di wm-skills: il lint di wm-context-doctor e la mod wm-plan-anchors",
+  "description": "Hook di wm-skills: il lint di wm-context-doctor, il controllo sugli identificatori, la mod wm-plan-anchors",
   "hooks": {
     "SubagentStop": [
       {
@@ -8,6 +8,17 @@
           {
             "type": "command",
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/verifica-lint-eseguito.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/identifier-check.sh\""
           }
         ]
       }

@@ -53,6 +53,13 @@ di codice: `$quote` e non `$preventivo`, `getUserTracks()` e non `getTracceUtent
 variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi
 di file e di branch. L'italiano resta nei testi destinati a persone.
 
+Questa regola non è affidata alla memoria: un hook `PostToolUse` di `wm-skills` esegue
+`scripts/identifier-check.sh` a ogni `Write`, `Edit` e `MultiEdit`, e segnala gli identificatori
+italiani nel testo appena scritto. Il dizionario e le eccezioni stanno in `scripts/data/`; un
+falso positivo si corregge nel dizionario, un nome italiano obbligato va in allowlist **con il
+suo motivo**. Il controllo guarda solo quello che hai scritto tu: gli identificatori italiani
+già presenti nel codice non si rinominano di propria iniziativa.
+
 Se non diresti quella frase parlando con un collega, non scriverla: di' la cosa in modo esplicito,
 anche se è più lungo.
 
@@ -136,7 +143,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
 | `wm-plan` (proposta tag) | `wm-tag` | `wm-tag` crea tag dossier, con descrizione; `wm-plan` propone e crea solo etichette, cioè tag con `description` nulla. Il confine è il filtro sulla descrizione: se cambia in una delle due, verifica l'altra. |
 | `wm-plan` ↔ `wm-tag` | NotebookLM | Entrambe usano `wm-transcript-research` (che contiene il template dei notebook), la verifica `shared/verifica-citazioni.md` e i nomi dei notebook (`scrum AAAA-MM-GG`, `tag <nome del tag>`). Se cambia uno di questi, verifica l'altra skill. |
-| `wm-plan` | mod `wm-plan-anchors` e `feature-docs-check.sh` | La forma della riga di un requisito (`- <a id="r1"></a>**R1** — …`) e della sua àncora. `wm-plan/SKILL.md` la detta, `scripts/feature-docs-check.sh` la riconosce con una regex awk, `mods/wm-plan-anchors/parse.ts` con `RIGA_REQUISITO`: cambiarla in uno solo rende gli altri ciechi in silenzio. Il controllo in CI lo impedisce. |
+| `wm-plan` | mod `wm-plan-anchors` e `feature-docs-check.sh` | L'àncora di un requisito (`<a id="r1"></a>`), nelle due forme che `wm-plan/SKILL.md` prescrive — voce di elenco e sezione. `scripts/feature-docs-check.sh` le riconosce con una regex awk, `mods/wm-plan-anchors/documents.ts` con la costante `ANCHOR`: cambiarla in uno solo rende gli altri ciechi in silenzio. Il controllo in CI lo impedisce. |
 | `wm-geohub-import-check` | `wm-tag` | `wm-tag` ha il materiale «report di verifica dell'import», con regole proprie in ogni fase. Il contratto sono i file della cartella del report, elencati in `wm-tag/SKILL.md` → `## Materiale: report di verifica dell'import`: se cambia la forma di uno di questi, verifica l'altra skill. |
 
 ## Convenzioni per le skill
@@ -167,6 +174,8 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | Test del codice Go, server MCP e `geohub-import-check` (quando tocchi `mcp/`) | `cd plugins/wm-skills/mcp && go test ./...` |
 | Test di `wm-geohub-import-check` (dopo `build.sh`) | `plugins/wm-skills/scripts/tests/geohub-import-check.test.sh` e `plugins/wm-skills/scripts/tests/geohub-codice-riferimento.test.sh` |
 | Test dello script di controllo dei documenti di una feature (`feature-docs-check.sh`, usato da `wm-plan` e `wm-review-ticket`) | `plugins/wm-skills/scripts/tests/feature-docs-check.test.sh` |
+| Cercare a mano gli identificatori italiani in uno o più file | `plugins/wm-skills/scripts/identifier-check.sh <file>...` |
+| Test del controllo sugli identificatori | `plugins/wm-skills/scripts/tests/identifier-check.test.sh` |
 | Ricompilare il binario MCP (versionato nel repo) | `plugins/wm-skills/mcp/build.sh` |
 | Verificare che diagramma e skill siano allineati | `./.github/scripts/verifica-diagramma.sh` |
 | Verificare che il formato della riga di un requisito sia lo stesso nei tre posti che lo definiscono | `./.github/scripts/verifica-formato-requisito.sh` |
