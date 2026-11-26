@@ -43,8 +43,15 @@ l'errore opposto, e fa lo stesso danno.
 **Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
 Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
 mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
-fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
-registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+fare il deploy / deployare, fare il build, fare il checkout del branch, fare il wrap / wrappare.
+Spingere, fondere, registrare, costruire, ritirare, avvolgere non sono mai la traduzione di quei
+verbi.
+
+**I nomi che si propongono per il codice sono sempre in inglese**, anche quando il dominio è
+italiano e anche quando il nome si sta solo proponendo in un messaggio, prima che esista una riga
+di codice: `$quote` e non `$preventivo`, `getUserTracks()` e non `getTracceUtente()`. Vale per
+variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi
+di file e di branch. L'italiano resta nei testi destinati a persone.
 
 Se non diresti quella frase parlando con un collega, non scriverla: di' la cosa in modo esplicito,
 anche se è più lungo.
@@ -129,6 +136,7 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | `wm-plan` (challenge) | `wm-plan` (review-gate) | Entrambe le sotto-fasi isolano il giudizio in un subagente cieco (solo path e istruzioni, nessun riassunto della conversazione). Se il pattern di isolamento cambia in una, verifica l'altra. |
 | `wm-plan` (proposta tag) | `wm-tag` | `wm-tag` crea tag dossier, con descrizione; `wm-plan` propone e crea solo etichette, cioè tag con `description` nulla. Il confine è il filtro sulla descrizione: se cambia in una delle due, verifica l'altra. |
 | `wm-plan` ↔ `wm-tag` | NotebookLM | Entrambe usano `wm-transcript-research` (che contiene il template dei notebook), la verifica `shared/verifica-citazioni.md` e i nomi dei notebook (`scrum AAAA-MM-GG`, `tag <nome del tag>`). Se cambia uno di questi, verifica l'altra skill. |
+| `wm-plan` | mod `wm-plan-anchors` e `feature-docs-check.sh` | La forma della riga di un requisito (`- <a id="r1"></a>**R1** — …`) e della sua àncora. `wm-plan/SKILL.md` la detta, `scripts/feature-docs-check.sh` la riconosce con una regex awk, `mods/wm-plan-anchors/parse.ts` con `RIGA_REQUISITO`: cambiarla in uno solo rende gli altri ciechi in silenzio. Il controllo in CI lo impedisce. |
 | `wm-geohub-import-check` | `wm-tag` | `wm-tag` ha il materiale «report di verifica dell'import», con regole proprie in ogni fase. Il contratto sono i file della cartella del report, elencati in `wm-tag/SKILL.md` → `## Materiale: report di verifica dell'import`: se cambia la forma di uno di questi, verifica l'altra skill. |
 
 ## Convenzioni per le skill
@@ -158,12 +166,15 @@ due versioni divergeranno. Ogni skill può comporre skill di `superpowers`, inst
 | Validare marketplace, plugin e skill | `claude plugin validate .` |
 | Test del codice Go, server MCP e `geohub-import-check` (quando tocchi `mcp/`) | `cd plugins/wm-skills/mcp && go test ./...` |
 | Test di `wm-geohub-import-check` (dopo `build.sh`) | `plugins/wm-skills/scripts/tests/geohub-import-check.test.sh` e `plugins/wm-skills/scripts/tests/geohub-codice-riferimento.test.sh` |
+| Test dello script di controllo dei documenti di una feature (`feature-docs-check.sh`, usato da `wm-plan` e `wm-review-ticket`) | `plugins/wm-skills/scripts/tests/feature-docs-check.test.sh` |
 | Ricompilare il binario MCP (versionato nel repo) | `plugins/wm-skills/mcp/build.sh` |
 | Verificare che diagramma e skill siano allineati | `./.github/scripts/verifica-diagramma.sh` |
+| Verificare che il formato della riga di un requisito sia lo stesso nei tre posti che lo definiscono | `./.github/scripts/verifica-formato-requisito.sh` |
+| Test del parser della mod `wm-plan-anchors` | `claude plugin test plugins/wm-skills` |
 | Verificare che nessuna skill contenga parametri posizionali | `./.github/scripts/verifica-segnaposto.sh` |
 
 In CI girano il controllo di coerenza fra skill e diagramma, quello sui parametri posizionali
-nelle skill e la pubblicazione delle guide.
+nelle skill, quello sul formato della riga di un requisito e la pubblicazione delle guide.
 
 ## Procedure
 

@@ -420,3 +420,100 @@ func TestUpdateStoryRejectsUnknownParameter(t *testing.T) {
 		t.Fatalf("nessuna scrittura attesa, ricevute %d", rs.writes)
 	}
 }
+
+// Aggiungere a un tag non deve costringere a ricopiarne la description: un tag
+// di call arriva a decine di migliaia di caratteri, e farla riscrivere al
+// modello significa rigenerarla parola per parola, con il rischio di alterare
+// punti che nessuno stava toccando. Stesso meccanismo di update_story.
+func TestUpdateTagAnnotationsLeaveTheRestIdentical(t *testing.T) {
+	corpo := `{"id":709,"name":"Tag di prova","description":"## Divergenze\n\n- Prima voce.\n- Seconda voce.\n\n## Altro\n\nTesto che non si deve toccare."}`
+	rs, srv := newRecordingServerWithBody(t, corpo)
+	session := testSession(t, map[string]bool{"tags": true, "stories": true, "me": true}, srv.URL)
+
+	res := callTool(t, session, "update_tag", map[string]any{
+		"tag_id":  709,
+		"confirm": true,
+		"annotations": []map[string]any{
+			{"after": "- Prima voce.", "text": "\n- Voce aggiunta."},
+		},
+	})
+
+	if rs.writes != 1 {
+		t.Fatalf("deve scrivere una volta sola, ha scritto %d volte", rs.writes)
+	}
+	scritta, _ := rs.lastWriteBody["description"].(string)
+	if !strings.Contains(scritta, "- Voce aggiunta.") {
+		t.Fatalf("l'annotazione non è stata inserita: %q", scritta)
+	}
+	if !strings.Contains(scritta, "Testo che non si deve toccare.") {
+		t.Fatalf("il resto della description è andato perso: %q", scritta)
+	}
+	if !strings.HasPrefix(scritta, "## Divergenze") {
+		t.Fatalf("la description non deve cambiare inizio: %q", scritta)
+	}
+	_ = resultText(res)
+}
+
+// Il prepend mette un blocco in testa senza toccare il resto.
+func TestUpdateTagPrependKeepsCurrentText(t *testing.T) {
+	corpo := `{"id":709,"name":"Tag di prova","description":"## Contesto\n\nTesto esistente."}`
+	rs, srv := newRecordingServerWithBody(t, corpo)
+	session := testSession(t, map[string]bool{"tags": true, "stories": true, "me": true}, srv.URL)
+
+	callTool(t, session, "update_tag", map[string]any{
+		"tag_id":  709,
+		"confirm": true,
+		"prepend": "> Nota in testa.\n\n",
+	})
+
+	scritta, _ := rs.lastWriteBody["description"].(string)
+	if !strings.HasPrefix(scritta, "> Nota in testa.") {
+		t.Fatalf("il prepend non è in testa: %q", scritta)
+	}
+	if !strings.Contains(scritta, "## Contesto\n\nTesto esistente.") {
+		t.Fatalf("il testo esistente deve restare identico: %q", scritta)
+	}
+}
+
+// description e prepend/annotations fanno cose opposte: insieme sono un errore,
+// non una combinazione da interpretare.
+func TestUpdateTagRejectsDescriptionTogetherWithAppending(t *testing.T) {
+	rs, srv := newRecordingServer(t)
+	session := testSession(t, map[string]bool{"tags": true, "stories": true, "me": true}, srv.URL)
+
+	res := callTool(t, session, "update_tag", map[string]any{
+		"tag_id":      709,
+		"confirm":     true,
+		"description": "Tutto nuovo",
+		"prepend":     "In testa",
+	})
+
+	if !res.IsError {
+		t.Fatalf("doveva essere un errore, invece: %q", resultText(res))
+	}
+	if rs.writes != 0 {
+		t.Fatalf("non deve scrivere nulla, ha scritto %d volte", rs.writes)
+	}
+}
+
+// Un'annotazione la cui frase non esiste non deve comporre a caso: si ferma.
+func TestUpdateTagRefusesAnnotationWithMissingSentence(t *testing.T) {
+	corpo := `{"id":709,"name":"Tag di prova","description":"## Contesto\n\nTesto esistente."}`
+	rs, srv := newRecordingServerWithBody(t, corpo)
+	session := testSession(t, map[string]bool{"tags": true, "stories": true, "me": true}, srv.URL)
+
+	res := callTool(t, session, "update_tag", map[string]any{
+		"tag_id":  709,
+		"confirm": true,
+		"annotations": []map[string]any{
+			{"after": "frase che non c'è", "text": "qualcosa"},
+		},
+	})
+
+	if !res.IsError {
+		t.Fatalf("doveva essere un errore, invece: %q", resultText(res))
+	}
+	if rs.writes != 0 {
+		t.Fatalf("non deve scrivere nulla, ha scritto %d volte", rs.writes)
+	}
+}

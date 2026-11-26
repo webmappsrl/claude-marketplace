@@ -1,4 +1,5 @@
 {
+  "description": "Hook di wm-skills: il lint di wm-context-doctor e la mod wm-plan-anchors",
   "hooks": {
     "SubagentStop": [
       {
@@ -6,10 +7,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/verifica-lint-eseguito.sh"
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/verifica-lint-eseguito.sh\""
           }
         ]
       }
     ]
-  }
+  },
+  "modules": ["../mods/wm-plan-anchors/register.tsx"]
 }

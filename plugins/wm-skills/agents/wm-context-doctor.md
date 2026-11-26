@@ -786,8 +786,10 @@ affermazione controllabile staticamente** — nomi di classi, metodi, file, camp
 merge successivo aveva riportato dentro; migrato alla lettera, è diventata una pagina che
 affermava l'inesistenza di un metodo vivo e cablato.
 
-**Non basta leggere la descrizione del lavoro: leggi anche il suo stato.** Un `overview.md` con
-le checkbox non spuntate descrive un'intenzione, non un esito; e un `notes.md` che alla voce
+**Non basta leggere la descrizione del lavoro: leggi anche il suo stato.** Un `overview.md`
+senza la riga `> Stato: chiusa il …` in testa — o, nei lavori più vecchi, con le checkbox non
+spuntate — descrive un'intenzione, non un esito; un requisito con la sottovoce `Non fatto` non
+è mai stato realizzato; e un `notes.md` che alla voce
 Follow-up dice «commit e PR non ancora fatti, le modifiche sono nel working tree» descrive un
 lavoro che non è mai atterrato. Quelle righe stanno in fondo al file, dove è facile non arrivare,
 e sono esattamente quelle che decidono se il testo sopra è vero.

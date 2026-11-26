@@ -18,8 +18,17 @@ illeggibile.
 **Un termine tecnico usato come verbo non si traduce con il verbo italiano corrispondente.**
 Si dice «ho fatto un push del codice», oppure la forma italianizzata ormai in uso, «ho pushato»:
 mai «ho spinto il codice». Vale per tutti — fare un merge / mergiare, fare un commit / committare,
-fare il deploy / deployare, fare il build, fare il checkout del branch. Spingere, fondere,
-registrare, costruire, ritirare non sono mai la traduzione di quei verbi.
+fare il deploy / deployare, fare il build, fare il checkout del branch, fare il wrap / wrappare.
+Spingere, fondere, registrare, costruire, ritirare, avvolgere non sono mai la traduzione di quei
+verbi.
+
+**I nomi che proponi per il codice sono sempre in inglese**, anche quando il dominio è italiano e
+anche quando il nome lo stai solo proponendo a voce in un messaggio, prima che esista una riga di
+codice: si scrive `$quote`, non `$preventivo`; `getUserTracks()`, non `getTracceUtente()`. Vale per
+variabili, funzioni, metodi, classi, campi del database, chiavi di array e di configurazione, nomi
+di file e di branch. L'italiano resta nei testi destinati a persone: commenti, docblock,
+documentazione, messaggi di commit, risposte al dev. Cosa fare quando trovi un identificatore
+italiano già scritto nel codice sta in `execution: implementation`.
 
 Nel dubbio: di' la cosa in modo esplicito, anche se è più lungo. «Non ha migliorato il risultato
 peggiore» si capisce; «non ha alzato il pavimento» no.
@@ -51,18 +60,26 @@ trenta righe. Se non ce ne sono, nessuna domanda.
 
 ### Il controllo prima di consegnare
 
-Una regola sulla lingua non si rispetta da sé: va verificata, come si verifica un test. Prima di
-consegnare `overview.md` e `plan.md`, cerca nel documento queste parole e, per ognuna che trovi,
-o la sostituisci con il nome del codice o la porti al dev:
+Una regola sulla lingua non si rispetta da sé: va verificata. Prima di consegnare un testo —
+`overview.md`, `plan.md`, un messaggio al dev — rileggilo guardando i **sostantivi che nominano
+parti del sistema**, e per ognuno chiediti da dove viene quella parola. Se non la trovi nel
+codice, nel framework o nell'output dello strumento di cui stai parlando, l'hai coniata tu, e
+va sostituita con il nome vero.
 
-```bash
-grep -noiE "\b(scheda|schede|pannello|pannelli|riquadro|tendina|casella|elenco|lista|vista|voce|voci|etichetta|etichette|blocco|sezione)\b" docs/features/<slug>/*.md
-```
+Tre modi in cui l'errore si presenta, per riconoscerlo:
 
-Non sono parole vietate in assoluto — «sezione» può essere la sezione di un documento, «elenco»
-un elenco di cose — ma ognuna va guardata: se nomina un elemento dell'interfaccia o del modello
-dati, quell'elemento ha un nome proprio e va usato quello. La lista cresce ogni volta che ne
-salta fuori una nuova.
+- «la scheda del sentiero» dove il nome è `detail view` della Resource `EcTrack`: il nome esiste
+  in Nova e dice al dev quale oggetto aprire, la resa italiana lo obbliga a indovinare;
+- «il repo è allineato» dove git dice `behind` e `ahead`: quei due numeri li stampa
+  `git rev-list --left-right --count`, e «allineato» non compare in nessun output;
+- «il riquadro laterale» dove il tipo si chiama `Pane`: è il nome che si cerca nei tipi e nella
+  documentazione quando qualcosa non funziona.
+
+**Non esiste una lista di parole da cercare**, e non va costruita: una lista dà per sospette
+parole che spesso sono giuste — «sezione» è davvero la sezione di un documento — e soprattutto
+lascia passare tutte quelle che non contiene. L'errore arriva sempre dalla parola che alla lista
+mancava. Quello che si ripete è il **tipo** di errore, non la parola: un oggetto che ha un nome
+proprio chiamato con una parola italiana che scorre meglio.
 
 ## Header di sessione
 
@@ -82,11 +99,11 @@ Subito dopo il banner, senza alcuna riga di commento tra l'uno e l'altro, mostra
 
 ### header: versione
 
-**Versione installata:** v1.6.2
+**Versione installata:** v1.7.0
 
 Questo valore è statico, scritto direttamente in questa skill (stesso pattern dell'URL del diagramma in `### header: diagramma`): si aggiorna manualmente ad ogni release, come da checklist in `docs/howto/rilascio-wm-skills.md` del repo `claude-marketplace`. Non richiede alcuna risoluzione di path a runtime (niente ricerca nella cache dei plugin né `git`), quindi mostra sempre il dato senza rischio di "check non disponibile".
 
-Mostra `Versione installata: v1.6.2` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
+Mostra `Versione installata: v1.7.0` come prima riga di questa sotto-sezione, poi prosegui con il check di aggiornamento disponibile:
 
 Determina la path del repo marketplace installato risolvendo la path del plugin cacheato, **indipendentemente dalla cwd** (questa skill può essere invocata da qualsiasi repo, non solo da `claude-marketplace`):
 
@@ -202,9 +219,21 @@ Per ogni feature lavorata con `wm-plan`, vengono creati i seguenti file nella ca
 
 | File | Contenuto | Usato da wm-review-ticket per |
 |------|-----------|-------------------------------|
-| `overview.md` | Cosa cambia, Perché, Requisiti, Rischi, Out of scope, Moduli toccati | Criterio principale di correttezza: il codice risponde ai Requisiti? |
-| `plan.md` | Lista task implementativi step-by-step | Verifica completezza: tutti i task sono stati eseguiti? |
-| `notes.md` | Deviazioni dal piano, bug trovati, decisioni on-the-fly | Contesto deviazioni: sono giustificate o rischiose? |
+| `overview.md` | Riga di stato, Cosa cambia, Perché, Punto di partenza, Requisiti (identificativi `R1`, `R2`… con àncora e riga `Verifica`), Rischi, Out of scope, Moduli toccati | Criterio principale di correttezza: ogni requisito è soddisfatto, e la sua `Verifica` lo dimostra? Ogni differenza dalla versione approvata è spiegata in `notes.md`? |
+| `plan.md` | Riga di stato, task implementativi, rimandi `⚠️` sui task divergenti | Contesto: come si è arrivati al codice. Non è il metro della correttezza: un task fatto in modo diverso conta solo se lascia un requisito scoperto |
+| `notes.md` | Impronta dell'overview approvata, Modifiche ai requisiti, Divergenze dal piano task per task, Bug trovati, Decisioni, Follow-up | Ogni voce di «Modifiche ai requisiti» è un finding da esaminare, non una deviazione già approvata |
+
+**La versione approvata dell'overview** è quella del primo commit del dev, che la contiene:
+`git log --diff-filter=A --format=%H -1 -- docs/features/<slug>/overview.md`. Il confronto con
+quella attuale (`git diff <quel commit> HEAD -- …/overview.md`) mostra i requisiti cambiati
+durante il lavoro.
+
+**Il controllo meccanico** dei tre file è `${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh
+<cartella> <prima-del-commit|chiusura>`: link e àncore, identificativi scritti come testo, voci
+delle note, differenze dalla versione approvata, righe `Verifica`. Dopo uno squash merge il
+commit che ha aggiunto l'overview è il merge stesso: il riferimento si passa come terzo argomento
+(il commit della PR che ha aggiunto l'overview, da `refs/pull/<n>/head`). Verifica la coerenza fra i
+documenti, non la loro verità: quella la giudicano il dev e la review.
 
 **Slug:** `<ID>-<titolo-in-kebab-case>` (es. `8068-wm-review-ticket`). Se non c'è ticket, solo `<titolo-in-kebab-case>`.
 
@@ -233,17 +262,21 @@ In tag-mode, `wm-plan` esegue **solo** queste fasi nell'ordine:
 3. `Fase: reverse-interaction` — dialogo socratico completo (minimo 5 domande, nessuna eccezione)
 4. `Fase: overview` — produce l'overview con la struttura canonica
 5. `Fase: challenge` — analisi adversariale sull'overview
-6. `Fase: estimation` — solo se Feature (stima in ore, approvata dal dev)
-7. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`; il tag padre si associa **dopo**, con `attach_story_to_tag`, mai passando `tags` a `create_story`
-8. **Stop** — restituisce il controllo a `wm-tag`
+6. `Fase: ticket` — crea il ticket su Orchestrator **solo ora**, con tutti i campi disponibili: `name`, `type`, `customer_request` (derivato dalla trascrizione), `description` (overview completa), `estimated_hours`; il tag padre si associa **dopo**, con `attach_story_to_tag`, mai passando `tags` a `create_story`
+7. **Stop** — restituisce il controllo a `wm-tag`
 
-Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**.
+`Fase: estimation` non fa parte di questo elenco: il ticket nasce senza `estimated_hours`, e la
+stima si fa dopo, se il dev la chiede.
+
+Le fasi `write-plan`, `execution`, `notes`, `update-context` **non vengono eseguite**. Di
+conseguenza non valgono nemmeno la chiusura dell'overview e lo script di controllo: l'overview
+esiste solo nel ticket, in HTML, dove gli identificativi `R1`, `R2`… restano testo semplice.
 
 **Importante:** l'overview **non viene salvata nel filesystem** del repo. Nessun file `docs/features/` viene creato o modificato.
 
 ### tag-mode: creazione ticket con overview
 
-Dopo l'approvazione dell'overview (e dell'estimation se Feature), crea il ticket in un'unica chiamata POST con tutti i campi disponibili. Il campo `description` è renderizzato da un editor WYSIWYG lato Orchestrator (nessun parsing Markdown): costruisci il contenuto in **HTML**, non in Markdown, convertendo la struttura canonica dell'overview 1:1 in tag HTML (`<h2>`/`<h3>` per le sezioni, `<p>` per il testo, `<ul><li>` per liste e requisiti):
+Dopo l'approvazione dell'overview crea il ticket in un'unica chiamata POST con tutti i campi disponibili. Il campo `description` è renderizzato da un editor WYSIWYG lato Orchestrator (nessun parsing Markdown): costruisci il contenuto in **HTML**, non in Markdown, convertendo la struttura canonica dell'overview 1:1 in tag HTML (`<h2>`/`<h3>` per le sezioni, `<p>` per il testo, `<ul><li>` per liste e requisiti):
 
 ```html
 <h2>Overview</h2>
@@ -293,7 +326,7 @@ Le operazioni su Orchestrator si fanno con i tool del server `orchestrator`, dis
 
 **Regola sulle scritture.** I tool di scrittura accettano `confirm`. Chiamali **sempre prima senza `confirm`**: restituiscono la differenza rispetto allo stato attuale senza scrivere nulla. Mostra quella differenza al dev, attendi un'approvazione esplicita, e solo allora richiama lo stesso tool con `confirm: true`. **Se il dev ha già approvato quell'azione precisa** («associalo», «crealo così») **e l'anteprima mostra esattamente quella**, applica senza chiedere di nuovo; chiedi solo se l'anteprima contiene qualcosa di diverso o in più. `customer_request` si chiede sempre quando il creatore del ticket è un cliente: scriverlo lo notifica, e una email inviata non si annulla. **Se invece l'anteprima del tool dice «Creatore del ticket: … (dev del team)»**, la notifica arriva a quel dev: non avvisare dell'email e, se il dev ha già approvato il testo, applica senza chiedere di nuovo, come per gli altri campi. L'elenco dei dev sta nel server, in `mcp/internal/tools/developers.go`. Non costruire tu la tabella dell'anteprima: quella del tool è calcolata sui dati veri. L'anteprima del tool mostra ogni campo per intero, con i campi HTML resi come testo leggibile: riportala al dev così com'è, etichetta e contenuto di ogni campo, anche se ripetitiva. Mai riassumerla, mai un rimando del tipo «il testo è quello scritto sopra».
 
-**Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata.
+**Aggiungere o sostituire la `description`.** Per aggiungere informazione — note dev, esito di una review, qualsiasi aggiunta — usa `update_story` con `prepend` (in testa) e, se serve, `annotations` (dopo frasi esatte): il testo esistente resta identico e non va ricopiato. Usa `description` solo per riformattare o invalidare il campo, perché lo sostituisce per intero. I due modi non si combinano nella stessa chiamata. **Vale identico per `update_tag`**, dove conta ancora di più: la descrizione di un tag di call è lunga decine di migliaia di caratteri, e riscriverla per aggiungere una riga costa minuti e rischia di alterare punti che non stavi toccando.
 
 **Tipi e stati.** Non scrivere valori a memoria: il tool rifiuta i valori fuori elenco e ti dice quali sono ammessi.
 
@@ -322,7 +355,7 @@ Fasi che delegano, e a chi:
 | `ticket` (avvio e caso B) | `wm-transcript-research` | informata |
 | `reverse-interaction` | `wm-transcript-research` | informata |
 | `challenge` | subagente già previsto | **cieca** |
-| `estimation` | `wm-estimate` | **cieca** |
+| `estimation` (solo quando il dev la chiede) | `wm-estimate` | **cieca** |
 | `review-gate` | subagente già previsto | **cieca** |
 | `update-context` | `wm-context-guard` | informata |
 
@@ -350,7 +383,7 @@ Il team Webmapp traccia il lavoro su Orchestrator. Ogni ticket ha un ID numerico
 date -u +"%Y-%m-%dT%H:%M:%S%z"
 ```
 
-Tieni questo valore attivo per tutto il workflow — serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato).
+Tieni questo valore attivo per tutto il workflow: serve in `Fase: estimation` per calcolare il tempo di pianificazione effettivamente trascorso (misurato, non stimato). Si registra sempre, anche se quella fase non partirà: costa un comando, e se il dev chiede una stima a lavoro avviato il dato non si può più ricostruire.
 
 **Subito dopo, lancia in background `wm-skills:wm-transcript-research` con la richiesta «prepara»**:
 crea o completa il notebook NotebookLM del giorno (`scrum AAAA-MM-GG`) con le call di oggi. Non
@@ -560,6 +593,52 @@ Se l'agente restituisce `RILEVAMENTO FALLITO`, mostra
 | `has_phpstan_ci` | `true` | trovato `phpstan.neon`/`phpstan.neon.dist` nella root **E** keyword `phpstan` (case-insensitive) in almeno un file `.github/workflows/*.yml` |
 | `has_phpstan_ci` | `false` | manca almeno una delle due condizioni |
 
+### environment-setup: repo-sync
+
+Verifica che il branch locale non sia **behind** rispetto al remoto, **prima** che il lavoro
+cominci. Un branch di feature che nasce da una base vecchia porta conflitti al merge e, peggio,
+fa scrivere codice contro una versione che non esiste più: il costo non si vede subito, si
+paga alla PR.
+
+```bash
+git fetch --quiet 2>/dev/null
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || echo origin/develop)
+git rev-list --left-right --count "$UPSTREAM...HEAD" 2>/dev/null
+git status --porcelain
+```
+
+`git rev-list --left-right --count` stampa due numeri: **behind** e **ahead**. Il confronto è
+con l'upstream del branch corrente; quando non ce n'è uno — un branch locale appena creato —
+vale `origin/develop`, perché è da lì che nasce ogni branch di feature.
+
+- **behind = 0** → mostra `✅ <BRANCH>: 0 commit behind <UPSTREAM>.` e prosegui senza altro.
+- **behind > 0** → **chiedi, e non fare il pull di tua iniziativa**:
+
+  > Il branch `<BRANCH>` è `<N>` commit behind `<UPSTREAM>`. Faccio un `git pull --ff-only`
+  > prima di cominciare?
+
+  Solo dopo un sì esplicito esegui `git pull --ff-only`. Il `--ff-only` è il punto: se la
+  storia è divergente il comando si ferma invece di aprire un merge che nessuno ha chiesto, e
+  quel caso torna al dev con il suo messaggio di errore.
+
+**Se il working tree non è pulito** (`git status --porcelain` non vuoto), dillo insieme alla
+domanda e non proporre nulla da solo: un pull con modifiche in corso è esattamente il momento
+in cui si perde lavoro. Decide il dev se fare uno stash o restare behind.
+
+**Con `has_submodules: true`** il controllo vale anche per i submodule, uno per volta e con la
+stessa domanda: un puntatore di submodule vecchio è la causa più comune di un repo che sembra
+in pari e non lo è.
+
+```bash
+git submodule foreach --quiet 'git fetch --quiet 2>/dev/null; echo "$name $(git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null)"'
+```
+
+**Se il dev dice di no, o se `git fetch` fallisce** — niente rete, nessun remoto configurato —
+prosegui: la fase è fail-soft e un branch behind non ferma un lavoro. Registra la scelta in
+`notes.md` (`## Decisioni`) solo se il dev ha detto di no sapendo di essere behind: serve a
+spiegare, alla PR, da dove vengono i conflitti.
+
 ### environment-setup: domain-mapping
 
 Prima di fare qualsiasi domanda, ispeziona il progetto e identifica:
@@ -615,7 +694,7 @@ SE confidenza alta:
       - Lista file/componenti UI coinvolti
       - customer_request del ticket (se disponibile)
       Ricevuto il parere della skill:
-      - Le raccomandazioni UX → aggiunte come requisiti funzionali nella sezione "Requisiti" di overview.md con prefisso `[UX]`
+      - Le raccomandazioni UX → aggiunte come requisiti nella sezione "Requisiti" di overview.md, con identificativo e àncora come gli altri e la sigla `[UX]` subito dopo: `- <a id="r7"></a>**R7** — [UX] …`
       - I rischi UX → aggiunti nella sezione "Rischi" di overview.md con prefisso `[UX]`
   → SE non trovata:
       scrivi: "⚠️ La skill ui-ux-pro-max non è installata.
@@ -902,6 +981,7 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 
 ```markdown
 > Ticket: oc:<ID>   ← ometti se non c'è ticket
+> Stato: approvata il <AAAA-MM-GG>
 
 # <Titolo dal ticket>
 
@@ -911,10 +991,12 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 ## Perché
 [Motivazione business/tecnica emersa dal ticket e dalla Fase: reverse-interaction]
 
+## Punto di partenza
+[Cosa c'è nel codice prima del lavoro, con file e simbolo: è l'unica sezione dove si scrive «oggi»]
+
 ## Requisiti
-- [ ] Requisito funzionale 1
-- [ ] Requisito funzionale 2
-...
+- <a id="r1"></a>**R1** — <comportamento atteso, osservabile da fuori>
+- <a id="r2"></a>**R2** — <vincolo di struttura, se è il requisito stesso: per esempio cosa sta nel package e cosa nello shard>
 
 ## Rischi
 [Criticità emerse dalla Fase: challenge con indicazione di come vengono mitigate]
@@ -923,10 +1005,46 @@ Il `<feature-slug>` è `<ID>-<titolo-in-kebab-case>` (es. `7815-creazione-poi-tr
 [Ciò che resta valido ma non si fa in questo ciclo. Mai le alternative scartate nel dialogo: chi rilegge l'overview in una sessione successiva le prenderebbe per ipotesi ancora aperte. Se una scelta scartata va conservata, va nella pagina di conoscenza, in «Come ci siamo arrivati»]
 
 ## Moduli toccati
-[Lista di file, moduli o servizi che vengono modificati o creati]
+[Previsti: file, moduli o servizi che si pensa di toccare. Alla chiusura diventano quelli toccati davvero]
 ```
 
+**I requisiti.** L'overview è il metro con cui la review giudica il codice: i requisiti sono
+scritti perché si possa dire, di ciascuno, se è soddisfatto.
+
+- **Ogni requisito ha un identificativo stabile**, `R1`, `R2`…, con un'àncora esplicita
+  `<a id="r3"></a>`. L'àncora del titolo non va bene: cambia quando si riformula il testo. Un
+  identificativo non si riusa mai, nemmeno dopo che il requisito è stato tolto.
+- **Un identificativo si scrive sempre come link**, in qualunque file e anche dentro l'overview
+  stessa: `[R3](#r3)` nell'overview, `[R3](overview.md#r3)` in `plan.md` e `notes.md`. Chi
+  legge arriva al requisito con un clic; chi riprende il lavoro sa di quale overview si parla,
+  quando ce n'è una per repo; e lo script segnala un link che punta a un requisito che non
+  esiste più. Solo la riga che definisce il requisito porta l'àncora senza link.
+- **Solo comportamento, o un vincolo di struttura quando è il requisito stesso.** Quale classe
+  scrivere e quale metodo chiamare va nel piano: sono le frasi che invecchiano per prime.
+- **Pochi.** Ogni requisito avrà la sua riga `Verifica` alla chiusura: un elenco di sessanta voci
+  di dettaglio diventa rumore, e la review smette di leggerlo.
+- **La riga `Verifica` si aggiunge alla chiusura**, come sottovoce del requisito, in una di
+  queste forme:
+  - un test: `` - Verifica: [ShowApplicationEndpointTest.php](../../../tests/Feature/ShowApplicationEndpointTest.php) › `hides the code until approval` ``;
+  - un file e un simbolo, per un vincolo di struttura: `` - Verifica: [routes/sus.php](../../../routes/sus.php) › `sus.applications.show` ``;
+  - una verifica a mano, con chi, quando e come: `- Verifica: a mano — dev, 2026-11-20: provato su UAT con un token scaduto`.
+
+  Mai un numero di riga (`#L42`): cambia al primo test aggiunto sopra. Il link porta al file, il
+  nome del test o del simbolo si trova con un grep, e lo script controlla che ci sia davvero.
+- **Fra repo diversi.** L'overview dello shard può linkare i test del package con il percorso
+  relativo che passa dal submodule (`../../../wm-package/tests/…`): su GitHub non si apre, in
+  locale sì, ed è in locale che girano lo script e la review. L'overview del package linka solo i
+  propri test; un requisito verificato nello shard lo nomina senza link, perché il package è
+  condiviso e non dipende da dove è montato: `` - Verifica: forestas tests/Feature/Sus/SusApplicationRoutesTest.php › `denies other users` ``.
+  Lo script accetta questa forma senza controllarla.
+
 Mostra il file all'utente e attendi approvazione esplicita prima di procedere.
+
+**Dopo l'approvazione del piano l'overview non si tocca fino alla chiusura.** Ogni cambiamento a un
+requisito durante il lavoro va in `notes.md`, nella sezione «Modifiche ai requisiti» (vedi
+`Fase: notes`); l'overview si aggiorna una volta sola, alla chiusura, copiando quelle voci. Chi
+la modificasse a metà lavoro cambierebbe la versione approvata senza che nessuno se ne accorga:
+il primo commit del dev la fotograferebbe già modificata.
 
 ---
 
@@ -1019,9 +1137,18 @@ Se dalla Challenge emergono buchi che cambiano requisiti, scope o approccio, agg
 
 ## Fase: estimation
 
-**Eseguita solo se il ticket è di tipo `Feature`.** Per qualsiasi altro tipo (fra quelli ammessi da `create_story`/`update_story`), salta questa fase e procedi direttamente a `Fase: write-plan`.
+**Questa fase non parte mai da sola.** Non si esegue per tipo di ticket, non si esegue in
+tag-mode, non si propone: da `Fase: challenge` si va direttamente a `Fase: write-plan`, e il
+ticket resta senza `estimated_hours`.
 
-In tag-mode, questa fase viene eseguita prima di fermarsi (non si procede a write-plan).
+**Si esegue solo se il dev la chiede**, con parole sue — «stima questo ticket», «quante ore
+sono», «aggiorna la stima» — in qualunque momento del workflow, anche dopo. Allora si fa per
+intero, come descritto qui sotto, e serve `plan.md`: prima che il piano esista non c'è niente
+da stimare, e va detto al dev invece di stimare a vuoto.
+
+**Perché non parte da sola.** Una stima che nessuno ha chiesto costa un agente e un giro di
+messaggi a ogni ticket, e il numero finisce su Orchestrator senza che nessuno lo stesse
+aspettando. Chiederla quando serve è il dev a saperlo.
 
 ### estimation: analisi
 
@@ -1050,7 +1177,8 @@ Restano nel context principale:
   Differenza con `planning_start_at` registrato in `Fase: ticket`. Se non è stato registrato,
   vale il fallback già previsto: dichiararlo al dev e presentare solo la quota stimata.
 
-- **la conferma del dev**, invariata.
+- **la presentazione al dev**, che è un esito e non una domanda: vedi
+  `estimation: nessuna domanda al dev`.
 
 Presenta al dev la tabella dell'agente con in testa la riga della pianificazione misurata, e
 chiudi sempre con la scomposizione, mai un numero unico fuso:
@@ -1062,17 +1190,31 @@ seguendo gli stessi criteri (tempo di esecuzione per componente, buffer di novit
 in valore assoluto, 5% di integrazione trasversale) e dichiara al dev che la stima non è
 indipendente.
 
-### estimation: conferma
+### estimation: nessuna domanda al dev
 
-Chiedi al dev, riportando sempre la scomposizione (mai un numero unico fuso):
+**La stima non si fa approvare.** Presentala come esito, con la scomposizione e mai un numero
+unico fuso, e prosegui senza fermarti:
 
-> "Accetti questa stima — **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h** — la sostituisci con un tuo valore, o la fai rifare a `wm-estimate` con le tue obiezioni?"
+> **Misurato: \<M\>h + Stimato: \<S\>h = Totale: \<N\>h**
 
-Aspetta risposta esplicita. Se il dev propone un valore diverso, usalo senza discutere — la stima finale è sempre quella approvata dal dev. Se il dev modifica solo la quota stimata (implementazione) lasciando invariata quella misurata (pianificazione), aggiorna solo `<S>` e ricalcola `<N>`. Se il dev ritiene il ragionamento sbagliato (es. buffer eccessivo, componente sottostimato), rimanda le sue obiezioni a `wm-estimate` invece di correggere il numero a mano — vedi `## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`.
+Nessuna domanda, nessuna attesa: è un'informazione, e il messaggio deve far capire che non
+chiede niente.
+
+**Se il dev interviene**, vale quello che dice lui, come è sempre stato: un valore diverso si
+usa senza discutere; se cambia solo la quota stimata, la quota misurata resta e si ricalcola il
+totale; se contesta il ragionamento — buffer eccessivo, un componente sottostimato — le
+obiezioni tornano a `wm-estimate` invece di correggere il numero a mano (vedi
+`## Revisione con l'agente` in `${CLAUDE_PLUGIN_ROOT}/shared/agent-delegation.md`). Se la stima
+è già stata scritta su Orchestrator, si riscrive con il valore nuovo.
+
+**Perché non si chiede.** La stima la produce un agente cieco leggendo overview e piano, e sul
+momento il dev non ha in mano un dato diverso per giudicarla: la domanda arriva quando la
+risposta è quasi sempre «va bene». Un numero stimato non è una decisione irreversibile — si
+riscrive quando serve, e `execution: re-estimation` lo fa già durante il lavoro.
 
 ### estimation: scrittura su Orchestrator
 
-Chiama `update_story` con `story_id` ed `estimated_hours: <N>`, prima senza `confirm` per mostrare al dev la differenza calcolata dal tool rispetto al valore attuale, poi con `confirm: true` dopo l'approvazione esplicita. Nota interna da tenere a mente nel dialogo con il dev (non un campo separato da inviare): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`.
+Chiama `update_story` con `story_id` ed `estimated_hours: <N>`, prima senza `confirm` per avere la differenza calcolata dal tool rispetto al valore attuale, poi subito con `confirm: true`. **Qui non si chiede nulla**: `estimated_hours` non notifica nessuno, e la stima non passa più da un'approvazione. Riporta al dev il valore scritto. Nota interna da tenere a mente nel dialogo con il dev (non un campo separato da inviare): `Misurato: <M>h + Stimato: <S>h = Totale: <N>h`.
 
 **Nessun marcatore di versione della metodologia va scritto nella nota.** La stima di un ticket parte **sempre** dal presupposto che l'esecuzione avvenga con un LLM: è il default, non una variante da segnalare. Un marcatore suggerirebbe che esista ancora una baseline alternativa in dev-hours umane, che non è più il caso.
 
@@ -1098,9 +1240,29 @@ Questo briefing è lo spec che writing-plans usa per generare il piano — senza
 - **Percorso di salvataggio:** `docs/features/<feature-slug>/plan.md`
 - **Header obbligatorio:** il piano inizia con `> Ticket: oc:<ID>`
 - **Commit convention:** tutti i commit usano `feat(oc:<ID>): ...` / `fix(oc:<ID>): ...` / `refactor(oc:<ID>): ...`
-- **⚠️ No commit o branch automatici:** i commit nel piano sono istruzioni testuali per l'utente, non azioni da eseguire autonomamente. Claude non esegue `git commit`, `git push` o crea branch senza conferma esplicita dell'utente per ogni singolo commit.
+- **⚠️ Nessun commit durante l'esecuzione:** i commit nel piano sono istruzioni testuali, non azioni da eseguire. Il primo commit lo fa il dev all'inizio della chiusura (`review-gate: dialog`); i successivi, della chiusura, la sessione principale. Nessuna skill e nessun subagent committa durante l'esecuzione, e nessun branch si crea senza il dev.
+- **Identificativi dei requisiti:** ogni task che realizza un requisito lo cita come link, `[R3](overview.md#r3)`.
 
 Mostra il piano all'utente e attendi approvazione esplicita prima di procedere.
+
+**Appena il piano è approvato, nasce `notes.md`**, con in testa l'impronta dell'overview
+approvata:
+
+```bash
+cd docs/features/<feature-slug>
+git hash-object -w overview.md   # scrive il contenuto nel database di git, senza commit né staging
+```
+
+```markdown
+> Ticket: oc:<ID>
+> Overview approvata il <AAAA-MM-GG> · impronta `<hash>`
+```
+
+L'impronta serve a una cosa sola: prima del primo commit del dev, lo script controlla che
+l'overview sia ancora quella approvata, e se non lo è mostra cosa è cambiato. `-w` conserva il
+testo approvato nel database di git, così la differenza si può mostrare. Dopo il primo commit
+l'impronta non serve più: il riferimento è il commit. Il controllo protegge da una modifica fatta
+per errore, non da una fatta di proposito, perché anche `notes.md` lo scrive l'agente.
 
 ---
 
@@ -1112,7 +1274,7 @@ Se il piano include componenti UI/UX (nuove interfacce, layout, prototipi, slide
 
 > "Questa feature ha componenti visual. Ti consiglio di prototipare il design su claude.ai/design prima di implementare — puoi poi trasferire il risultato direttamente a Claude Code con un'istruzione."
 
-Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con 6b (creazione branch).
+Aspetta che l'utente confermi di aver completato la fase di design (o decida di saltarla) prima di procedere con `execution: branch`.
 
 ### execution: branch (obbligatoria, prima di scrivere qualsiasi file)
 
@@ -1134,7 +1296,7 @@ git checkout -b <nome-branch>
 
 Ripeti per ogni submodule coinvolto dalla feature (stesso nome branch in tutti i repo).
 
-Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con 6c.
+Mostra all'utente il nome del branch creato e attendi conferma prima di procedere con `execution: implementation`.
 
 ### execution: implementation
 
@@ -1165,19 +1327,21 @@ Esempio di dichiarazione: *"Invoco `superpowers:subagent-driven-development` per
 
 Prima di invocare la skill scelta, dichiara esplicitamente — come se fosse parte del tuo contesto di esecuzione:
 
-> "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. La fase di commit è gestita separatamente in 6c dopo approvazione del developer. Gli identificatori nel codice — variabili, funzioni, classi, campi, chiavi — vanno scritti sempre in inglese, mai in italiano, anche quando il dominio è italiano; l'italiano è ammesso solo nei commenti e nei testi rivolti a persone."
+> "In questo progetto Webmapp i commit sono vietati durante l'esecuzione. Non eseguire `git commit`, `git add`, `git push` o qualsiasi operazione git per nessun motivo, nemmeno alla fine di un task o di un sotto-task. Scrivi solo i file. Il primo commit lo fa il developer all'inizio della chiusura. Non modificare `overview.md`: ogni cambiamento a un requisito va in `notes.md`, sezione «Modifiche ai requisiti», con l'effetto e, se il requisito cambia, il testo nuovo per intero. Gli identificatori nel codice — variabili, funzioni, classi, campi, chiavi — vanno scritti sempre in inglese, mai in italiano, anche quando il dominio è italiano; l'italiano è ammesso solo nei commenti e nei testi rivolti a persone."
 
 Questo override ha priorità su qualsiasi istruzione interna della skill Superpowers che preveda commit automatici. Se la skill tenta di committare, interrompi e non eseguire il comando git.
 
-### execution: re-estimation (solo se il ticket è di tipo Feature)
+### execution: re-estimation (solo se una stima esiste già)
 
-Se durante l'implementazione emerge un problema non previsto nell'overview e nella stima originale, e questo problema è stimabile in ore (non un semplice imprevisto trascurabile), proponi al dev una revisione della stima prima di proseguire:
+Se il dev non ha mai chiesto una stima, qui non c'è niente da rivedere e non si propone nulla: `Fase: estimation` resta un servizio che parte su richiesta.
 
-> "Ho trovato \<descrizione problema non previsto\>. Stimo un impatto aggiuntivo di **\<X\>h**, portando il totale da \<N\> a \<N+X\>h. Vuoi che aggiorni la stima su Orchestrator?"
+Se invece una stima è stata fatta e durante l'implementazione emerge un problema non previsto, stimabile in ore (non un semplice imprevisto trascurabile), **aggiorna la stima e dillo al dev, senza chiederglielo** — vale la stessa ragione di `estimation: nessuna domanda al dev`:
 
-Se il dev conferma, chiama `update_story` con `estimated_hours` pari al nuovo totale, prima senza `confirm` poi con `confirm: true` dopo l'approvazione esplicita.
+> "Ho trovato \<descrizione problema non previsto\>. Impatto aggiuntivo **\<X\>h**: il totale passa da \<N\> a \<N+X\>h, aggiornato su Orchestrator."
 
-Registra sempre l'evento in `Fase: notes` (sezione "Decisioni"), indipendentemente dal fatto che il dev abbia accettato o rifiutato la revisione.
+Chiama `update_story` con `estimated_hours` pari al nuovo totale, prima senza `confirm` per l'anteprima e poi subito con `confirm: true`. Se il dev non è d'accordo lo dice, e il valore si riscrive.
+
+Registra sempre l'evento in `Fase: notes` (sezione "Decisioni").
 
 ### execution: divergenze
 
@@ -1193,14 +1357,14 @@ In `plan.md`, all'inizio del task divergente, va una riga sola che rimanda alla 
 
 Motivo: tiene separate due domande — "cosa avevamo deciso" (il piano) e "cosa è successo" (le note) — senza che il piano possa ingannare chi lo apre a metà, senza sapere che quel pezzo è superato. Le alternative sono tutte peggiori: riscrivere il piano cancella la storia del cambiamento, lasciarlo muto trae in inganno, duplicare il testo nei due file crea due verità che divergono al primo aggiornamento.
 
-**Nota tecnica:** l'ancora segue lo slug GitHub del titolo (minuscolo, punteggiatura rimossa, spazi convertiti in trattini).
+**Nota tecnica:** l'ancora segue lo slug GitHub del titolo (minuscolo, punteggiatura rimossa, lettere accentate conservate, spazi convertiti in trattini). Lo script di controllo verifica che ogni task annotato nelle note abbia la sua riga `⚠️` nel piano: un rimando mancante non dà nessun errore in Markdown.
 
-**Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione — in quel caso conviene riscriverlo invece di continuare ad annotarlo.
+**Limite:** se la maggioranza dei task ha un rimando, il piano non descrive più il lavoro nemmeno in prima approssimazione. In quel caso si può riscriverlo, ma solo con una nuova approvazione del dev: le note restano com'erano, e la riga di stato del piano lo dice — `> Stato: riscritto il <AAAA-MM-GG>, approvato dal dev; le divergenze precedenti sono in notes.md`.
 
 ### execution: review-gate (obbligatorio, non skippabile)
 
 <HARD-GATE>
-Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto.
+Dopo che la skill Superpowers ha completato l'implementazione, **nessun commit può essere eseguito** finché il developer non ha approvato esplicitamente il codice scritto. **Il primo commit lo fa il developer**: è il momento in cui legge il diff. Solo dopo quel commit la sessione principale committa il lavoro della chiusura.
 </HARD-GATE>
 
 Al termine dell'implementazione, prima di qualsiasi `git commit` o `git push`, il riepilogo del diff viene prodotto da un **subagente isolato**, non dal context principale — lo stesso principio di `challenge: subagent`: chi ha scritto/coordinato il codice tende a confermare le proprie scelte invece di valutarle a freddo; un subagente che non ha visto il ragionamento implementativo ha più probabilità di notare un'incongruenza tra intenzione e codice reale.
@@ -1286,7 +1450,7 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
 
    > "PHPStan blocca il commit per [errori di codice sul diff / fallimento infrastrutturale]. Vuoi bypassare questo blocco specifico? Verrà registrato in notes.md con la motivazione: \"[motivazione confermata]\"."
 
-5. Solo se il dev conferma esplicitamente il bypass (non basta il sì al commit del punto 5 di `review-gate: dialog`), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
+5. Solo se il dev conferma esplicitamente il bypass (non basta che il dev dica di voler committare), consenti di proseguire e registra in `docs/features/<feature-slug>/notes.md` (sezione "Decisioni") una riga con: motivazione, timestamp, e la responsabilità esplicita attribuita al dev.
 6. Se il dev non conferma il bypass, il workflow resta bloccato su questo punto: nessun commit finché gli errori non sono risolti o il bypass non viene confermato.
 
 #### review-gate: dialog
@@ -1298,15 +1462,87 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
    > "Ho completato l'implementazione. Ecco il riepilogo del diff (prodotto da un subagente isolato, senza contesto sulla conversazione precedente). **Rivedi comunque il diff completo** — il riepilogo è un ausilio di orientamento, non sostituisce la lettura del codice. C'è qualcosa da correggere?"
 
    Se sì, correggi e ripresenta il riepilogo aggiornato.
-3. Quando non c'è più niente da correggere, proponi **da sola** la review formale:
+3. **Note complete.** Ogni decisione presa durante il lavoro è in `notes.md`: le modifiche ai
+   requisiti, le divergenze dal piano, i bug, le decisioni, ciascuna con il campo «Scartato»
+   quando c'era un'alternativa. Poi lancia il controllo:
+
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<feature-slug> prima-del-commit
+   ```
+
+   in ogni repo che ha una cartella della feature. Se segnala `overview-cambiata`, mostra al dev
+   la differenza che lo script stampa e chiedi, da sola, se la modifica va spostata in una voce
+   di `notes.md` o se si torna al testo approvato.
+4. **Il primo commit lo fa il dev.** Digli, senza nient'altro nel messaggio, che il lavoro è
+   pronto per il suo primo commit, con l'elenco dei file per repo (`git status --short`): tutto
+   il codice più overview, piano e note. L'overview in quel commit è la versione approvata, il
+   riferimento di tutta la chiusura. Aspetta che ti dica di averlo fatto, poi controlla che
+   `overview.md` sia nel commit (`git log --diff-filter=A -1 -- docs/features/<feature-slug>/overview.md`).
+5. **Chiusura dell'overview**, nel modo descritto in `review-gate: chiusura dell'overview` qui
+   sotto. Poi mostra al dev, da sola, la differenza dalla versione approvata limitata ai requisiti
+   modificati, tolti e non fatti (`git diff <primo commit> -- docs/features/<feature-slug>/overview.md`)
+   e chiedi se la approva.
+6. Proponi **da sola** la review formale:
 
    > "Vuoi una code review strutturata con `wm-skills:wm-review-ticket oc:<ID>` (finder paralleli, aggiornamento del ticket)? È più approfondita del riepilogo del subagente, e facoltativa."
 
    Se sì, segui `execution: formal-review`.
-4. Completa la Fase: notes e la Fase: update-context, così tutti i file entrano nello stesso commit.
-5. **Solo ora, quando non resta altro da fare**, chiedi il commit con una domanda singola ed esplicita, senza nient'altro nel messaggio: «Faccio il commit?». Il commit non si mette mai dentro un'altra proposta («aggiungo X e poi committo»): un sì alla proposta non è un sì al commit. Un silenzio o un «ok» generico non basta.
-6. Dopo il sì, esegui i commit seguendo la convention `feat(oc:<ID>): ...`.
-7. Dopo i commit, apri la PR verso **`develop`** (non `main`), il branch di integrazione Webmapp. **Una sola PR per ticket in ogni repo**, e si mergia una volta sola. Il puntatore di un submodule va in un commit suo, separato da quelli di lavoro, ma nella stessa PR: mai in una PR a parte.
+7. Completa la `Fase: update-context`.
+8. **Prima della PR:** se `has_phpstan_ci: true` rilancia `review-gate: phpstan-check`, perché i
+   commit della chiusura possono contenere codice; ricalcola «Moduli toccati» e committalo se è
+   cambiato; poi mostra al dev, da sola, tutto ciò che è
+   cambiato dopo il suo commit — `git diff <primo commit>..HEAD --stat` e il diff completo — e
+   chiedi se si può aprire la PR.
+9. Apri la PR verso **`develop`** (non `main`), il branch di integrazione Webmapp. **Una sola PR per ticket in ogni repo**, e si mergia una volta sola, in squash: il primo commit del dev e quelli della chiusura diventano un commit solo. Il puntatore di un submodule va in un commit suo, separato da quelli di lavoro, ma nella stessa PR: mai in una PR a parte.
+
+**I commit della chiusura li fa la sessione principale, senza chiedere ogni volta**: chiusura
+dell'overview, correzioni della review, pagine di conoscenza. Tre vincoli, senza eccezioni:
+
+- aggiunge solo file nominati, mai `git add -A` o `git add .`;
+- non fa mai amend, rebase o force push: riscriverebbero il primo commit del dev, che è il
+  riferimento della chiusura;
+- i subagent non committano mai, nemmeno ora.
+
+#### review-gate: chiusura dell'overview
+
+Alla chiusura l'overview si aggiorna **dalle voci di `notes.md`, non dal codice**. Riscriverla
+guardando il codice farebbe derivare il metro della review da ciò che deve misurare: un
+requisito non fatto sparirebbe invece di risultare non fatto.
+
+1. **Per ogni voce di «Modifiche ai requisiti»** applica l'effetto all'overview:
+   - *aggiunto* → il requisito nuovo, con l'identificativo che la voce gli ha dato, testo copiato dalla voce;
+   - *modificato* → il testo del requisito sostituito con quello della voce, parola per parola;
+   - *tolto* → la riga del requisito rimossa;
+   - *non fatto* → il requisito resta com'è, con la sottovoce `- Non fatto: [motivo](notes.md#<voce>)`;
+   - *fatto*, *ripristinato* → annullano una voce precedente: vedi `Fase: notes`.
+
+   Le voci di un requisito si applicano in ordine, partendo dalla versione approvata: **vale
+   l'ultima**.
+2. **Aggiungi la riga `Verifica`** a ogni requisito che non è «non fatto», nella forma descritta
+   in `Fase: overview`.
+3. **Moduli toccati:** sostituisci quelli previsti con quelli toccati davvero, ricavati da git in
+   ogni repo: `git diff --name-only $(git merge-base develop HEAD)..HEAD`. Dopo il primo commit
+   del dev non ci sono più file non tracciati da perdere. Si ricalcola al passo 8 di
+   `review-gate: dialog`, prima della PR: le correzioni della review e le pagine di conoscenza
+   arrivano dopo.
+4. **Rischi:** quelli superati si tolgono; quelli ancora aperti non si cancellano, si spostano dove
+   qualcuno li ritroverà — un ticket, il tag, la pagina di conoscenza — scrivendo dove.
+5. **Riga di stato:** `> Stato: chiusa il <AAAA-MM-GG> · approvata il <AAAA-MM-GG>`. In testa a
+   `plan.md` una riga analoga: `> Stato: seguito, con <N> divergenze annotate in notes.md`,
+   `seguito senza divergenze`, oppure quella del piano riscritto (vedi `execution: divergenze`).
+6. **Lancia il controllo** in ogni repo con una cartella della feature:
+
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/scripts/feature-docs-check.sh docs/features/<feature-slug> chiusura
+   ```
+
+   Gli `error` si correggono prima di proseguire. Gli `hint` su «oggi» sono un elenco da
+   guardare: «oggi» fuori da «Punto di partenza» spesso descrive uno stato che il lavoro ha
+   cambiato, ma non sempre.
+7. Committa l'overview chiusa, `plan.md` e `notes.md`.
+
+**Un requisito «non fatto» impedisce di chiudere il ticket come `done`**: o si fa, o il dev
+decide di toglierlo con una voce «tolto», o il lavoro resta aperto.
 
 **Un ticket entra in `develop` con un solo merge per repo.** Ogni merge in più dello stesso ticket appare come un ticket diverso nella storia di `develop`, e il team lo considera un errore. Per questo:
 
@@ -1314,7 +1550,7 @@ Attivato quando `review-gate: phpstan-check` rileva un blocco (errori sul diff c
 - se il dev vuole provare il lavoro su un ambiente che legge `develop` (per esempio il server dev) prima che il ticket sia finito, chiedi come provarlo senza mergiare, invece di passare da `develop`;
 - se dopo il merge arriva altro lavoro sullo stesso ticket, prima di cominciare di' al dev che produrrà un secondo merge dello stesso ticket, e aspetta la sua risposta.
 
-**Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere con push o PR.
+**Nessuna eccezione.** Il subagente produce solo il riepilogo — non decide né esegue commit. Anche se la skill Superpowers invocata tenta di committare autonomamente, il gate di revisione Webmapp ha priorità. Se la skill ha già eseguito commit automatici, segnalalo all'utente prima di procedere: un commit fatto prima di quello del dev toglie la versione approvata dal suo posto.
 
 ### execution: formal-review
 
@@ -1322,50 +1558,74 @@ Se l'utente risponde **sì** alla proposta di review formale in `execution: revi
 
 1. Invoca `wm-skills:wm-review-ticket oc:<ID>`
 2. Attendi il completamento della review
-3. Se emergono correzioni → applicale prima di procedere ai commit
-4. Torna al punto 4 di `review-gate: dialog` (notes, update-context, poi la domanda sul commit)
+3. Se emergono correzioni → applicale e committale. Una correzione che cambia un requisito passa
+   da `notes.md` come ogni altra: voce in «Modifiche ai requisiti», poi l'overview si aggiorna
+   copiandola, e si rilancia il controllo di chiusura.
+4. Torna al punto 7 di `review-gate: dialog` (update-context, poi il diff finale prima della PR)
 
 ---
 
 ## Fase: notes
 
-Crea e aggiorna `docs/features/<feature-slug>/notes.md` durante e dopo l'esecuzione.
+`docs/features/<feature-slug>/notes.md` nasce all'approvazione del piano (`Fase: write-plan`) e
+si scrive **durante** il lavoro, non alla fine: una decisione si descrive bene mentre la si
+prende, male ricostruendola dopo.
 
 **Regole:**
 - Il file deve esistere al termine del workflow. Un notes.md con "Nessuna deviazione rilevante" è valido. Un notes.md assente non lo è.
-- Registra: deviazioni dal piano, bug trovati durante l'implementazione, decisioni prese on-the-fly, follow-up da fare in cicli successivi.
+- **Ogni voce ha la data e, quando c'era un'alternativa, il campo «Scartato»**: cosa non si è
+  fatto e perché. È da qui che le strade scartate passano alla pagina di conoscenza.
+- **Le modifiche ai requisiti hanno una sezione propria, in testa.** È quella che la chiusura
+  applica all'overview e che la review esamina una per una: non è un diario, è l'elenco delle
+  differenze fra l'overview approvata e quella chiusa. Ogni voce ha l'effetto sul requisito —
+  aggiunto, modificato, tolto, non fatto, fatto, ripristinato — e chi l'ha deciso; quando il requisito è aggiunto o
+  modificato, il testo nuovo **per intero**, così una sessione che riparte a metà lavoro legge lo
+  stato vero da overview più note, senza ricostruirlo. Una decisione che non tocca nessun
+  requisito va in «Decisioni», non qui.
+- **Un requisito aggiunto riceve l'identificativo quando si scrive la voce**: il primo numero mai
+  usato. Il link della voce punta a un'àncora che nell'overview nascerà alla chiusura; lo script
+  lo sa e, prima della chiusura, non lo segnala.
+- **Una voce si supera con un'altra, non si cancella.** Le voci si scrivono in fondo alla
+  sezione, in ordine di data; quelle di un requisito valgono in quell'ordine, e conta l'ultima: «fatto» annulla un «non fatto», «ripristinato» riporta il requisito alla
+  versione approvata, annullando un «modificato» o un «tolto» — e, su un requisito aggiunto
+  durante il lavoro, lo toglie.
+- **Un identificativo non si riusa**, nemmeno dopo un «tolto»: un requisito riscritto da capo con
+  lo stesso numero sarebbe una modifica travestita da aggiunta. Lo script lo segnala.
 - **Non registrare la pulizia della sessione** — risorse di prova create e poi cancellate, i loro id, chi le ha cancellate: né qui né in `plan.md`. Non serve a chi riprende il lavoro, e una sessione futura potrebbe mettersi a cercare cose che non esistono più. La pulizia si fa e si riferisce al dev nella risposta.
-- **Modifiche richieste a posteriori** (dopo l'approvazione del piano ma prima del commit): registrale nella sezione "Decisioni" con una riga che descrive cosa è cambiato e perché — anche se la modifica è stata recepita nel codice, la traccia in notes serve per capire perché il piano è stato superato.
-- **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, non qui. In questa fase **verifica che i rimandi funzionino**: ogni riga `> ⚠️ L'implementazione ha deviato` in `plan.md` deve puntare a un titolo che esiste davvero in `notes.md`. Un rimando rotto non produce nessun errore in Markdown — resta lì e nessuno se ne accorge — quindi il controllo va fatto a macchina:
-
-  ```bash
-  cd docs/features/<feature-slug>
-  # estrae le ancore citate nel piano e le confronta con i titoli presenti nelle note
-  grep -o 'notes\.md#[a-z0-9-]*' plan.md | sed 's/.*#//' | sort -u > /tmp/wm-ancore-citate
-  grep '^### ' notes.md | sed 's/^### //' \
-    | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9 -]//g; s/ /-/g' | sort -u > /tmp/wm-ancore-esistenti
-  comm -23 /tmp/wm-ancore-citate /tmp/wm-ancore-esistenti
-  ```
-
-  Se il comando stampa qualcosa, quei rimandi sono rotti: correggi il titolo nelle note o l'ancora nel piano prima di proseguire.
-
+- **Divergenze dal piano:** vanno annotate in `execution: divergenze` nel momento in cui accadono, nella sezione «Divergenze dal piano, task per task». Che ogni task annotato abbia il suo rimando `⚠️` in `plan.md`, e che ogni link porti a un'àncora che esiste, lo controlla lo script (`feature-docs-check.sh`, vedi `Contratto artefatti`).
 - **Falsi negativi di classificazione stima** (solo per ticket Feature): se un componente classificato "scrittura pura" in `Fase: estimation` si rivela durante l'esecuzione una "decisione aperta" (richiede scelte UX/comportamentali non previste), registralo esplicitamente in una riga della sezione "Follow-up" o "Decisioni" — questo dato è necessario per calibrare il criterio di classificazione nei cicli successivi.
+- `notes.md` **non si riscrive, si annota**: una voce superata resta, e la voce nuova dice cosa
+  la supera. Vale per le note, non per l'overview, che alla chiusura si aggiorna.
 
-**Struttura consigliata:**
+**Struttura:**
 
 ```markdown
 > Ticket: oc:<ID>
+> Overview approvata il <AAAA-MM-GG> · impronta `<hash>`
 
 # Notes — <Titolo feature>
 
-## Deviazioni dal piano
-[Task che hanno richiesto approcci diversi da quanto pianificato, con motivazione]
+## Modifiche ai requisiti
+
+### <AAAA-MM-GG> — <cosa cambia, in una riga>
+- **Requisito:** [R3](overview.md#r3)
+- **Effetto:** modificato   ← aggiunto | modificato | tolto | non fatto | fatto | ripristinato
+- **Decide:** dev           ← chi l'ha deciso: dev, cliente (con la fonte), agente
+- **Perché:** <motivo>
+- **Scartato:** <l'alternativa e perché no, se c'era>
+- **Testo nuovo:**          ← solo per aggiunto e modificato
+  > <il requisito per intero, senza identificativo; gli altri requisiti come [R1](overview.md#r1)>
+
+## Divergenze dal piano, task per task
+
+### <task>
+<cosa è stato fatto di diverso e perché>
 
 ## Bug trovati
 [Problemi scoperti durante l'implementazione, anche se già risolti]
 
 ## Decisioni
-[Scelte tecniche non ovvie prese durante l'esecuzione]
+[Scelte tecniche non ovvie che non toccano requisiti, con data e «Scartato»]
 
 ## Follow-up
 [Cose da fare in cicli successivi, tech debt consapevolmente accettato]
@@ -1426,8 +1686,17 @@ Altrimenti: il comportamento corrente e i vincoli che lo governano>
 - **<scelta precedente>** (oc:<ID>, superata): <perché è stata abbandonata>
 ```
 
-Ogni voce porta il ticket da cui proviene: è il legame con il cantiere, che resta la fonte
-completa di com'è andata.
+Ogni voce porta il ticket da cui proviene (`oc:<ID>`): è il legame con la cartella della
+feature, che resta la fonte completa di com'è andata.
+
+**Le strade scartate.** Il campo «Scartato» delle note è la fonte di «Come ci siamo arrivati», ma
+non tutto passa: solo le strade che qualcuno potrebbe riproporre domani, con il motivo per cui
+non si sono prese. Un'alternativa che nessuno riproporrebbe resta nelle note.
+
+**Prima di chiudere, controlla la forma della pagina**: i tre titoli `## Come funziona oggi`,
+`## Perché così`, `## Come ci siamo arrivati`, e il riferimento `oc:<ID>` su ogni voce di
+«Perché così». Una pagina scritta in un'altra forma non viene ritrovata da chi la cerca per
+titolo, e senza il ticket non si risale alla cartella della feature.
 
 **Aggiornare una pagina esistente è una riscrittura, non un'aggiunta.** Apri la pagina,
 stabilisci cosa è ancora valido, riscrivi `## Come funziona oggi` e sposta in
@@ -1540,7 +1809,7 @@ Il formato è vincolante, ed è quello che tiene il file piccolo:
 - **una riga per trappola**, imperativa, con la conseguenza;
 - **l'ID del ticket a fine riga**, mai come titolo di sezione: serve a risalire alla storia,
   non a organizzarla;
-- **la cronaca resta nel `notes.md`** del cantiere — i round di review, cosa è stato provato e
+- **la cronaca resta nel `notes.md`** della cartella della feature — i round di review, cosa è stato provato e
   scartato, le decisioni di scope. Nel `CLAUDE.md` va solo ciò che, se sparisse, farebbe
   sbagliare qualcuno.
 
@@ -1607,9 +1876,11 @@ Mostra le modifiche al `CLAUDE.md` all'utente prima di scriverle.
 
 Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i file:
 
-- [ ] `docs/features/<feature-slug>/overview.md` — approvato dall'utente (riferimento ticket presente se applicabile)
-- [ ] `docs/features/<feature-slug>/plan.md` — approvato dall'utente (riferimento ticket presente se applicabile)
-- [ ] `docs/features/<feature-slug>/notes.md` — compilato (anche solo con "Nessuna deviazione") (riferimento ticket presente se applicabile)
+- [ ] `docs/features/<feature-slug>/overview.md` — approvato dall'utente, poi chiuso dalle voci di `notes.md` con la riga `> Stato: chiusa il …` e una `Verifica` per ogni requisito; la chiusura approvata dal dev (riferimento ticket presente se applicabile)
+- [ ] `docs/features/<feature-slug>/plan.md` — approvato dall'utente, con la riga `> Stato:` in testa (riferimento ticket presente se applicabile)
+- [ ] `docs/features/<feature-slug>/notes.md` — nato all'approvazione del piano con l'impronta dell'overview; compilato (anche solo con "Nessuna deviazione") (riferimento ticket presente se applicabile)
+- [ ] Primo commit fatto dal dev; `feature-docs-check.sh … chiusura` senza `error` in ogni repo con una cartella della feature
+- [ ] Diff finale (`git diff <primo commit>..HEAD`) mostrato al dev prima della PR
 
 **Questi tre file sono obbligatori sempre, con o senza ticket Orchestrator.**
 - [ ] `CLAUDE.md` del progetto target aggiornato — **nella forma che quel repo usa davvero**: una riga sotto `## Conoscenza` se il repo è già in questa struttura, altrimenti nella sezione che usa oggi (`## Feature disponibili`), senza migrarlo di iniziativa. Più l'eventuale riga di regola proposta al dev, se il lavoro ne ha introdotta una da seguire d'ora in poi
@@ -1623,7 +1894,7 @@ Prima di dichiarare il workflow concluso, verifica che esistano tutti e tre i fi
 
 - [ ] Leggi lo status attuale del ticket con `get_story`
 - [ ] Prova a impostare uno status non ammesso con `update_story` (senza `confirm`) e usa l'elenco che il tool restituisce nell'errore, oppure consulta lo schema del tool
-- [ ] Suggerisci lo status più appropriato al contesto (es. `testing` se ci sono test da verificare, `done` se tutto è completato e i test passano) e presenta la lista completa — aspetta la scelta esplicita dell'utente
+- [ ] Suggerisci lo status più appropriato al contesto (es. `testing` se ci sono test da verificare, `done` se tutto è completato e i test passano) e presenta la lista completa — aspetta la scelta esplicita dell'utente. Con un requisito segnato «Non fatto» nell'overview chiusa, `done` non si propone
 - [ ] Prepara la bozza di `description` (note dev) con:
   - Link cliccabile HTML alla cartella `docs/features/<feature-slug>/` — il campo è interpretato come HTML, usa:
     ```

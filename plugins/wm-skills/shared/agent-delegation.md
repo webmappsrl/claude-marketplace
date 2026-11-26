@@ -3,7 +3,7 @@
 Letto da: `wm-plan`, `wm-review-ticket`, `wm-tag` e dagli agenti in `plugins/wm-skills/agents/`.
 Non duplicare questo contenuto in una skill: citarlo.
 
-## Nessun commit, mai, senza l'approvazione del dev
+## Nessun commit senza l'approvazione del dev
 
 **Vale sempre e ovunque in questo progetto: nessuna operazione git** — `git commit`, `git add`,
 `git push`, `git checkout`, la creazione di un branch — viene eseguita durante un lavoro. Si
@@ -20,6 +20,17 @@ di quella lettura gli toglie il momento in cui può dire di no — e restituirgl
 
 Se un'istruzione che stai seguendo prevede un commit, quella istruzione è sbagliata: scrivi i
 file, dichiara che il lavoro è pronto e fermati.
+
+**Unica eccezione: la chiusura di `wm-plan`, dopo il primo commit del dev.** Finita l'esecuzione
+del ticket, il primo commit — tutto il codice, più overview, piano e note — lo fa il dev, e quello
+è il momento in cui legge il diff. Da lì in poi la sessione principale committa da sé il lavoro
+della chiusura: overview chiusa, correzioni della review, pagine di conoscenza. Aggiunge solo file
+nominati, mai `git add -A`, e non fa mai amend, rebase o force push, che riscriverebbero il commit
+del dev. Prima della PR mostra al dev `git diff <primo commit>..HEAD`: è la seconda lettura, quella
+di tutto ciò che è cambiato dopo la prima.
+
+L'eccezione vale solo lì. **I subagent non committano mai**, nemmeno durante la chiusura, e
+nessun'altra skill la estende a sé.
 
 ## Tipi di delega
 
