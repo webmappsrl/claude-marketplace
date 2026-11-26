@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'claude-code/testing'
 
 import {
-  indicizza,
-  indicizzaTutti,
-  pathCitati,
-  riferimenti,
-  sigleNominate,
+  citedPaths,
+  citedTickets,
+  indexAll,
+  indexDocument,
+  namedCodes,
+  references,
   slug,
-  ticketCitati,
-} from './documento.ts'
-import { testaOverview } from './parse.ts'
+} from './documents.ts'
+import { overviewHead } from './parse.ts'
 
 /**
  * Le prime righe dell'overview di oc:9056, copiate come stanno.
@@ -42,7 +42,7 @@ const HEADING = [
 ].join('\n')
 
 /** Lo stesso contenuto nella forma a elenco, quella che SKILL.md prescrive. */
-const ELENCO = [
+const LIST = [
   '## Requisiti',
   '',
   '- <a id="r1"></a>**R1** — La creazione chiede tre campi',
@@ -52,94 +52,94 @@ const ELENCO = [
   '## Rischi',
 ].join('\n')
 
-describe('indicizza', () => {
+describe('indexDocument', () => {
   test('riconosce i requisiti scritti come heading', () => {
-    const indice = indicizza(HEADING, 'overview.md')
+    const index = indexDocument(HEADING, 'overview.md')
 
-    expect(indice.has('r1')).toBe(true)
-    expect(indice.get('R1')?.titolo).toBe('La creazione chiede tre campi')
-    expect(indice.get('R1')?.sigla).toBe('R1')
-    expect(indice.get('R1')?.livello).toBe(3)
+    expect(index.has('r1')).toBe(true)
+    expect(index.get('R1')?.title).toBe('La creazione chiede tre campi')
+    expect(index.get('R1')?.code).toBe('R1')
+    expect(index.get('R1')?.level).toBe(3)
   })
 
   test('riconosce i requisiti scritti come voci di elenco', () => {
-    const indice = indicizza(ELENCO, 'overview.md')
+    const index = indexDocument(LIST, 'overview.md')
 
-    expect(indice.get('R1')?.titolo).toBe('La creazione chiede tre campi')
-    expect(indice.get('R1')?.livello).toBe(0)
+    expect(index.get('R1')?.title).toBe('La creazione chiede tre campi')
+    expect(index.get('R1')?.level).toBe(0)
   })
 
   test('le due forme danno lo stesso indice', () => {
-    const a = indicizza(HEADING, 'overview.md')
-    const b = indicizza(ELENCO, 'overview.md')
+    const a = indexDocument(HEADING, 'overview.md')
+    const b = indexDocument(LIST, 'overview.md')
 
-    expect(a.get('R1')?.titolo).toBe(b.get('R1')?.titolo)
-    expect(a.get('R2')?.titolo).toBe(b.get('R2')?.titolo)
+    expect(a.get('R1')?.title).toBe(b.get('R1')?.title)
+    expect(a.get('R2')?.title).toBe(b.get('R2')?.title)
   })
 
   test("il corpo di un heading arriva fino al successivo di pari rango", () => {
-    const corpo = indicizza(HEADING, 'overview.md').get('R1')?.corpo ?? ''
+    const body = indexDocument(HEADING, 'overview.md').get('R1')?.body ?? ''
 
-    expect(corpo).toContain('senza dover avere già')
-    expect(corpo).toContain('**Verifica:**')
-    expect(corpo).not.toContain('Il riferimento del SUS')
+    expect(body).toContain('senza dover avere già')
+    expect(body).toContain('**Verifica:**')
+    expect(body).not.toContain('Il riferimento del SUS')
   })
 
   test('il corpo di una voce di elenco si ferma alla voce dopo', () => {
-    const corpo = indicizza(ELENCO, 'overview.md').get('R1')?.corpo ?? ''
+    const body = indexDocument(LIST, 'overview.md').get('R1')?.body ?? ''
 
-    expect(corpo).toContain('Verifica')
-    expect(corpo).not.toContain('Il riferimento del SUS')
+    expect(body).toContain('Verifica')
+    expect(body).not.toContain('Il riferimento del SUS')
   })
 
   test('un heading senza àncora esplicita si indicizza con il suo slug', () => {
-    const indice = indicizza(HEADING, 'overview.md')
+    const index = indexDocument(HEADING, 'overview.md')
 
-    expect(indice.has('rischi')).toBe(true)
-    expect(indice.get('rischi')?.corpo).toContain('Qui non ci sono requisiti')
+    expect(index.has('rischi')).toBe(true)
+    expect(index.get('rischi')?.body).toContain('Qui non ci sono requisiti')
   })
 
   test('una sigla qualunque vale, non solo R', () => {
     const md = ['## T4 — La sovrapposizione vera non si riproduce', '', 'Il test prova il ramo che conta.'].join('\n')
-    const indice = indicizza(md, 'plan.md')
+    const index = indexDocument(md, 'plan.md')
 
-    expect(indice.get('T4')?.titolo).toBe('La sovrapposizione vera non si riproduce')
-    expect(indice.get('T4')?.file).toBe('plan.md')
+    expect(index.get('T4')?.title).toBe('La sovrapposizione vera non si riproduce')
+    expect(index.get('T4')?.file).toBe('plan.md')
   })
 })
 
-describe('indicizzaTutti', () => {
+describe('indexAll', () => {
   test("il primo documento vince sulle chiavi che si ripetono", () => {
-    const indice = indicizzaTutti([
-      { file: 'overview.md', md: ELENCO },
+    const index = indexAll([
+      { file: 'overview.md', md: LIST },
       { file: 'plan.md', md: '### <a id="r1"></a>**R1** — un altro R1' },
     ])
 
-    expect(indice.get('R1')?.file).toBe('overview.md')
+    expect(index.get('R1')?.file).toBe('overview.md')
   })
 })
 
-describe('riferimenti', () => {
-  const indice = indicizzaTutti([
+describe('references', () => {
+  const index = indexAll([
     { file: 'overview.md', md: HEADING },
     { file: 'plan.md', md: '## T4 — La sovrapposizione vera non si riproduce\n\nIl test prova il ramo che conta.' },
   ])
 
   test('trova le sigle nude e i link alle àncore, in ordine di testo', () => {
-    const frase = 'Visto R2, poi R1 e infine [il piano](plan.md#t4--la-sovrapposizione-vera-non-si-riproduce).'
-    const esito = riferimenti(frase, indice).map(uno => uno.voce.sigla)
+    const sentence = 'Visto R2, poi R1 e infine [il piano](plan.md#t4--la-sovrapposizione-vera-non-si-riproduce).'
+    const got = references(sentence, index).map(one => one.entry.code)
 
-    expect(esito).toEqual(['R2', 'R1', 'T4'])
+    expect(got).toEqual(['R2', 'R1', 'T4'])
   })
 
   test('una sigla che non è nei documenti non diventa una voce', () => {
-    expect(riferimenti('il ticket R99 non esiste', indice)).toEqual([])
+    expect(references('il ticket R99 non esiste', index)).toEqual([])
   })
 
   test('un link a uno slug lungo ricade sulla sigla che lo apre', () => {
-    const esito = riferimenti('vedi [qui](plan.md#t4-qualunque-coda)', indice)
+    const got = references('vedi [qui](plan.md#t4-qualunque-coda)', index)
 
-    expect(esito[0]?.voce.sigla).toBe('T4')
+    expect(got[0]?.entry.code).toBe('T4')
   })
 })
 
@@ -152,28 +152,28 @@ describe('slug', () => {
 
 describe("l'ID del ticket quando la riga di testa non c'è", () => {
   test('lo prende dal titolo', () => {
-    expect(testaOverview('# oc:9056 — Il fascicolo\n\n> Stato: approvata').ticket).toBe('oc:9056')
+    expect(overviewHead('# oc:9056 — Il fascicolo\n\n> Stato: approvata').ticket).toBe('oc:9056')
   })
 
   test('lo prende dal nome della cartella', () => {
-    const esito = testaOverview('# Il fascicolo\n', 'docs/features/9056-il-fascicolo')
-    expect(esito.ticket).toBe('oc:9056')
+    const got = overviewHead('# Il fascicolo\n', 'docs/features/9056-il-fascicolo')
+    expect(got.ticket).toBe('oc:9056')
   })
 
   test('la riga di testa vince sugli altri due', () => {
     const md = '# oc:1111 — titolo\n> Ticket: oc:9056\n'
-    expect(testaOverview(md, 'docs/features/2222-x').ticket).toBe('oc:9056')
+    expect(overviewHead(md, 'docs/features/2222-x').ticket).toBe('oc:9056')
   })
 
   test('senza ID da nessuna parte non se lo inventa', () => {
-    expect(testaOverview('# Un titolo qualunque\n', 'docs/features/senza-numero').ticket).toBe(undefined)
+    expect(overviewHead('# Un titolo qualunque\n', 'docs/features/senza-numero').ticket).toBe(undefined)
   })
 })
 
-describe('pathCitati', () => {
+describe('citedPaths', () => {
   test('prende i link e i path nudi, senza doppioni', () => {
-    const testo = 'Vedi [le note](docs/features/x/notes.md#r1) e anche docs/features/x/plan.md, poi notes.md.'
-    expect(pathCitati(testo).sort()).toEqual([
+    const text = 'Vedi [le note](docs/features/x/notes.md#r1) e anche docs/features/x/plan.md, poi notes.md.'
+    expect(citedPaths(text).sort()).toEqual([
       'docs/features/x/notes.md',
       'docs/features/x/plan.md',
       'notes.md',
@@ -181,62 +181,62 @@ describe('pathCitati', () => {
   })
 
   test('un testo senza markdown non produce path', () => {
-    expect(pathCitati('nessun documento qui')).toEqual([])
+    expect(citedPaths('nessun documento qui')).toEqual([])
   })
 })
 
-describe('sigleNominate', () => {
+describe('namedCodes', () => {
   test('dice tutto quello che è stato nominato, risolto o no', () => {
-    expect(sigleNominate('T1, T3 e R99 sono citati').sort()).toEqual(['R99', 'T1', 'T3'])
+    expect(namedCodes('T1, T3 e R99 sono citati').sort()).toEqual(['R99', 'T1', 'T3'])
   })
 })
 
-describe('ticketCitati', () => {
+describe('citedTickets', () => {
   test('prende il numero dei ticket nominati, senza doppioni', () => {
-    expect(ticketCitati('fatto in oc:8333, vedi anche oc:9056 e di nuovo oc:8333').sort()).toEqual([
+    expect(citedTickets('fatto in oc:8333, vedi anche oc:9056 e di nuovo oc:8333').sort()).toEqual([
       '8333',
       '9056',
     ])
   })
 
   test('un numero che non è un ticket non conta', () => {
-    expect(ticketCitati('la riga 8333 del file')).toEqual([])
+    expect(citedTickets('la riga 8333 del file')).toEqual([])
   })
 })
 
 describe('una sigla si qualifica con il ticket nominato nella stessa frase', () => {
-  const indice = indicizzaTutti([
+  const index = indexAll([
     { file: 'docs/features/9056-corrente/overview.md', md: '### <a id="r2"></a>**R2** — quello di 9056' },
     { file: 'docs/features/8968-altro/overview.md', md: '### <a id="r2"></a>**R2** — quello di 8968' },
   ])
 
   test('il ticket nominato prima della sigla vince', () => {
-    const esito = riferimenti('fatto in oc:8968, vedi il suo R2', indice)
-    expect(esito[0]?.voce.titolo).toBe('quello di 8968')
+    const got = references('fatto in oc:8968, vedi il suo R2', index)
+    expect(got[0]?.entry.title).toBe('quello di 8968')
   })
 
   test('dopo il punto la qualificazione non vale più', () => {
-    const esito = riferimenti('fatto in oc:8968. Qui siamo su R2', indice)
-    expect(esito[0]?.voce.titolo).toBe('quello di 9056')
+    const got = references('fatto in oc:8968. Qui siamo su R2', index)
+    expect(got[0]?.entry.title).toBe('quello di 9056')
   })
 
   test('senza ticket nominato vince il primo documento', () => {
-    expect(riferimenti('siamo su R2', indice)[0]?.voce.titolo).toBe('quello di 9056')
+    expect(references('siamo su R2', index)[0]?.entry.title).toBe('quello di 9056')
   })
 
   test('una sigla che nel ticket nominato non esiste resta non risolta', () => {
-    expect(riferimenti('in oc:8968 il suo R7', indice)).toEqual([])
+    expect(references('in oc:8968 il suo R7', index)).toEqual([])
   })
 })
 
 describe('una sigla scritta in minuscolo vale come in maiuscolo', () => {
-  const indice = indicizza('## T9 — Il canale si chiude\n\nTesto del task.', 'plan.md')
+  const index = indexDocument('## T9 — Il canale si chiude\n\nTesto del task.', 'plan.md')
 
   test('t9 trova T9', () => {
-    expect(riferimenti('ricordami t9', indice)[0]?.voce.sigla).toBe('T9')
+    expect(references('ricordami t9', index)[0]?.entry.code).toBe('T9')
   })
 
   test('una parola che somiglia a una sigla ma non è nell indice non conta', () => {
-    expect(riferimenti('la versione v2 del file', indice)).toEqual([])
+    expect(references('la versione v2 del file', index)).toEqual([])
   })
 })

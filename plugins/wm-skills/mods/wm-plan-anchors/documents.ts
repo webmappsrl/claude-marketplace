@@ -23,23 +23,23 @@
  * perché la sigla non è prescritta: si legge da dov'è scritta.
  */
 
-export type Voce = {
+export type Entry = {
   /** L'àncora con cui ci si arriva: `r1`, `t4-la-sovrapposizione-vera`. */
   id: string
   /** La sigla con cui lo si nomina parlando: `R1`, `T4`. Assente se non c'è. */
-  sigla?: string
+  code?: string
   /** Il testo del titolo, senza sigla né markdown. */
-  titolo: string
+  title: string
   /** Il blocco che l'elemento apre, fino al successivo di pari rango. */
-  corpo: string
+  body: string
   /** Il file in cui sta, relativo alla cartella della feature. */
   file: string
   /** 1-6 per un heading, 0 per un'àncora dentro un elenco o in riga. */
-  livello: number
+  level: number
 }
 
 /** L'àncora esplicita in una riga: `<a id="r1"></a>`. */
-const ANCORA = /<a id="([^"]+)"><\/a>/
+const ANCHOR = /<a id="([^"]+)"><\/a>/
 /** Un heading markdown, con il suo livello. */
 const HEADING = /^(#{1,6})\s+(.*)$/
 /**
@@ -48,7 +48,7 @@ const HEADING = /^(#{1,6})\s+(.*)$/
  * Una lettera e almeno una cifra, perché una parola qualunque non diventi una
  * sigla per sbaglio, e solo in apertura: `vedi R3` dentro un titolo non lo è.
  */
-const SIGLA_IN_TESTA = /^\*{0,2}([A-Z]+\d+)\*{0,2}\s*[—–-]\s*/
+const LEADING_CODE = /^\*{0,2}([A-Z]+\d+)\*{0,2}\s*[—–-]\s*/
 
 /**
  * Lo slug di un heading, come lo calcola GitHub per l'àncora automatica.
@@ -58,8 +58,8 @@ const SIGLA_IN_TESTA = /^\*{0,2}([A-Z]+\d+)\*{0,2}\s*[—–-]\s*/
  * `t4--la-sovrapposizione`, con due trattini dove stava il trattino lungo, ed
  * è la forma che wm-plan scrive davvero nei link ai documenti.
  */
-export function slug(testo: string): string {
-  return testo
+export function slug(text: string): string {
+  return text
     .toLowerCase()
     .replace(/<[^>]+>/g, '')
     .replace(/[`*_\[\]()]/g, '')
@@ -69,8 +69,8 @@ export function slug(testo: string): string {
 }
 
 /** Toglie il markdown dal titolo: nel pane è solo rumore. */
-function testoPulito(riga: string): string {
-  return riga
+function cleanText(line: string): string {
+  return line
     .replace(/<[^>]+>/g, '')
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -79,12 +79,12 @@ function testoPulito(riga: string): string {
     .trim()
 }
 
-type Segnato = {
-  riga: number
+type Marked = {
+  line: number
   id: string
-  sigla?: string
-  titolo: string
-  livello: number
+  code?: string
+  title: string
+  level: number
 }
 
 /**
@@ -96,71 +96,71 @@ type Segnato = {
  * Verifica e le sue fonti, e uno scritto come voce di elenco porta le sue
  * sottovoci, senza che l'indice sappia che cos'è un requisito.
  */
-export function indicizza(md: string, file: string): Map<string, Voce> {
-  const righe = md.split('\n')
-  const segnati: Segnato[] = []
+export function indexDocument(md: string, file: string): Map<string, Entry> {
+  const lines = md.split('\n')
+  const marked: Marked[] = []
 
-  righe.forEach((riga, n) => {
-    const head = HEADING.exec(riga)
-    const ancora = ANCORA.exec(riga)
+  lines.forEach((line, n) => {
+    const heading = HEADING.exec(line)
+    const anchor = ANCHOR.exec(line)
 
-    if (head) {
-      const livello = (head[1] ?? '').length
-      const resto = (head[2] ?? '').replace(ANCORA, '').trim()
-      const sigla = SIGLA_IN_TESTA.exec(resto)?.[1]
-      const titolo = testoPulito(resto.replace(SIGLA_IN_TESTA, ''))
+    if (heading) {
+      const level = (heading[1] ?? '').length
+      const rest = (heading[2] ?? '').replace(ANCHOR, '').trim()
+      const code = LEADING_CODE.exec(rest)?.[1]
+      const title = cleanText(rest.replace(LEADING_CODE, ''))
       // L'àncora esplicita vince sullo slug: è quella che non cambia quando il
       // titolo si riformula, ed è quella che wm-plan scrive nei link.
-      segnati.push({ riga: n, id: ancora?.[1] ?? slug(resto), sigla, titolo, livello })
+      marked.push({ line: n, id: anchor?.[1] ?? slug(rest), code, title, level })
       return
     }
 
-    if (!ancora) return
+    if (!anchor) return
 
-    const dopo = riga.slice((ancora.index ?? 0) + ancora[0].length).trim()
-    const sigla = SIGLA_IN_TESTA.exec(dopo)?.[1]
-    const titolo = testoPulito(dopo.replace(SIGLA_IN_TESTA, ''))
+    const after = line.slice((anchor.index ?? 0) + anchor[0].length).trim()
+    const code = LEADING_CODE.exec(after)?.[1]
+    const title = cleanText(after.replace(LEADING_CODE, ''))
     // Livello 0: un'àncora fuori da un heading non apre una sezione, quindi
     // il suo blocco si chiude al primo elemento indicizzato che segue.
-    segnati.push({ riga: n, id: ancora[1] ?? '', sigla, titolo, livello: 0 })
+    marked.push({ line: n, id: anchor[1] ?? '', code, title, level: 0 })
   })
 
-  const indice = new Map<string, Voce>()
+  const index = new Map<string, Entry>()
 
-  segnati.forEach((uno, i) => {
-    let fine = righe.length
-    for (let j = i + 1; j < segnati.length; j++) {
-      const altro = segnati[j]
-      if (altro === undefined) continue
+  marked.forEach((one, i) => {
+    let end = lines.length
+    for (let j = i + 1; j < marked.length; j++) {
+      const other = marked[j]
+      if (other === undefined) continue
       // Un heading chiude il blocco precedente quando è di pari rango o più
       // alto; un elemento senza livello chiude solo gli altri senza livello.
-      const chiude = uno.livello === 0 ? true : altro.livello !== 0 && altro.livello <= uno.livello
-      if (chiude) {
-        fine = altro.riga
+      const closes = one.level === 0 ? true : other.level !== 0 && other.level <= one.level
+      if (closes) {
+        end = other.line
         break
       }
     }
 
-    const corpo = righe
-      .slice(uno.riga + 1, fine)
+    const body = lines
+      .slice(one.line + 1, end)
       .join('\n')
       .trim()
 
-    const voce: Voce = {
-      id: uno.id,
-      sigla: uno.sigla,
-      titolo: uno.titolo,
-      corpo,
+    const entry: Entry = {
+      id: one.id,
+      code: one.code,
+      title: one.title,
+      body,
       file,
-      livello: uno.livello,
+      level: one.level,
     }
 
-    if (uno.id !== '') indice.set(uno.id, voce)
+    if (one.id !== '') index.set(one.id, entry)
     // La sigla è un secondo nome per la stessa voce: `R1` e `r1` portano lì.
-    if (uno.sigla !== undefined && !indice.has(uno.sigla)) indice.set(uno.sigla, voce)
+    if (one.code !== undefined && !index.has(one.code)) index.set(one.code, entry)
   })
 
-  return indice
+  return index
 }
 
 /**
@@ -170,25 +170,25 @@ export function indicizza(md: string, file: string): Map<string, Voce> {
  * `overview.md` si passa per primo, perché è lì che un identificativo è
  * definito, e `plan.md` o `notes.md` aggiungono i loro senza coprirlo.
  */
-export function indicizzaTutti(documenti: { file: string; md: string }[]): Map<string, Voce> {
-  const indice = new Map<string, Voce>()
+export function indexAll(docs: { file: string; md: string }[]): Map<string, Entry> {
+  const index = new Map<string, Entry>()
 
-  for (const uno of documenti) {
+  for (const one of docs) {
     // Il ticket a cui il documento appartiene, letto dal path della cartella.
     // Serve a dare a ogni voce un secondo nome qualificato, `8333:R2`, con cui
     // una sigla si risolve nel ticket giusto quando se ne nominano due.
-    const ticket = /docs\/features\/(\d+)-/.exec(uno.file)?.[1]
+    const ticket = /docs\/features\/(\d+)-/.exec(one.file)?.[1]
 
-    for (const [chiave, voce] of indicizza(uno.md, uno.file)) {
-      if (!indice.has(chiave)) indice.set(chiave, voce)
+    for (const [key, entry] of indexDocument(one.md, one.file)) {
+      if (!index.has(key)) index.set(key, entry)
       if (ticket !== undefined) {
-        const qualificata = `${ticket}:${chiave}`
-        if (!indice.has(qualificata)) indice.set(qualificata, voce)
+        const qualified = `${ticket}:${key}`
+        if (!index.has(qualified)) index.set(qualified, entry)
       }
     }
   }
 
-  return indice
+  return index
 }
 
 /**
@@ -199,71 +199,67 @@ export function indicizzaTutti(documenti: { file: string; md: string }[]): Map<s
  * si risolve prima sull'àncora intera e poi, se non la trova, sulla sigla che
  * la apre: un link a uno slug lungo trova lo stesso la sua voce.
  */
-export function riferimenti(
-  testo: string,
-  indice: Map<string, Voce>,
-): { at: number; voce: Voce }[] {
-  const trovati: { at: number; voce: Voce }[] = []
+export function references(
+  text: string,
+  index: Map<string, Entry>,
+): { at: number; entry: Entry }[] {
+  const found: { at: number; entry: Entry }[] = []
   // I tratti di testo gia consumati da un link: la sigla che sta dentro
   // l'ancora — `#t4--la-sovrapposizione` — e lo stesso riferimento, non un
   // secondo, e contarla due volte riempirebbe il pane di doppioni.
-  const presi: { da: number; a: number }[] = []
+  const taken: { from: number; to: number }[] = []
 
-  for (const hit of testo.matchAll(/\(([^)\s]*#([^)\s]+))\)/g)) {
-    const ancora = hit[2]
-    if (ancora === undefined || hit.index === undefined) continue
-    presi.push({ da: hit.index, a: hit.index + hit[0].length })
-    const apertura = ancora.split('-')[0] ?? ''
-    const voce =
-      indice.get(ancora) ?? indice.get(apertura) ?? indice.get(apertura.toUpperCase())
-    if (voce) trovati.push({ at: hit.index, voce })
+  for (const hit of text.matchAll(/\(([^)\s]*#([^)\s]+))\)/g)) {
+    const anchor = hit[2]
+    if (anchor === undefined || hit.index === undefined) continue
+    taken.push({ from: hit.index, to: hit.index + hit[0].length })
+    const opening = anchor.split('-')[0] ?? ''
+    const entry =
+      index.get(anchor) ?? index.get(opening) ?? index.get(opening.toUpperCase())
+    if (entry) found.push({ at: hit.index, entry })
   }
 
   // Dove sono nominati i ticket: una sigla che viene dopo `oc:8333` si
   // intende in quel ticket, perche e cosi che se ne parla — «fatto in
   // oc:8333, vedi il suo R2». Senza questo vincerebbe sempre la feature
   // corrente, e il pane mostrerebbe il requisito sbagliato con lo stesso nome.
-  const ticketA: { at: number; numero: string }[] = []
-  for (const hit of testo.matchAll(/\boc:(\d+)\b/g)) {
+  const tickets: { at: number; number: string }[] = []
+  for (const hit of text.matchAll(/\boc:(\d+)\b/g)) {
     if (hit[1] !== undefined && hit.index !== undefined) {
-      ticketA.push({ at: hit.index, numero: hit[1] })
+      tickets.push({ at: hit.index, number: hit[1] })
     }
   }
 
   // Anche minuscola: `t9` scritto di fretta e la stessa cosa di `T9`, e il
   // pane non deve fare lo schizzinoso. Il rischio di prendere una parola a
   // caso non c'e: una sigla conta solo se l'indice la conosce davvero.
-  for (const hit of testo.matchAll(/\b([A-Za-z]+\d+)\b/g)) {
-    const scritta = hit[1]
-    if (scritta === undefined || hit.index === undefined) continue
-    const dove = hit.index
-    if (presi.some(uno => dove >= uno.da && dove < uno.a)) continue
-    const sigla = scritta.toUpperCase()
+  for (const hit of text.matchAll(/\b([A-Za-z]+\d+)\b/g)) {
+    const written = hit[1]
+    if (written === undefined || hit.index === undefined) continue
+    const at = hit.index
+    if (taken.some(one => at >= one.from && at < one.to)) continue
+    const code = written.toUpperCase()
     // La qualificazione vale dentro la frase, non per tutto il messaggio:
     // «fatto in oc:8968, vedi il suo R2. Qui siamo su R3» parla di due
     // ticket diversi, e il punto e quello che li separa.
-    const prima = [...ticketA]
+    const before = [...tickets]
       .reverse()
-      .find(
-        uno =>
-          uno.at < (hit.index ?? 0) &&
-          !/[.;\n]/.test(testo.slice(uno.at, hit.index ?? 0)),
-      )
-    const qualificata = prima === undefined ? undefined : indice.get(`${prima.numero}:${sigla}`)
+      .find(one => one.at < at && !/[.;\n]/.test(text.slice(one.at, at)))
+    const qualified = before === undefined ? undefined : index.get(`${before.number}:${code}`)
 
     // Se il ticket nominato e fra quelli letti ma quella sigla li dentro non
     // c'e, la si lascia non risolta: ricadere sulla sigla della feature
     // corrente mostrerebbe un requisito diverso con lo stesso nome, cioe un
     // dato sbagliato al posto di un dato mancante.
-    const letto =
-      prima !== undefined && [...indice.keys()].some(k => k.startsWith(`${prima.numero}:`))
-    if (qualificata === undefined && letto) continue
+    const known =
+      before !== undefined && [...index.keys()].some(k => k.startsWith(`${before.number}:`))
+    if (qualified === undefined && known) continue
 
-    const voce = qualificata ?? indice.get(sigla)
-    if (voce) trovati.push({ at: hit.index, voce })
+    const entry = qualified ?? index.get(code)
+    if (entry) found.push({ at, entry })
   }
 
-  return trovati.sort((a, b) => a.at - b.at)
+  return found.sort((a, b) => a.at - b.at)
 }
 
 /**
@@ -274,36 +270,36 @@ export function riferimenti(
  * quali documenti la sessione sta toccando: sono quelli da indicizzare, non
  * solo i tre della cartella corrente.
  */
-export function pathCitati(testo: string): string[] {
-  const trovati = new Set<string>()
+export function citedPaths(text: string): string[] {
+  const found = new Set<string>()
 
-  for (const hit of testo.matchAll(/\]\(([^)\s]+\.md)(?:#[^)\s]*)?\)/g)) {
-    if (hit[1] !== undefined) trovati.add(hit[1])
+  for (const hit of text.matchAll(/\]\(([^)\s]+\.md)(?:#[^)\s]*)?\)/g)) {
+    if (hit[1] !== undefined) found.add(hit[1])
   }
 
-  for (const hit of testo.matchAll(/(?:^|[\s`"'(])([\w./-]+\.md)\b/g)) {
-    if (hit[1] !== undefined) trovati.add(hit[1])
+  for (const hit of text.matchAll(/(?:^|[\s`"'(])([\w./-]+\.md)\b/g)) {
+    if (hit[1] !== undefined) found.add(hit[1])
   }
 
-  return [...trovati]
+  return [...found]
 }
 
 /**
  * Le sigle nominate in un testo, risolte o no.
  *
- * `riferimenti` restituisce solo quelle che l'indice conosce: questa dice
+ * `references` restituisce solo quelle che l'indice conosce: questa dice
  * tutto quello che la sessione ha nominato, così chi disegna il pane può
  * accorgersi di una sigla citata che nei documenti non esiste. Un riferimento
  * che non si trova è un difetto del documento, e va mostrato, non taciuto.
  */
-export function sigleNominate(testo: string): string[] {
-  const trovate = new Set<string>()
+export function namedCodes(text: string): string[] {
+  const found = new Set<string>()
 
-  for (const hit of testo.matchAll(/\b([A-Z]+\d+)\b/g)) {
-    if (hit[1] !== undefined) trovate.add(hit[1])
+  for (const hit of text.matchAll(/\b([A-Z]+\d+)\b/g)) {
+    if (hit[1] !== undefined) found.add(hit[1])
   }
 
-  return [...trovate]
+  return [...found]
 }
 
 /**
@@ -314,12 +310,12 @@ export function sigleNominate(testo: string): string[] {
  * letta. Chi raccoglie i documenti traduce il numero nella sua cartella,
  * `docs/features/<numero>-<titolo>`.
  */
-export function ticketCitati(testo: string): string[] {
-  const trovati = new Set<string>()
+export function citedTickets(text: string): string[] {
+  const found = new Set<string>()
 
-  for (const hit of testo.matchAll(/\boc:(\d+)\b/g)) {
-    if (hit[1] !== undefined) trovati.add(hit[1])
+  for (const hit of text.matchAll(/\boc:(\d+)\b/g)) {
+    if (hit[1] !== undefined) found.add(hit[1])
   }
 
-  return [...trovati]
+  return [...found]
 }

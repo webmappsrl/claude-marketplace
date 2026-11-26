@@ -3,7 +3,7 @@
 #
 #   1. plugins/wm-skills/skills/wm-plan/SKILL.md      lo prescrive  (la fonte autoritativa)
 #   2. plugins/wm-skills/scripts/feature-docs-check.sh  lo riconosce con una regex awk
-#   3. plugins/wm-skills/mods/wm-plan-anchors/documento.ts  lo indicizza per il pane della mod
+#   3. plugins/wm-skills/mods/wm-plan-anchors/documents.ts  lo indicizza per il pane della mod
 #
 # Se la forma cambia in uno solo, gli altri due smettono di riconoscere i requisiti senza dire
 # niente: lo script di controllo dei documenti passa su un overview che non legge, e il pane
@@ -22,7 +22,7 @@ cd "$(dirname "$0")/../.."
 
 SKILL="plugins/wm-skills/skills/wm-plan/SKILL.md"
 AWK_SRC="plugins/wm-skills/scripts/feature-docs-check.sh"
-TS_SRC="plugins/wm-skills/mods/wm-plan-anchors/documento.ts"
+TS_SRC="plugins/wm-skills/mods/wm-plan-anchors/documents.ts"
 ESITO=0
 
 for F in "$SKILL" "$AWK_SRC" "$TS_SRC"; do
@@ -57,8 +57,8 @@ awk_riconosce() { # <riga> → 0 se il parser le dà un identificativo
 # JavaScript: l'indicizzatore non ha una regex per «la riga di un requisito» — segna le àncore
 # e gli heading, e una riga è indicizzata se porta un'àncora. Si estrae quella costante e si
 # verifica che la riga la contenga: è ciò che decide se quel requisito finirà nel pane.
-TS_RE="$(grep -oE 'const ANCORA = /.*/$' "$TS_SRC" | sed 's|^.* = /||; s|/$||')"
-[ -n "$TS_RE" ] || { echo "❌ non trovo la costante ANCORA in $TS_SRC"; exit 1; }
+TS_RE="$(grep -oE 'const ANCHOR = /.*/$' "$TS_SRC" | sed 's|^.* = /||; s|/$||')"
+[ -n "$TS_RE" ] || { echo "❌ non trovo la costante ANCHOR in $TS_SRC"; exit 1; }
 TS_ERE="$(printf '%s' "$TS_RE" \
   | sed 's|\\s|[[:space:]]|g; s|\\d|[0-9]|g; s|\\/|/|g; s|\\\*|[*]|g')"
 
@@ -78,7 +78,7 @@ while IFS= read -r RIGA; do
   prova "$TS_ERE" "$RIGA" || {
     echo "❌ $TS_SRC non riconosce una riga che $SKILL prescrive:"
     echo "   $RIGA"
-    echo "   → allinea ANCORA in $TS_SRC"
+    echo "   → allinea ANCHOR in $TS_SRC"
     ESITO=1
   }
 done <<< "$ESEMPI"

@@ -2,7 +2,7 @@
  * Le letture di contorno del pane: le etichette definite parlando, la pulizia
  * del markdown, e il ticket e lo stato scritti in testa a un `overview.md`.
  *
- * Il riconoscimento dei requisiti non sta piu qui: lo fa `documento.ts`,
+ * Il riconoscimento dei requisiti non sta piu qui: lo fa `documents.ts`,
  * indicizzando ancore e heading invece di inseguire la forma di una riga.
  */
 
@@ -33,14 +33,14 @@ export function parseLabels(text: string): Map<string, string> {
  * si riferisce. Gli spazi restano al posto del codice, cosi le posizioni non
  * si spostano e l'ordine per posizione nel testo resta giusto.
  */
-export function senzaCodice(text: string): string {
+export function withoutCode(text: string): string {
   return text
-    .replace(/```[\s\S]*?```/g, blocco => ' '.repeat(blocco.length))
-    .replace(/`[^`\n]*`/g, pezzo => ' '.repeat(pezzo.length))
+    .replace(/```[\s\S]*?```/g, block => ' '.repeat(block.length))
+    .replace(/`[^`\n]*`/g, piece => ' '.repeat(piece.length))
 }
 
 /** Toglie il markdown: nel pane non significa niente ed e solo rumore. */
-export function pulisci(text: string): string {
+export function clean(text: string): string {
   return text
     .replace(/`([^`]+)`/g, '$1')
     .replace(/\*\*([^*]+)\*\*/g, '$1')
@@ -57,11 +57,11 @@ export function pulisci(text: string): string {
  * Senza ticket la prima riga non c'è, e lo stato esiste solo da quando l'overview
  * viene approvata: entrambi i casi tornano `undefined`, non una stringa vuota.
  */
-export function testaOverview(
+export function overviewHead(
   md: string,
   dir?: string,
-): { ticket?: string; stato?: string } {
-  const stato = /^>\s*Stato:\s*(.+?)\s*$/m.exec(md)?.[1]
+): { ticket?: string; status?: string } {
+  const status = /^>\s*Stato:\s*(.+?)\s*$/m.exec(md)?.[1]
   const ticket =
     /^>\s*Ticket:\s*(oc:\d+)/m.exec(md)?.[1] ??
     // La riga di testa e la forma prescritta, ma non e l'unico posto dove
@@ -72,5 +72,5 @@ export function testaOverview(
     /^#\s+(?:oc:)?(\d+)\b/m.exec(md)?.[1]?.replace(/^/, 'oc:') ??
     (dir === undefined ? undefined : /(?:^|\/)(\d+)-/.exec(dir)?.[1]?.replace(/^/, 'oc:'))
 
-  return { ticket, stato }
+  return { ticket, status }
 }
